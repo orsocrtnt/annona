@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **22** : RECETTE-V1, LOT1-D9, NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **7** : RECETTE-V1, LOT1-D9, HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **15** : CARTE-1, DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2 | **4** : SEP-1, AUTH-GOOGLE, RETOURS-1, DISPATCH-OPTIM |
+| À faire | **16** : CARTE-1, DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2, DISPATCH-OPTIM | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -36,13 +36,13 @@
 - LOT2-D9 — Commandes de gâteaux des particuliers en boutique (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
 - LOT2-D10 — Pâtisseries pour les restaurants (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
 - RETOURS-2 — Retouches des notes du tour de Théo (`outputs/notes-tour.md`, 21 novembre) (4 enregistrements DNS chez Dovendi pour `mail.annona.fr` (e-mail de l'accès Vente) ; ensuite Claude vérifie le domaine et Théo crée un accès Vente pour voir l'e-mail arriver)
+- DISPATCH-OPTIM — Le calcul des tournées est-il optimal ? (RG-09, ADM-06) (dire si on fait l'équilibrage (gain mesuré, voir l'étude) et choisir un service d'itinéraires (piste 3) ; Théo — vérifier `DRIVE_ROUTE_OSRM_URL` sur Vercel)
 
 **À faire par Théo**
 
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (relier le projet Vercel `annona` à `orsocrtnt/annona` (branche `base`) ; ensuite Orso : offre Pro, sort de `main` et `preproduction`, annona.fr)
 - AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - RETOURS-1 — Tour complet de l'application et notes de retouches (tour à la main (parcours qui écrivent, application Android), partie 2 de `docs/rapports/2026-11-16-tour-theo.md`)
-- DISPATCH-OPTIM — Le calcul des tournées est-il optimal ? (RG-09, ADM-06) (dire s'il faut des tournées de taille voisine ou le moins de tournées possible (piste 4) ; Orso — dire si on fait la piste 3 (temps routiers))
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
@@ -53,7 +53,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **Point du 23 novembre 2026** : LOT1-D9 close (Théo a vérifié sur téléphone, les lenteurs ont disparu) ; détail dans `docs/TODO-ARCHIVE.md`. RECETTE-V1 close aussi (menu « Comment y aller ? » validé par Théo sur un vrai Android) ; iPhone et notifications natives restent dans MOBILE-1.
 
-**Calcul des tournées amélioré (23 novembre 2026, DISPATCH-OPTIM, pistes 1 et 2 demandées par Orso)** : les commerces les plus éloignés du laboratoire sont placés d'abord, puis chaque tournée est raccourcie (2-opt + Or-opt). Meilleure tournée trouvée 127 fois sur 150 (avant : 53), écart moyen 0,6 % (avant : 4,6 %) ; 140 commandes : 180 min de route au total au lieu de 278. Démo : même amélioration, 2 043 → 1 814 min de route sur une journée. Restent : Théo (équilibrer les tournées ?) et Orso (temps routiers au-delà de 60 commerces, piste 3).
+**Calcul des tournées amélioré (23 novembre 2026, DISPATCH-OPTIM, pistes 1 et 2 demandées par Orso)** : les commerces les plus éloignés du laboratoire sont placés d'abord, puis chaque tournée est raccourcie (2-opt + Or-opt). Meilleure tournée trouvée 127 fois sur 150 (avant : 53), écart moyen 0,6 % (avant : 4,6 %) ; 140 commandes : 180 min de route au total au lieu de 278. Démo : même amélioration, 2 043 → 1 814 min de route sur une journée. Étude du 23 novembre : des tournées de même taille seraient plus courtes et finiraient 1 à 2 h plus tôt, sans livreur de plus (à décider par Orso) ; temps routiers : il faut un service d'itinéraires (Orso) et vérifier Vercel (Théo) ; réglage sur l'historique : attendre de vrais clients.
 
 **Point du 22 novembre 2026 (nuit, Claude de Théo en autonomie)**
 
@@ -604,7 +604,7 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
 
 - [ ] **DISPATCH-OPTIM — Le calcul des tournées est-il optimal ? (RG-09, ADM-06)**
 
-  **Qui : Théo — dire s'il faut des tournées de taille voisine ou le moins de tournées possible (piste 4) ; Orso — dire si on fait la piste 3 (temps routiers).**
+  **Qui : Orso — dire si on fait l'équilibrage (gain mesuré, voir l'étude) et choisir un service d'itinéraires (piste 3) ; Théo — vérifier `DRIVE_ROUTE_OSRM_URL` sur Vercel.**
 
   - **Demande d'Orso (23 novembre 2026)** : une série de tests sur l'organisation des tournées, pour savoir si le calcul est le plus optimisé possible.
   - **Fait le 23 novembre (Claude d'Orso, branche `orso/dispatch-optim-tests`)** : `tests/dispatch-optimisation.test.ts`, 6 tests sur des adresses de Paris (rues de la démo, tirage fixe), départ du laboratoire de la démo, temps à vol d'oiseau. Deux garde-fous qui passent ; quatre défauts en test `todo` (ils échouent tant que le calcul n'est pas amélioré, sans faire échouer `npm test`). Aucun code de production modifié.
@@ -628,5 +628,10 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
     - Fonction renommée `demoRoundOrder` après la fusion de la PR #73 (`orso/demo-1-lot2`) ; fusion de `base` dans la branche sans conflit sur `demo-scenario.ts`.
     - Test ajouté dans `tests/dispatch-optimisation.test.ts` : chaque tournée de la démo est déjà au bout de l'amélioration, journée construite en moins de 1 s. `tests/demo1-scenario.test.ts` 6/6. `npm run check` : sortie 0 (935 tests, 932 réussis, 0 échec, 1 sauté, 2 `todo`).
     - Non vérifié : environnement de démo reconstruit et carte regardée dans le navigateur.
+  - **Étude des pistes 2, 3 et 5 (23 novembre, demande d'Orso « étudie ces questions »)** :
+    - **Équilibrer les tournées (pistes 4 et 5)** : banc d'essai hors dépôt, mêmes tournées que plus haut. Échanger des arrêts entre tournées seul rapporte peu (0 à 7 % de route, souvent 1 à 2 %, jusqu'à 2,6 s de calcul). En revanche, **des tournées de même taille, avec le même nombre de livreurs, sont plus courtes ET finissent plus tôt** : 140 commandes, 99 + 41 arrêts (181 min de route, fin 12h26) → 70 + 70 (161 min, fin 10h27) ; autre tirage 167 → 159 min ; 180 commandes 186 → 176 min (fin 12h19 → 11h34) ; 220 commandes 107 + 107 + 6 (200 min) → 74 + 74 + 72 (193 min, fin 12h24 → 10h16). Méthode d'essai grossière (découpe en parts égales par direction autour du laboratoire, puis 2-opt + Or-opt) : un calcul soigné ferait au moins aussi bien. Le calcul actuel remplit la première tournée jusqu'au bout du créneau, ce qui la fait serpenter. Une tournée de plus (3 au lieu de 2) ne raccourcit pas la route, elle coûte un livreur. **Conclusion : équilibrer à nombre de tournées égal ne coûte rien et gagne partout** ; la seule question pour Théo devient « le moins de livreurs possible, oui ? » (déjà le cas) et « de 60 à 70 arrêts chacun plutôt que 99 et 41 ? ».
+    - **Régler les estimations sur les vraies livraisons (piste 2)** : possible avec les données déjà enregistrées (`stops.delivered_at` à l'heure du geste, LIV-03, `estimated_arrival_at`, `rounds.started_at`, ordre de passage) : l'écart entre deux « Livré » successifs = trajet + temps sur place, d'où une régression robuste (vitesse et détour, temps par arrêt, par tranche horaire). Pas d'historique des positions (`DriverLocation` ne garde que la dernière), donc trajet et temps sur place ne se séparent que par le calcul. **Bloquant : aucune donnée réelle** dans `annona-dev` (vérifié le 23 novembre : seulement « Boulangerie de démonstration », 9 328 arrêts livrés, et « Boulangerie Démo Annona », 1 519, heures générées par programme et réparties à intervalles réguliers, donc inutilisables). À faire après quelques semaines de vrais clients ; d'ici là, possible : un écran « heure prévue / heure réelle » pour mesurer l'écart.
+    - **Temps routiers réels (piste 3)** : `DRIVE_ROUTE_OSRM_URL` vide en local ; sur le site en ligne, projet Vercel de Théo, non visible depuis le compte d'Orso (à vérifier par Théo). Le code refuse un service non HTTPS et le serveur public OSRM n'est pas prévu (positions des clients). Il faut un service : OSRM hébergé (petit serveur avec la carte de l'Île-de-France) ou une API payante de matrice de temps. Côté code : demander la matrice créneau par créneau et par blocs (OSRM accepte `sources` et `destinations`), aujourd'hui une seule requête de 60 points au plus pour toute la journée ; « Recalculer l'ordre » (environ 70 arrêts) est aussi à vol d'oiseau. `improveOpenPath` gère déjà les sens uniques. Gain inconnu tant qu'aucun vrai temps n'est disponible.
+    - **Ordre conseillé** : (a) équilibrage, sans service extérieur ni décision lourde, gain mesuré ; (b) service d'itinéraires, décision d'Orso (hébergement et coût) et vérification de Théo sur Vercel ; (c) réglage sur l'historique, après les premiers vrais clients.
     - Non vérifié : clic réel sur « Recalculer l'ordre » et verrouillage d'une vraie journée sur `annona-dev` (aucun serveur lancé) ; tournées déjà calculées en base non recalculées.
   - **Non vérifié** : écart avec de vrais temps routiers (aucun appel au service OSRM fait) ; adresses des vrais clients (aucun encore).
