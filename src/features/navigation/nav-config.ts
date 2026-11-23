@@ -18,7 +18,7 @@ export const adminNavItems: NavItem[] = [
 export const companyNavItems: NavItem[] = [
   { title: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
   { title: "Commandes", href: "/dashboard/orders", icon: Package },
-  { title: "Suivi livreurs", href: "/dashboard/tracking", icon: Navigation },
+  { title: "Carte", href: "/dashboard/tracking", icon: Navigation },
   { title: "Tournées", href: "/dashboard/rounds", icon: Route },
   { title: "Clients", href: "/dashboard/merchants", icon: UserCircle },
   { title: "Boutiques", href: "/dashboard/shops", icon: Store },

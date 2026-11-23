@@ -4,16 +4,16 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**25 tâches terminées sur 44 — 57 %**
+**25 tâches terminées sur 45 — 56 %**
 
-`███████████░░░░░░░░░` · 19 tâches restantes
+`███████████░░░░░░░░░` · 20 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
 | Fait | **22** : RECETTE-V1, LOT1-D9, NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **7** : RECETTE-V1, LOT1-D9, HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **14** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2 | **4** : SEP-1, AUTH-GOOGLE, RETOURS-1, DISPATCH-OPTIM |
+| À faire | **15** : CARTE-1, DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2 | **4** : SEP-1, AUTH-GOOGLE, RETOURS-1, DISPATCH-OPTIM |
 
 **À faire par Claude**
 
@@ -21,6 +21,7 @@
 
 **À faire par Orso**
 
+- CARTE-1 — Une seule carte des tournées pour le gérant (page « Carte » et tableau de bord) (regarder la carte (page « Carte » et tableau de bord) et dire ce qui cloche)
 - DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (regarder le socle dans le navigateur et dire ce qui cloche ; ensuite Claude migre les écrans un par un)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
@@ -166,6 +167,23 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 ## Tâches ouvertes
 
 _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
+
+- [ ] **CARTE-1 — Une seule carte des tournées pour le gérant (page « Carte » et tableau de bord).**
+
+  **Qui : Orso — regarder la carte (page « Carte » et tableau de bord) et dire ce qui cloche.**
+
+  **En cours : Orso.**
+
+  - **Demande d'Orso (23 novembre 2026)** : une seule carte chez le gérant, la principale et sa copie sur le tableau de bord, qui réunit « Suivi livreurs » et les tournées ; claire (« pour le moment c'est hyper brouillon ») ; cliquer sur la tournée X ou Y pour la voir, toutes activables, mais pouvoir n'en voir qu'une.
+  - **Fait le 23 novembre (Claude d'Orso, branche `orso/carte-1`)** : composant unique `src/features/delivery-map/` (`DeliveryMap`, données `useDeliveryMapData`, sélection `visible-rounds.ts`) à la place des trois cartes (`rounds-map*`, `tracking-map*` supprimés). Un bouton par tournée (couleur, nom, avancement livrés/total) et « Toutes » : toucher une tournée quand toutes sont affichées n'affiche qu'elle, toucher d'autres tournées les ajoute ou les retire, « Toutes » réaffiche tout ; les tournées masquées ne sont pas dessinées ; recadrage sur les tournées affichées. Arrêts : à livrer numérotés (liseré de la couleur de la tournée), livrés en petit point gris, problème en rouge « ! » ; livreur (initiales, couleur de sa tournée) et son trajet vers les prochains arrêts ; légende sous la carte.
+  - Page « Carte » (`/dashboard/tracking`, entrée de menu « Suivi livreurs » renommée « Carte ») : toutes les tournées du jour (pas seulement celles en cours), carte en grand et liste des tournées affichées ; toucher un livreur sur la carte ou une tournée dans la liste n'affiche qu'elle et ouvre sa fiche (prochains arrêts avec heure prévue, livrés avec l'heure, problèmes). Tableau de bord : même carte, plus petite, avec « Ouvrir la carte ». Page « Tournées » (planification) : même carte, la tournée choisie dans la liste est seule affichée.
+  - Mini admin (lot 1, demande 4) : chaque source n'est lue que si le compte y a droit ; avec seulement « Suivi des livreurs », la carte est reconstruite à partir du suivi (tournées en cours).
+  - Tracé : seulement ce qui reste à livrer, depuis le dernier arrêt fait (ou le laboratoire) ; une tournée terminée ne laisse que ses points gris (constaté en recette : les arrêts livrés reliés faisaient de grands zigzags).
+  - Tests : `tests/carte1-visible-rounds.test.ts` **5/5** ; libellés « Carte » dans `lot1-d4-mini-admin`, `lot1-d5-tracking` et les E2E `lot1-recette`, `lot1-d9-perf` (**E2E non lancés**) ; `npm run check` **sortie 0** (929 tests, 928 réussis, 1 ignoré).
+  - **Recette navigateur le 23 novembre** (Playwright, Chromium 1440×900, gérant de la démo sur `annona-dev`, branche d'aperçu locale démo + DA-1 + CARTE-1) : tableau de bord → « Ouvrir la carte » → page « Carte » : « Toutes (4) », un clic sur une tournée n'affiche qu'elle et ouvre sa fiche (prochains arrêts avec heure prévue, livrés avec l'heure), un second clic en ajoute une (2 affichées), « Toutes » réaffiche tout ; aucune erreur dans la page. Corrigé pendant la recette : tracé limité à ce qui reste à livrer (les arrêts livrés reliés faisaient de grands zigzags) et cadrage sur ce qui reste à faire. Non regardés : thème sombre, téléphone, compte mini admin.
+  - **Reste** : avis d'Orso ; couleurs des tournées à revoir avec la nouvelle identité (DA-1).
+
+  - **23 novembre 2026** : couleurs des tournées sans vert (sarcelle et vert olive remplacés par bleu ciel, ocre, indigo et gris pierre ; jaune laissé au livreur), à la demande d'Orso (« encore des détails verts »). Vérifié : `npx tsc --noEmit` et `npm run lint` ; recette navigateur faite sur la branche d'aperçu.
 
 - [ ] **DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B).**
 

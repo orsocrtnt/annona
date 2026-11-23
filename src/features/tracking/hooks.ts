@@ -13,9 +13,10 @@ async function fetchTracking(): Promise<DriverTracking> {
   return json.data;
 }
 
-export function useDriverTracking() {
+export function useDriverTracking({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["tracking"],
+    enabled,
     queryFn: fetchTracking,
     refetchInterval: TRACKING_REFRESH_MS,
     refetchIntervalInBackground: false,
