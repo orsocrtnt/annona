@@ -1,15 +1,15 @@
-/** Mails Annona : direction « Menthe soignée », logo officiel et texte brut de secours. */
+/** Mails Annona : identité DA-1 (encre, Aube, gris neutres), logo officiel et texte brut de secours. */
 import { emailPresentation, type EmailPresentation } from "./email-presentation";
 
 const COLORS = {
-  background: "#f5f8f6",
+  background: "#f2f2f4",
   card: "#ffffff",
-  border: "#e4e8e5",
-  ink: "#0e1310",
-  secondary: "#4f5953",
-  muted: "#68726b",
-  primary: "#00d46a",
-  link: "#08783f",
+  border: "#e2e2e6",
+  ink: "#0d0d12",
+  secondary: "#44444d",
+  muted: "#6b6b76",
+  primary: "#ffd60a",
+  link: "#0d0d12",
   warning: "#b45309",
   warningSubtle: "#fffbeb",
 };
@@ -89,9 +89,9 @@ export function renderEmailLayout(input: EmailLayoutInput) {
     ? `<tr><td style="padding:12px 16px;background:${COLORS.warningSubtle};border-bottom:1px solid ${COLORS.border};font-size:13px;line-height:1.5;color:${COLORS.warning}">Message de recette Annona destiné à ${escapeHtml(input.testRecipient)}.</td></tr>`
     : "";
   const badgeColor = input.tone === "danger" ? "#a12c2c" : input.tone === "warning" ? "#775716" : COLORS.link;
-  const badgeBackground = input.tone === "danger" ? "#fceeee" : input.tone === "warning" ? "#fff5df" : "#e9f9ef";
+  const badgeBackground = input.tone === "danger" ? "#fceeee" : input.tone === "warning" ? "#fff5df" : "#fff4c2";
   const details = input.details?.length
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;background:#f7f9f7;border:1px solid ${COLORS.border};border-radius:12px"><tbody>${input.details.map((row) => `<tr><td style="padding:12px 16px;font-size:13px;color:${COLORS.muted};vertical-align:top">${escapeHtml(row.label)}</td><td style="padding:12px 16px;font-size:13px;font-weight:600;color:${COLORS.ink};text-align:right;overflow-wrap:anywhere">${escapeHtml(row.value)}</td></tr>`).join("")}</tbody></table>`
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;background:#f6f6f8;border:1px solid ${COLORS.border};border-radius:12px"><tbody>${input.details.map((row) => `<tr><td style="padding:12px 16px;font-size:13px;color:${COLORS.muted};vertical-align:top">${escapeHtml(row.label)}</td><td style="padding:12px 16px;font-size:13px;font-weight:600;color:${COLORS.ink};text-align:right;overflow-wrap:anywhere">${escapeHtml(row.value)}</td></tr>`).join("")}</tbody></table>`
     : "";
   const body = [
     input.badge ? `<span style="display:inline-block;padding:7px 11px;border-radius:999px;background:${badgeBackground};color:${badgeColor};font-size:11px;line-height:1.4;font-weight:700;letter-spacing:0.3px">${escapeHtml(input.badge)}</span>` : "",

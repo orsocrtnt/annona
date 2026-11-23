@@ -160,10 +160,10 @@ async function contentFingerprint(bytes: Uint8Array) {
 }
 
 test("le PDF classique (sans variante Factur-X) garde exactement le rendu d'avant la tranche Factur-X", async () => {
-  // Empreintes relevées le 6 novembre 2026, après le passage au nom et au logo Annona (rendu inchangé sinon).
-  assert.equal(await contentFingerprint(await generateInvoicePdf(classic)), "90d13f5e3a2b512693146cc81e0ed14dc643a9f71900395fca995afa80d0cba0");
+  // Empreinte relevée le 23 novembre 2026 après le passage du PDF aux couleurs DA-1 (encre, Aube, gris neutres) ; mise en page inchangée.
+  assert.equal(await contentFingerprint(await generateInvoicePdf(classic)), "67d9554e97556b291dd0b04185121c24d4ee68f0f3f64080433d68a4e9727052");
   const rich = { ...classic, status: "PAID", paidAt: new Date("2026-10-28T09:00:00Z"), notes: "Livré à l'accueil", footerNote: "Merci pour votre confiance." };
-  assert.equal(await contentFingerprint(await generateInvoicePdf(rich)), "dfaacdbac8faf00e65dfccb5127d15dacb8870f4603524252176248e391ed01e");
+  assert.equal(await contentFingerprint(await generateInvoicePdf(rich)), "6c0926f31a9951b9bc26618bfd94f975ff85d0bd4cbf29bc1ecab0f14bc08e90");
 });
 
 test("un PDF qui contient déjà un factur-x.xml est refusé plutôt que doublé", async () => {

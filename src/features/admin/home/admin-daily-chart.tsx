@@ -6,7 +6,7 @@ import type { AdminHomeDay } from "@/domains/admin/admin-home.service";
 /** Courbe 30 jours de l'accueil : commandes créées et livraisons livrées (hors démo, jours de Paris). */
 const LINES: ReadonlyArray<DailyLine<"orders" | "delivered">> = [
   { key: "orders", label: "Commandes créées", short: "Commandes", ...CHART_COLORS.blue },
-  { key: "delivered", label: "Livraisons livrées", short: "Livrées", ...CHART_COLORS.green },
+  { key: "delivered", label: "Livraisons livrées", short: "Livrées", ...CHART_COLORS.ink },
 ];
 
 export function AdminDailyChart({ series }: { series: AdminHomeDay[] }) {

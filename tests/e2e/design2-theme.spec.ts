@@ -18,9 +18,9 @@ async function openAs(page: Page, persona: "admin" | "driver", path: string, wid
 }
 
 const bodyBackground = (page: Page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-const DARK_BG = "rgb(20, 23, 22)";
-const LIGHT_BG = "rgb(245, 248, 246)";
-const CARD_DARK = "rgb(28, 31, 30)";
+const DARK_BG = "rgb(13, 13, 18)";
+const LIGHT_BG = "rgb(255, 255, 255)";
+const CARD_DARK = "rgb(26, 26, 34)";
 
 test("back-office : suit le système, bascule en un clic, choix Système dans le menu du compte, sans éclair au rechargement", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });

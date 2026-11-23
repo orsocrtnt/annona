@@ -1,180 +1,100 @@
 # Design System Annona
 
-> **Direction créative provisoire validée en discussion le 26/10/2026 (DESIGN-1 encore ouvert).** Les maquettes Light « Soft Glass sobre » et Dark graphite professionnel sont les références de travail pour la landing page, fonctionnalités, tarifs et les trois espaces. Fond blanc cassé et menthe très discrète en Light ; graphite neutre et cartes anthracite en Dark ; vert émeraude mesuré pour les CTA, statuts et focus ; verre très subtil, bordures fines, typographie nette. Pas de néon, d'esthétique crypto, de dégradés agressifs ni de chiffres/témoignages fictifs. La palette bleue documentée ci-dessous est **historique**, non cible : ne pas l'implémenter comme nouvelle DA. Les tokens définitifs, l'accessibilité et les écrans n'ont pas encore été validés ni implémentés. Ne pas marquer DESIGN-1 terminé sur cette base.
+> **Identité DA-1, mise en œuvre à la demande d'Orso le 23 novembre 2026, à affiner par itérations** (croisement « Net × Livraison », plaquette d'identité de 12 planches sur le canvas privé d'Orso, page « Plaquette »). Elle remplace la direction verte « Menthe / Soft Glass » (DESIGN-1) et la palette bleue historique, qui ne doivent plus être utilisées. Ressenti visé à l'ouverture de l'app : **simple et rapide**.
 
-## Philosophie
+## Principes
 
-Inspiré des références premium : Uber, Tesla, Stripe, Linear, Apple.
+- **Noir et blanc, un seul jaune.** Le jaune est rare, donc il se voit : la marque, le bouton principal et ce qui est en direct.
+- **Peu de pièces, toujours les mêmes.** Tout ce qui se touche est rond (boutons, quantités) ; tout ce qui contient est doux (cartes 24 px, champs 14 px). Zone de toucher de 44 px minimum.
+- **Une seule alerte** : le rouge Retard. Chaque statut a une forme en plus de sa couleur (lisible en noir et blanc et pour un daltonien).
+- **On parle comme au comptoir** : court, poli, concret, avec les mots du métier (commande, tournée, cagette, réserve, labo).
 
-**Principes** : Fiabilité, Performance, Modernité, Simplicité, Premium.
+## Couleurs
 
-## Palette de couleurs
+| Nom | Valeur | Rôle |
+|-----|--------|------|
+| Aube | `#FFD60A` | Marque, action principale (une par écran), en direct. **Jamais en texte sur fond clair** (1,4:1). |
+| Encre | `#0D0D12` | Texte, actions secondaires, fond du thème sombre. |
+| Brume | `#F2F2F4` | Champs, cartes secondaires, lignes de liste. |
+| Gris | `#6B6B76` | Texte secondaire (5,3:1 sur blanc). |
+| Retard | `#E5484D` (texte `#B42318`) | Seule couleur d'alerte. |
 
-### Couleurs principales
+Proportions visées : blanc 58 %, Brume 15 %, Encre 22 %, Aube 5 %.
 
-| Token | Valeur | Usage |
-|-------|--------|-------|
-| `--color-background` | `#fafafa` | Fond principal |
-| `--color-foreground` | `#0a0a0a` | Texte principal |
-| `--color-card` | `#ffffff` | Surfaces cartes |
-| `--color-primary` | `#0066ff` | Actions, liens |
-| `--color-brand` | `#0066ff` | Accent principal |
-| `--color-brand-hover` | `#0052cc` | Hover boutons |
-| `--color-brand-subtle` | `#e6f0ff` | Fonds accentués |
+Les couleurs nommées existent comme utilitaires Tailwind (`bg-aube`, `text-encre`, `bg-brume`, `bg-retard`), identiques dans les deux thèmes. Pour le reste, **toujours passer par les jetons sémantiques** (`src/app/globals.css`) :
 
-### Couleurs sémantiques
+| Jeton | Clair | Sombre | Usage |
+|-------|-------|--------|-------|
+| `background` | `#FFFFFF` | `#0D0D12` | Fond de page |
+| `card` / `surface` | `#FFFFFF` | `#1A1A22` | Cartes |
+| `popover` | `#FFFFFF` | `#22222B` | Menus, fenêtres |
+| `muted` / `secondary` / `accent` | `#F2F2F4` | `#22222B` | Champs, survols, aplats |
+| `border` | `#E2E2E6` | `#2A2A33` | Bordures |
+| `input` | `#D4D4DA` | `#74747F` | Bordure de champ (contour en sombre : 3:1) |
+| `foreground` | `#0D0D12` | `#FFFFFF` | Texte |
+| `muted-foreground` | `#6B6B76` | `#B4B4BE` | Texte secondaire |
+| `primary` | `#FFD60A` | `#FFD60A` | Action principale (texte encre dessus) |
+| `brand` | `#0D0D12` | `#FFD60A` | Texte de marque, liens, icônes |
+| `brand-subtle` / `success-subtle` | `#FFF4C2` | `#2B2710` | Aplat Aube pâle |
+| `success` | `#0D0D12` | `#FFD60A` | « Livrée » (la coche porte le statut) |
+| `warning` | `#7A5C00` | `#FFE066` | Attention (Aube foncée, pas de seconde alerte) |
+| `error` / `destructive` | `#B42318` | `#FF8589` / `#FF6B70` | Retard, erreur, suppression |
+| `ring` | `#0D0D12` | `#FFD60A` | Focus clavier |
 
-| Token | Valeur | Usage |
-|-------|--------|-------|
-| `--color-success` | `#10b981` | Succès, actif |
-| `--color-warning` | `#f59e0b` | Attention |
-| `--color-error` | `#ef4444` | Erreur, danger |
-| `--color-muted-foreground` | `#71717a` | Texte secondaire |
+Thème sombre : pour le livreur et le labo, la nuit. Il ne s'applique qu'aux espaces migrés (`src/lib/theme.ts`) ; le téléphone reste en clair pour le moment.
 
-### Gris
+### Statuts d'une commande
 
-| Token | Valeur |
-|-------|--------|
-| `--color-border` | `#e4e4e7` |
-| `--color-muted` | `#f4f4f5` |
-| `--color-surface-subtle` | `#f9fafb` |
+| Statut | Pastille | Forme |
+|--------|----------|-------|
+| Brouillon | Brume, texte encre | rond vide gris |
+| Validée | Brume | rond plein encre |
+| Verrouillée | Brume | cadenas |
+| Préparée | Brume | carré encre |
+| En route | Encre, texte blanc | rond Aube avec halo |
+| Livrée | Aube, texte encre | coche |
+| En retard | `#FDECEC`, texte `#B42318` | rond Retard |
 
 ## Typographie
 
-- **Police** : Inter (Google Fonts)
-- **Features** : `cv02`, `cv03`, `cv04`, `cv11`
-- **Hiérarchie** :
-  - H1 : `text-2xl font-semibold tracking-tight`
-  - H2 : `text-xl font-semibold`
-  - H3 : `text-lg font-semibold`
-  - Body : `text-sm`
-  - Caption : `text-xs text-muted-foreground`
+- **Geist** pour tout (chargée par `next/font/google` dans `src/app/layout.tsx`, variable `--font-sans`). Chiffres de même largeur : les quantités et les heures s'alignent.
+- **Geist Mono** (`font-mono`) pour ce qui se recopie : numéros de bon, de facture, de tournée, codes d'accès.
+- Titres serrés : h1 −4 %, h2 −3 %, h3 −2 % (posé dans `globals.css`) ; texte normal sans interlettrage.
+- Échelle : chiffre clé 72/700 ; titre 1 40/700 ; titre 2 28/700 ; titre 3 20/600 ; texte 16/400 ; libellé 14/600 ; légende 12/500.
+- Jamais de capitales pour une phrase entière. Les heures s'écrivent `17:00` dans l'app et « 17 h » dans les phrases.
 
-## Espacement
+## Rayons et ombres
 
-- Padding cartes : `p-6`
-- Gap grilles : `gap-4`
-- Sections : `space-y-6` à `space-y-8`
-- Marges généreuses pour aération
-
-## Border Radius
-
-| Token | Valeur | Usage |
+| Jeton | Valeur | Usage |
 |-------|--------|-------|
-| `--radius-sm` | `0.375rem` | Badges |
-| `--radius-md` | `0.5rem` | Inputs |
-| `--radius-lg` | `0.75rem` | Boutons |
-| `--radius-xl` | `1rem` | Cartes |
+| `rounded-full` | — | Boutons, quantités, filtres, pastilles |
+| `rounded-sm` | 8 px | Petits éléments |
+| `rounded-md` | 12 px | Messages, menus |
+| `rounded-lg` | 14 px | Champs |
+| `rounded-xl` | 24 px | Cartes |
 
-## Ombres
-
-| Token | Usage |
-|-------|-------|
-| `--shadow-sm` | Cartes au repos |
-| `--shadow-md` | Cartes hover |
-| `--shadow-lg` | Modals, dropdowns |
-| `--shadow-xl` | Drawers |
+Ombres très légères, teintées encre ; pas de verre ni de dégradé décoratif.
 
 ## Composants
 
-### Boutons (`Button`)
+- **Boutons** (`src/components/ui/button.tsx`, tous ronds) : `default`/`brand` = Aube, texte encre gras, **une seule action principale par écran** ; `secondary` = Encre ; `outline` = contour ; désactivé = Brume, texte gris, avec la raison écrite.
+- **Champs** (`input.tsx`, `select.tsx`) : aplat Brume, 44 px de haut, rayon 14 px, bordure encre de 2 px au focus ; contour visible en sombre.
+- **Carte « demain »** : la seule carte noire de l'écran, ce qui reste à faire (chiffre clé + bouton Aube).
+- **En direct** : le livreur en route est le soleil qui pulse ; le commerce du client est un carré ; les arrêts suivants sont numérotés.
+- **Messages** : confirmation sur encre (action d'annulation en Aube) ; alerte sur `#FDECEC` texte `#B42318` ; information sur Brume.
+- **Teintes d'état** des tableaux de bord : `src/components/ui/tone.ts`.
 
-| Variant | Usage |
-|---------|-------|
-| `default` | Action primaire |
-| `brand` | CTA principal (gradient) |
-| `outline` | Action secondaire |
-| `ghost` | Action tertiaire |
-| `destructive` | Action destructive |
-| `link` | Lien stylisé |
+## Logo
 
-| Size | Hauteur |
-|------|---------|
-| `sm` | 32px |
-| `default` | 40px |
-| `lg` | 48px |
-| `xl` | 56px |
+- Composants : `BrandMark` (symbole) et `BrandLogo` (symbole + mot) dans `src/components/brand/`. Fichiers : `public/brand/annona-symbole.svg`, `annona-symbole-sur-encre.svg` ; icônes de l'app dans `src/app/` (`icon.png`, `apple-icon.png`, `favicon.ico`).
+- Construction (grille 48) : soleil de rayon 14, posé 3 au-dessus de l'horizon ; horizon 40 × 4, bouts arrondis. Le mot « annona » en minuscules, Geist 700, −6 %.
+- Versions : sur blanc (horizon encre), sur encre (horizon blanc), sur Aube (soleil encre), une couleur (tampon, fax).
+- Interdits : changer la couleur du soleil, étirer ou déformer. Tailles mini : symbole 16 px, logo complet 80 px de large.
 
-### Inputs (`Input`, `FormField`, `Select`)
+## Ton
 
-- Hauteur : 40px
-- Border radius : `rounded-lg`
-- Focus ring : `ring-2 ring-ring`
-- États erreur : border destructive
+Vouvoiement pour les commerçants ; tutoiement possible dans l'app livreur. Un bouton dit ce qu'il fait (« Valider la commande », pas « OK »). Une erreur dit la cause puis la solution. Exemples : « C'est validé. Livraison demain entre 5 h 30 et 7 h. » ; « La commande est clôturée depuis 17 h. Pour un ajout, appelez le labo. » ; « Comme jeudi dernier ».
 
-### Cartes (`Card`)
+## Migration en cours (DA-1)
 
-- Border : `border-border`
-- Radius : `rounded-xl`
-- Shadow : `shadow-sm` → `shadow-md` on hover
-- Padding header/content : `p-6`
-
-### Badges (`Badge`)
-
-| Variant | Usage |
-|---------|-------|
-| `default` | Neutre |
-| `brand` | Information |
-| `success` | Actif, terminé |
-| `warning` | En attente |
-| `error` | Erreur, retard |
-| `secondary` | Inactif |
-
-### Tables & DataGrid
-
-- Header : uppercase, `text-xs`, `text-muted-foreground`
-- Rows : hover `bg-muted/50`
-- Pagination intégrée
-- Recherche et tri
-
-### Feedback
-
-- **Alert** : info, success, warning, destructive
-- **Loader** : sm, md, lg + PageLoader, FullPageLoader
-- **EmptyState** : icon + title + description + action
-- **Skeleton** : loading placeholders
-- **Toast** : via Sonner (top-right)
-
-### Modals & Drawers
-
-- **Dialog** : centré, overlay blur, animation zoom
-- **Drawer** : latéral (left/right) ou bottom (mobile)
-
-### Charts
-
-- **ChartPlaceholder** : line, bar, pie, area
-- Prêt pour intégration Recharts/Chart.js en Phase 2
-
-## Animations
-
-| Classe | Effet |
-|--------|-------|
-| `animate-fade-in` | Apparition en fondu |
-| `animate-slide-up` | Glissement vers le haut |
-| `animate-slide-down` | Glissement vers le bas |
-
-Transitions : `duration-200` sur les interactions.
-
-## Responsive
-
-- Mobile-first
-- Breakpoints Tailwind standard
-- Sidebar → Mobile nav (< lg)
-- Driver app : bottom navigation fixe
-- Client portal : tabs horizontales scrollables
-
-## Règles visuelles
-
-### À faire
-- Espacement généreux
-- Typographie nette et lisible
-- Micro-interactions discrètes
-- Hiérarchie visuelle forte
-- Couleurs sobres avec accent bleu
-
-### À éviter
-- Dégradés agressifs
-- Couleurs criardes
-- Cartes surchargées
-- Bordures excessives
-- Templates génériques
+Fait : jetons clair et sombre, Geist, logo et icônes web, boutons, champs, teintes d'état ; le 23 novembre, plus aucun vert de l'ancienne direction dans `src/` (menus, accueil super-admin, cartes, PDF, e-mails ; CSS de l'ancienne landing supprimé). Reste (suivi dans `TODO.md`, tâche DA-1) : recette navigateur clair et sombre écran par écran, logos PNG des e-mails et PDF, icônes des applications natives.

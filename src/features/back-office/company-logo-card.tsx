@@ -66,7 +66,7 @@ export function CompanyLogoCard({
       <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
         {/* Aperçu sur fond papier dans les deux thèmes : le logo s'affiche tel qu'il sortira sur les factures. */}
         <div
-          className="flex h-24 w-full shrink-0 items-center justify-center rounded-xl border border-dashed border-border bg-[#f5f8f6] p-3 sm:w-60 dark:bg-[#f5f8f6]"
+          className="flex h-24 w-full shrink-0 items-center justify-center rounded-xl border border-dashed border-border bg-[#f6f6f8] p-3 sm:w-60 dark:bg-[#f6f6f8]"
         >
           {hasLogo ? (
             // eslint-disable-next-line @next/next/no-img-element -- image privée servie par l'API, sans optimisation Next
@@ -76,7 +76,7 @@ export function CompanyLogoCard({
               className="max-h-full max-w-full object-contain"
             />
           ) : (
-            <span className="flex flex-col items-center gap-1 text-center text-xs text-muted-foreground dark:text-[#68726b]">
+            <span className="flex flex-col items-center gap-1 text-center text-xs text-muted-foreground dark:text-[#6b6b76]">
               <ImageIcon className="h-5 w-5" aria-hidden="true" />
               Aucun logo
             </span>
@@ -107,7 +107,7 @@ export function CompanyLogoCard({
             <label
               htmlFor={inputId}
               className={cn(
-                "inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-border bg-white px-4 text-sm font-semibold text-foreground transition-colors hover:bg-[#f0f4f1] dark:bg-card dark:hover:bg-muted peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
+                "inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-border bg-white px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted dark:bg-card peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
                 save.isPending && "cursor-not-allowed opacity-60 hover:bg-white dark:hover:bg-card"
               )}
             >

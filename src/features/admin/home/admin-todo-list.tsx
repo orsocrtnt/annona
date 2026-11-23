@@ -48,14 +48,14 @@ export function AdminTodoList({ todo }: { todo: AdminHomeTodo }) {
             return (
               <li key={row.key} className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e3f7ec] text-brand dark:bg-brand-subtle" aria-hidden>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-subtle text-brand" aria-hidden>
                     <Icon className="h-5 w-5" />
                   </span>
                   <p className="min-w-0 text-sm leading-6 text-foreground">{row.text}</p>
                 </div>
                 <Link
                   href={row.href}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-[#f0f4f1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-secondary max-sm:w-full"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-secondary max-sm:w-full"
                 >
                   {row.action}
                   <ArrowRight className="h-4 w-4" aria-hidden />
