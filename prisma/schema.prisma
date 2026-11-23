@@ -1235,3 +1235,30 @@ model AuthLoginFailure {
   @@index([createdAt])
   @@map("auth_login_failures")
 }
+
+enum DemoPoolState {
+  READY
+  PREPARING
+  LEASED
+}
+
+/// DEMO-1 : environnements de démo prêtés à un visiteur (une boulangerie fictive `demopool_NN_…` chacun).
+/// Le prêt est porté par un cookie dont seule l'empreinte SHA-256 est gardée ; table réservée au serveur (RLS).
+model DemoPoolEnvironment {
+  id             String        @id @default(cuid())
+  slot           Int           @unique
+  /// Entreprise `demopool_NN_company`, sans clé étrangère : la reconstruction efface et réécrit l'entreprise.
+  companyId      String        @unique @map("company_id")
+  state          DemoPoolState @default(PREPARING)
+  leaseKeyHash   String?       @unique @map("lease_key_hash")
+  leasedAt       DateTime?     @map("leased_at")
+  leaseExpiresAt DateTime?     @map("lease_expires_at")
+  preparedAt     DateTime?     @map("prepared_at")
+  lastError      String?       @map("last_error")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([state, leaseExpiresAt])
+  @@map("demo_pool_environments")
+}

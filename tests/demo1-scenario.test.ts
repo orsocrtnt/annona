@@ -2,7 +2,7 @@
 // remise à l'heure de Paris, client et livreur de démo avec quelque chose à essayer, contraintes d'unicité du schéma.
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildDemoScenario, demoPoolPrefix, DEMO_SCENARIO } from "@/domains/demo/demo-scenario";
+import { buildDemoScenario, demoPersonaUserId, demoPoolPrefix, DEMO_SCENARIO } from "@/domains/demo/demo-scenario";
 
 // Lundi 16 novembre 2026 (heure d'hiver : Paris = UTC+1).
 const at = (hour: number, minute = 0) => new Date(Date.UTC(2026, 10, 16, hour - 1, minute));
@@ -125,4 +125,6 @@ test("DEMO-1 : un compte par espace à essayer, le client rattaché à son comme
   const roles = Object.fromEntries(scenario.users.filter((user) => user.persona).map((user) => [user.persona, user.role]));
   assert.deepEqual(roles, { admin: "ADMIN", baker: "BAKER", driver: "DRIVER", client: "MERCHANT" });
   assert.equal(scenario.users.filter((user) => user.role === "DRIVER").length, 2);
+  // La page /demo retrouve le compte de chaque espace sans recalculer la journée.
+  for (const user of scenario.users) if (user.persona) assert.equal(user.id, demoPersonaUserId(7, user.persona));
 });

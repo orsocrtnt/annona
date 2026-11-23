@@ -103,6 +103,11 @@ export function demoPoolPrefix(slot: number): string {
   return `demopool_${pad(slot)}_`;
 }
 
+/** Compte à ouvrir pour essayer un espace (page /demo) : identifiant stable d'une reconstruction à l'autre. */
+export function demoPersonaUserId(slot: number, persona: DemoPersona): string {
+  return `${demoPoolPrefix(slot)}user_${persona}`;
+}
+
 /** Générateur pseudo-aléatoire déterministe (mulberry32). */
 function prng(seed: number) {
   let state = seed >>> 0;
