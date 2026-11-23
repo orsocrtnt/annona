@@ -13,15 +13,16 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **22** : RECETTE-V1, LOT1-D9, NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **7** : RECETTE-V1, LOT1-D9, HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **14** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2 | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
+| À faire | **15** : DA-1, DEMO-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2 | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
 
 **À faire par Claude**
 
-- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (après la fusion du lot 2 de Théo (LOT2-D1 à D10) : lot 2 de la démo (lot d'environnements de démo, connexion sans identifiants), en pause depuis le 16 novembre au soir à la demande d'Orso ; journée type à faire relire par Théo)
+- Rien pour l'instant
 
 **À faire par Orso**
 
 - DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (relire la plaquette et la valider ou dire ce qui cloche ; ensuite Claude l'applique au code)
+- DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (feu vert pour appliquer la migration `20261123120000_demo1_pool` sur `annona-dev` (à annoncer à Théo) et lancer un premier essai ; ensuite Claude fait la recette navigateur (lot 4))
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
 - LOT2-D1 — Boutiques et comptes vendeuse (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
@@ -145,7 +146,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - RETOURS-2 / AUTH-GOOGLE : dès qu'Orso a posé les DNS, vérifier le domaine `mail.annona.fr` dans le compte Resend de Théo (connecteur Resend). La clé « envoi seulement » peut être créée par Théo lui-même (Resend › API Keys) ou par Claude. Image des étapes à envoyer à Orso : `outputs/smtp-etapes-orso.png` (hors Git).
 - DA-1 : une fois la plaquette validée par Orso, appliquer la nouvelle identité (couleurs, police Geist, logo soleil, écrans) en commençant par `globals.css` et `docs/DESIGN_SYSTEM.md`.
 - MOBILE-1 : application iOS compilée pour le simulateur le 16 novembre (iOS 26.5 installé sur le Mac d'Orso). Reste : la lancer sur le simulateur, essayer la connexion Google et le menu « Comment y aller ? » (Plans). En pause : Orso a demandé de garder son processeur libre ; lui demander le feu vert avant de relancer le simulateur ou le serveur local.
-- DEMO-1 : une démo par visiteur, ouverte à tous, sans aucun envoi, journée réaliste (décisions d'Orso du 16 novembre). Lot 1 (journée de démo) fait ; suite : lot d'environnements et connexion sans identifiants (nouvelle table, migration à annoncer à Théo), garde-fous, écrans.
+- DEMO-1 : lots 2 et 3 écrits le 23 novembre (branche `orso/demo-1-lot2`) ; après le feu vert d'Orso, appliquer la migration sur `annona-dev`, mesurer la reconstruction, recette navigateur des quatre espaces ; puis suivi par le super admin.
 - Recette finale faite le 15 novembre (RECETTE-V1, `docs/rapports/2026-11-15-recette-v1.md`) : dix critères réussis sur `base` à jour, dans le navigateur (12/12) et dans l'application Android sur émulateur. Prochaine passe : sur un vrai téléphone, une fois MOBILE-1 avancée.
 
 **4. Attente extérieure**
@@ -176,11 +177,21 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv.**
 
-  **Qui : Claude — après la fusion du lot 2 de Théo (LOT2-D1 à D10) : lot 2 de la démo (lot d'environnements de démo, connexion sans identifiants), en pause depuis le 16 novembre au soir à la demande d'Orso ; journée type à faire relire par Théo.**
+  **Qui : Orso — feu vert pour appliquer la migration `20261123120000_demo1_pool` sur `annona-dev` (à annoncer à Théo) et lancer un premier essai ; ensuite Claude fait la recette navigateur (lot 4).**
 
   - 19 novembre 2026, décision d'Orso : le lot 2 de Théo (pâtisserie, boutiques, stock) passe **avant** DEMO-1, dont la migration (`demo_pool_environments`) n'était pas encore écrite. Ses 6 migrations sont déjà sur `annona-dev` ; la migration DEMO-1 s'écrira par-dessus, après la fusion des PR #48 à #53.
 
   **En cours : Orso.**
+
+  - **23 novembre 2026, lots 2 et 3 écrits (Claude d'Orso, branche `orso/demo-1-lot2`, demande d'Orso : « reprends la démo maintenant »)** :
+    - **Lot 2, une démo par visiteur** : table `demo_pool_environments` (modèle `DemoPoolEnvironment`, migration `20261123120000_demo1_pool`, RLS et droits retirés à `anon`/`authenticated`, sans clé étrangère car la reconstruction efface et réécrit l'entreprise ; **non appliquée sur `annona-dev`**). `src/domains/demo/demo-pool.service.ts` : réservation d'un environnement libre (`FOR UPDATE SKIP LOCKED` ; libre = rendu, prêt expiré ou préparation abandonnée depuis 10 min), sinon ouverture d'un nouveau (20 au plus), reconstruction à l'heure du moment, prêt de 4 h ; jeton aléatoire en cookie HttpOnly `annona-demo-lease`, empreinte SHA-256 seule en base. `demo-provision.service.ts` : efface l'entreprise `demopool_NN_company` et ses comptes, réécrit la journée (`buildDemoScenario`) en une transaction, par paquets de 1 500 lignes ; comptes Supabase créés une fois, confirmés, mot de passe aléatoire jamais affiché, réutilisés. `demo-session.service.ts` : connexion sans identifiants par lien à usage unique généré et validé côté serveur (`generateLink` puis `verifyOtp`, aucun e-mail). Routes `/api/demo/start`, `/api/demo/persona`, `/api/demo/leave` ; page publique `/demo` (quatre espaces : commerçant, gérant, boulanger, livreur) ; lien « Voir la démo » sur la page de connexion.
+    - **Garde « une démo par visiteur »** : `server-auth.ts` (pages et API) refuse tout compte d'une entreprise `demopool_NN_company` sans le cookie de prêt valable de son environnement ; le cache de 5 s du middleware dépend du cookie.
+    - **Lot 3, garde-fous** : toutes les adresses de la démo passent en `@demo.annona.example` (domaine réservé) ; `sendTransactionalEmail` refuse ce domaine avant tout appel au fournisseur, même en mode test. Aucun abonnement aux notifications pour un compte de démo, aucune notification de tournée pour une entreprise de démo (`driver-push.service.ts`). Middleware : suppressions (`DELETE`), comptes (`/api/users`), profil et mots de passe refusés (403) aux comptes de démo ; relecture en base seulement pour un porteur du cookie de prêt qui tente une de ces mutations.
+    - **Lot 4 commencé** : bandeau « Démo · changer d'espace · quitter » (`src/features/demo/demo-bar.tsx`) dans le back-office, le portail et l'app livreur, invisible pour un vrai compte.
+    - Inventaires mis à jour : routes publiques (critère 10), page publique `/demo`, `DATABASE.md`, `data02/INVENTORY.md`, exception documentée du test PLA-01 (pas de relation vers `Company`).
+    - Tests : `tests/demo1-pool.test.ts` **7/7** (prêt, garde, cookie, connexion sans e-mail, garde-fous), `tests/demo1-scenario.test.ts` **6/6** ; `npm run check` **sortie 0** (931 tests, 930 réussis, 1 ignoré, 0 échec).
+    - **Non vérifié** : rien n'a tourné contre la base (migration non appliquée) ; temps de reconstruction réel d'un environnement (23 551 lignes) ; connexion Supabase réelle par `generateLink` et `verifyOtp` ; bandeau et page `/demo` dans le navigateur.
+    - **Reste** : feu vert d'Orso pour la migration et un premier essai sur `annona-dev` (et prévenir Théo) ; recette navigateur des quatre espaces, du changement d'espace et de « Quitter » ; suivi des démos par le super admin (`/admin/demos` de TutelLiv) ; limite de débit sur `/api/demo/start` (aujourd'hui seulement 20 environnements au plus) ; pâtissier et vendeuse (lot 2 de Théo) absents de la démo ; journée type à faire relire par Théo.
 
   - **Décisions d'Orso du 16 novembre 2026 (second questionnaire, remplacent « une entreprise isolée »)** : **une démo par visiteur** (un environnement de démo prêté à chacun, comme TutelLiv) ; **ouverte à tout le monde** (« Voir la démo » sur la page de connexion, sans identifiants) ; le visiteur **peut tout essayer, sans aucun envoi** (ni e-mail ni notification ; mot de passe, comptes et suppressions bloqués) ; **journée réaliste** (volumes de Théo : 60 à 70 arrêts par tournée du matin, 15 à 20 produits par livraison).
   - **Conception (Claude d'Orso, 16 novembre)**, reprise de la démo TutelLiv adaptée au nouveau schéma : un lot d'entreprises de démo `demopool_NN` dans `annona-dev`, suivi par une nouvelle table `demo_pool_environments` (prêt, expiration, recyclage ; **changement de schéma et migration, à annoncer à Théo avant de l'appliquer sur `annona-dev`**). Chaque environnement a quatre comptes (admin, boulanger, livreur, client) en `@example.com`, connectés sans mot de passe par un lien magique ouvert côté serveur ; un cookie de prêt (4 h) est exigé pour tout compte de démo, donc un visiteur ne peut pas entrer dans l'environnement d'un autre. À l'expiration, l'environnement est reconstruit à l'heure du moment. Garde « aucun envoi » au plus bas niveau (e-mails, notifications web et natives). Page `/demo` avec les quatre espaces, bandeau « Démo · changer d'espace · quitter ». Lots : (1) journée de démo, (2) lot d'environnements et connexion, (3) garde-fous, (4) écrans et recette navigateur.

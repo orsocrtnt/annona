@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect } from "react";
 import { NativeAppBridge } from "@/components/native/native-app-bridge";
 import { ClientPortalLayout } from "@/components/layouts/client-portal-layout";
 import { PortalGuard } from "@/features/client-portal/portal-guard";
+import { DemoBar } from "@/features/demo/demo-bar";
 import { sora } from "./portal-font";
 
 // Pas de layout effect côté serveur ; sur le client il s'exécute avant la peinture.
@@ -29,6 +30,7 @@ export default function ClientPortalRootLayout({ children }: { children: React.R
 
   return (
     <div className={sora.variable} data-portal-root>
+      <DemoBar />
       <ClientPortalLayout>
         <PortalGuard>{children}</PortalGuard>
         <NativeAppBridge />
