@@ -11,6 +11,8 @@
  */
 import type { BillingPeriod, OrderStatus, PaymentMethod, Prisma, RoundStatus, StopStatus, SystemRole } from "@prisma/client";
 import { DEMO_CATALOG } from "@/domains/demo/demo-catalog";
+import { improveOpenPath } from "@/lib/dispatch/round-improve";
+import { straightLineSeconds } from "@/lib/dispatch/travel-time";
 import {
   DEMO_ACCESS_INSTRUCTIONS,
   DEMO_FIRST_NAMES,
@@ -138,8 +140,13 @@ function haversineKm(a: { latitude: number; longitude: number }, b: { latitude: 
   return 6371 * 2 * Math.asin(Math.sqrt(h));
 }
 
-/** Ordre de passage au plus proche voisin depuis le laboratoire. */
-function nearestNeighbourOrder<T extends { latitude: number; longitude: number }>(stops: readonly T[]): T[] {
+/**
+ * Ordre de passage d'une tournée de démo depuis le laboratoire : plus proche voisin, puis la même amélioration que
+ * les vraies tournées (2-opt + Or-opt, `improveOpenPath`, DISPATCH-OPTIM), temps à vol d'oiseau. Mesuré le 23 novembre
+ * 2026 sur une journée : 1 814 min de route pour 30 tournées (plus proche voisin seul : 2 043 ; calcul complet
+ * `orderRoundStops` : 1 835), construction en 0,2 s (calcul complet : 1,7 s).
+ */
+function demoRoundOrder<T extends { latitude: number; longitude: number }>(stops: readonly T[]): T[] {
   const remaining = [...stops];
   const ordered: T[] = [];
   let current: { latitude: number; longitude: number } = DEMO_SCENARIO.depot;
@@ -152,7 +159,8 @@ function nearestNeighbourOrder<T extends { latitude: number; longitude: number }
     ordered.push(next!);
     current = next!;
   }
-  return ordered;
+  const depot = { latitude: DEMO_SCENARIO.depot.latitude, longitude: DEMO_SCENARIO.depot.longitude };
+  return improveOpenPath(depot, ordered, straightLineSeconds).map((index) => ordered[index]!);
 }
 
 /** Heure murale de Paris (minutes depuis minuit) d'un jour donné, en instant UTC ; un calcul de fuseau par jour. */
@@ -420,7 +428,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
 
         const phase = slotPhase(offset, zone, period, clockNow);
         const window = phase.window;
-        const sequence = nearestNeighbourOrder(ordering);
+        const sequence = demoRoundOrder(ordering);
         const span = window.end - window.start - 20;
         const roundId = id("round", dayKey(day), zone, period);
         const withRound = !tomorrowOpen;

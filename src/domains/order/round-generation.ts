@@ -2,8 +2,8 @@
  * Tournées calculées à l'heure limite (LOCK-1 : RG-08, RG-09, ADM-06), module pur.
  *
  * Une tournée correspond à un créneau (RG-08) : les commandes verrouillées d'un créneau sont
- * réparties en tournées par le calcul existant (`planRounds`, insertion au moindre coût), au départ
- * du laboratoire. Aucune tournée n'a de livreur : l'attribution et l'édition relèvent de TOUR-1.
+ * réparties en tournées par le calcul existant (`planRounds`, insertion au moindre coût en partant des
+ * commerces les plus éloignés, puis 2-opt + Or-opt sur chaque tournée : DISPATCH-OPTIM), au départ du laboratoire. Aucune tournée n'a de livreur : l'attribution et l'édition relèvent de TOUR-1.
  *
  * Nombre de tournées : le moins possible. On commence par ⌈commandes / ROUND_MAX_STOPS⌉ tournées et on en ajoute
  * une tant que des arrêts ne tiennent pas dans le créneau (10 essais au plus). Si le créneau reste
@@ -76,6 +76,8 @@ export function planSlotRounds(input: SlotRoundInput): PlannedRound[] {
       maxDaySeconds: ROUND_MAX_DAY_SECONDS,
       maxDeliveries: ROUND_MAX_STOPS,
       travelSeconds: input.travelSeconds,
+      // DISPATCH-OPTIM : même heure limite pour tout le créneau ; les plus éloignés du laboratoire d'abord.
+      insertFrom: input.depot,
     };
     const ids = new Set(located.map((order) => order.id));
     const deliveries = (windowed: boolean): RoundDelivery[] =>
@@ -157,7 +159,14 @@ export function orderRoundStops(input: {
   const plan = planRounds(
     located.map((stop) => ({ id: stop.id, destination: stop.point, pickup: null, weightKg: null, windowStart: null, windowEnd: null, urgent: false })),
     [{ id: "r01", start: input.start, readyAt: 0, capacityKg: null, eligibleDeliveryIds: ids }],
-    { now: 0, stopSeconds: ROUND_STOP_SECONDS, maxDaySeconds: Number.MAX_SAFE_INTEGER, maxDeliveries: Number.MAX_SAFE_INTEGER, travelSeconds: input.travelSeconds }
+    {
+      now: 0,
+      stopSeconds: ROUND_STOP_SECONDS,
+      maxDaySeconds: Number.MAX_SAFE_INTEGER,
+      maxDeliveries: Number.MAX_SAFE_INTEGER,
+      travelSeconds: input.travelSeconds,
+      insertFrom: input.start,
+    }
   );
   const ordered = plan.rounds[0]?.evaluation.stops.map((stop) => stop.deliveryId) ?? [];
   const placed = new Set(ordered);

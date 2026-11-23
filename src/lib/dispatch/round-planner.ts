@@ -1,3 +1,4 @@
+import { improveOpenPath } from "@/lib/dispatch/round-improve";
 import type { GeoPoint } from "@/lib/dispatch/travel-time";
 
 /**
@@ -5,7 +6,8 @@ import type { GeoPoint } from "@/lib/dispatch/travel-time";
  *
  * Une tournée part de la position du livreur et finit au dernier arrêt. Limites : créneaux promis,
  * capacité du véhicule, zone (`eligibleDeliveryIds`), durée de la journée. Méthode : insertion au
- * moindre coût, livraison la plus urgente d'abord. C'est une heuristique : bonne et explicable,
+ * moindre coût, livraison la plus urgente d'abord (à égalité, la plus éloignée de `insertFrom`), puis chaque
+ * tournée est raccourcie par 2-opt + Or-opt (DISPATCH-OPTIM). C'est une heuristique : bonne et explicable,
  * pas une tournée prouvée optimale, et le dispatcher peut la modifier.
  * Coût : livraisons × livreurs × positions², borné par `maxDeliveries` et le plafond du service.
  */
@@ -42,6 +44,11 @@ export type RoundOptions = {
   maxDaySeconds: number;
   maxDeliveries: number;
   travelSeconds: (from: GeoPoint, to: GeoPoint) => number;
+  /**
+   * DISPATCH-OPTIM : à urgence et heure limite égales, les livraisons les plus éloignées de ce point (le
+   * laboratoire) sont insérées d'abord, au lieu de l'ordre des identifiants. Sans lui, ordre des identifiants.
+   */
+  insertFrom?: GeoPoint | null;
 };
 
 export type RoundViolation =
@@ -136,11 +143,41 @@ export function evaluateRound(
   return { stops: evaluated, durationSeconds, maxLoadKg: maxLoad, unknownWeightCount: known.filter((delivery) => delivery.weightKg === null).length, violations };
 }
 
-function byUrgency(a: RoundDelivery, b: RoundDelivery) {
-  if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
-  const left = a.windowEnd ?? Number.POSITIVE_INFINITY;
-  const right = b.windowEnd ?? Number.POSITIVE_INFINITY;
-  return left - right || a.id.localeCompare(b.id);
+/** Plus urgente d'abord ; à égalité, la plus éloignée de `from` (insertion du plus lointain), puis l'identifiant. */
+function byUrgency(from: GeoPoint | null, travelSeconds: RoundOptions["travelSeconds"]) {
+  const distance = new Map<string, number>();
+  const away = (delivery: RoundDelivery) => {
+    if (!from) return 0;
+    let seconds = distance.get(delivery.id);
+    if (seconds === undefined) distance.set(delivery.id, (seconds = travelSeconds(from, delivery.pickup ?? delivery.destination)));
+    return seconds;
+  };
+  return (a: RoundDelivery, b: RoundDelivery) => {
+    if (a.urgent !== b.urgent) return a.urgent ? -1 : 1;
+    const left = a.windowEnd ?? Number.POSITIVE_INFINITY;
+    const right = b.windowEnd ?? Number.POSITIVE_INFINITY;
+    return left - right || away(b) - away(a) || a.id.localeCompare(b.id);
+  };
+}
+
+/**
+ * DISPATCH-OPTIM : raccourcit le trajet d'une tournée (2-opt + Or-opt, `improveOpenPath`). Gardé seulement si
+ * aucune limite n'est dépassée en plus et si la tournée ne dure pas plus longtemps ; sinon l'ordre calculé reste.
+ * Les tournées avec retraits ne sont pas touchées (le retrait doit précéder la livraison).
+ */
+function improveRound(
+  driver: RoundDriver,
+  stops: RoundStop[],
+  current: RoundEvaluation,
+  deliveries: ReadonlyMap<string, RoundDelivery>,
+  options: RoundOptions
+): RoundEvaluation {
+  if (stops.length < 3 || stops.some((stop) => stop.kind === "PICKUP")) return current;
+  const points = stops.map((stop) => deliveries.get(stop.deliveryId)!.destination);
+  const order = improveOpenPath(driver.start, points, options.travelSeconds);
+  if (order.every((index, position) => index === position)) return current;
+  const candidate = evaluateRound(driver, order.map((index) => stops[index]!), deliveries, options);
+  return candidate.violations.length <= current.violations.length && candidate.durationSeconds <= current.durationSeconds ? candidate : current;
 }
 
 /** Chaque position d'insertion ; le retrait reste avant la livraison. */
@@ -167,7 +204,7 @@ export function planRounds(deliveries: RoundDelivery[], drivers: RoundDriver[], 
   const current = new Map(orderedDrivers.map((driver) => [driver.id, { stops: [] as RoundStop[], duration: 0 }]));
   const unplanned: RoundPlan["unplanned"] = [];
 
-  for (const delivery of [...deliveries].sort(byUrgency)) {
+  for (const delivery of [...deliveries].sort(byUrgency(options.insertFrom ?? null, options.travelSeconds))) {
     let best: { driverId: string; stops: RoundStop[]; duration: number; cost: number } | null = null;
     const seen = new Set<RoundViolation["code"]>();
     let eligible = false;
@@ -197,6 +234,9 @@ export function planRounds(deliveries: RoundDelivery[], drivers: RoundDriver[], 
 
   const rounds = orderedDrivers
     .filter((driver) => current.get(driver.id)!.stops.length > 0)
-    .map((driver) => ({ driverId: driver.id, evaluation: evaluateRound(driver, current.get(driver.id)!.stops, byId, options) }));
+    .map((driver) => {
+      const stops = current.get(driver.id)!.stops;
+      return { driverId: driver.id, evaluation: improveRound(driver, stops, evaluateRound(driver, stops, byId, options), byId, options) };
+    });
   return { rounds, unplanned };
 }
