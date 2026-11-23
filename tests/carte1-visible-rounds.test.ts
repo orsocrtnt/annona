@@ -32,3 +32,19 @@ test("CARTE-1 : une tournée disparue (terminée, supprimée) sort de la sélect
   assert.equal(toggleRound("all", "seule", ["seule"]), "all");
   assert.equal(soloRoundId("all", ["seule"]), "seule");
 });
+
+test("CARTE-1 : le tracé relie seulement ce qui reste à livrer, depuis le dernier arrêt fait", async () => {
+  const { remainingPath } = await import("@/features/delivery-map/visible-rounds");
+  const depot = { latitude: 48.85, longitude: 2.37 };
+  const stop = (sequence: number, status: string) => ({ sequence, status, latitude: 48 + sequence / 100, longitude: 2 + sequence / 100 });
+  // Arrêts 1 et 2 livrés, 3 en problème, 4 et 5 à livrer : départ du 3, puis 4 et 5.
+  assert.deepEqual(remainingPath([stop(5, "PENDING"), stop(1, "DELIVERED"), stop(3, "INCIDENT"), stop(2, "DELIVERED"), stop(4, "PENDING")], depot), [
+    [48.03, 2.03],
+    [48.04, 2.04],
+    [48.05, 2.05],
+  ]);
+  // Rien de livré : départ du laboratoire.
+  assert.deepEqual(remainingPath([stop(1, "PENDING")], depot), [[48.85, 2.37], [48.01, 2.01]]);
+  // Tournée terminée : aucun trait.
+  assert.deepEqual(remainingPath([stop(1, "DELIVERED"), stop(2, "DELIVERED")], depot), []);
+});

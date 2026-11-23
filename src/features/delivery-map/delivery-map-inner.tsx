@@ -6,6 +6,7 @@ import { Marker, Polyline, Tooltip, useMap } from "react-leaflet";
 import { LeafletBaseMap } from "@/components/maps/leaflet-base-map";
 import type { DeliveryMapInnerProps, DeliveryMapRound } from "@/features/delivery-map/delivery-map";
 import { MAP_VISUAL_THEME } from "@/lib/maps/map-visual-theme";
+import { remainingPath } from "@/features/delivery-map/visible-rounds";
 import { fr } from "@/lib/i18n/fr";
 
 const t = fr.deliveryMap;
@@ -88,12 +89,7 @@ export function DeliveryMapInner({ depot, rounds, height, onDriverClick }: Deliv
     () =>
       rounds.map((round) => {
         const stops = located(round);
-        // Ordre de passage : laboratoire puis arrêts ; trait fin, le trajet calculé du livreur est plus épais.
-        const planned: Array<[number, number]> = [
-          ...(depot ? [[depot.latitude, depot.longitude] as [number, number]] : []),
-          ...stops.map((stop) => [stop.latitude!, stop.longitude!] as [number, number]),
-        ];
-        return { round, stops, planned };
+        return { round, stops, planned: remainingPath(stops, depot) };
       }),
     [rounds, depot],
   );
@@ -109,7 +105,7 @@ export function DeliveryMapInner({ depot, rounds, height, onDriverClick }: Deliv
       {drawn.map(({ round, stops, planned }) => (
         <Fragment key={round.id}>
           {planned.length > 1 ? (
-            <Polyline positions={planned} pathOptions={{ color: round.color, weight: 2.5, opacity: 0.5 }} />
+            <Polyline positions={planned} pathOptions={{ color: round.color, weight: 3, opacity: 0.6 }} />
           ) : null}
           {round.route?.polyline ? (
             <Polyline

@@ -29,3 +29,19 @@ export function soloRoundId(visible: VisibleRounds, allIds: readonly string[]): 
   if (visible === "all") return allIds.length === 1 ? allIds[0]! : null;
   return visible.length === 1 ? visible[0]! : null;
 }
+
+/**
+ * Tracé de ce qui reste à faire : depuis le dernier arrêt fait (ou le laboratoire), les arrêts à livrer dans l'ordre.
+ * Les arrêts livrés ne sont pas reliés (petits points gris) : une tournée terminée ne laisse aucun trait.
+ */
+export function remainingPath(
+  stops: ReadonlyArray<{ sequence: number; status: string; latitude: number | null; longitude: number | null }>,
+  depot: { latitude: number; longitude: number } | null,
+): Array<[number, number]> {
+  const ordered = [...stops].sort((a, b) => a.sequence - b.sequence);
+  const pending = ordered.filter((stop) => stop.status === "PENDING");
+  if (pending.length === 0) return [];
+  const lastDone = ordered.filter((stop) => stop.status !== "PENDING" && stop.sequence < pending[0]!.sequence).at(-1);
+  const start = lastDone ? [lastDone.latitude!, lastDone.longitude!] as [number, number] : depot ? [depot.latitude, depot.longitude] as [number, number] : null;
+  return [...(start ? [start] : []), ...pending.map((stop) => [stop.latitude!, stop.longitude!] as [number, number])];
+}
