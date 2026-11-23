@@ -30,7 +30,13 @@ export async function getMerchantCatalog(actor: MerchantRef, now = new Date()): 
         name: true,
         products: {
           // Lot 2, demande 4 : sans prix restaurant, absent du catalogue des restaurants ; gros gâteaux par taille (demande 10).
-          where: { companyId: actor.companyId, active: true, basePriceCents: { not: null }, NOT: { pastryFormat: "LARGE" } },
+          // Les pains n'ont pas de format (NULL) : exclure « format = LARGE » par NOT les écartait aussi (NULL en SQL).
+          where: {
+            companyId: actor.companyId,
+            active: true,
+            basePriceCents: { not: null },
+            OR: [{ pastryFormat: null }, { pastryFormat: { not: "LARGE" } }],
+          },
           orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
           select: { id: true, name: true, description: true, unit: true, photoUrl: true, basePriceCents: true, vatRateBasisPoints: true, allergens: true, allergensDeclared: true },
         },
