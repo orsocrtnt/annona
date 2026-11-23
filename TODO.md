@@ -177,7 +177,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Mini admin (lot 1, demande 4) : chaque source n'est lue que si le compte y a droit ; avec seulement « Suivi des livreurs », la carte est reconstruite à partir du suivi (tournées en cours).
   - Tracé : seulement ce qui reste à livrer, depuis le dernier arrêt fait (ou le laboratoire) ; une tournée terminée ne laisse que ses points gris (constaté en recette : les arrêts livrés reliés faisaient de grands zigzags).
   - Tests : `tests/carte1-visible-rounds.test.ts` **5/5** ; libellés « Carte » dans `lot1-d4-mini-admin`, `lot1-d5-tracking` et les E2E `lot1-recette`, `lot1-d9-perf` (**E2E non lancés**) ; `npm run check` **sortie 0** (929 tests, 928 réussis, 1 ignoré).
-  - **Reste** : recette navigateur ; couleurs des tournées à revoir avec la nouvelle identité (DA-1).
+  - **Recette navigateur le 23 novembre** (Playwright, Chromium 1440×900, gérant de la démo sur `annona-dev`, branche d'aperçu locale démo + DA-1 + CARTE-1) : tableau de bord → « Ouvrir la carte » → page « Carte » : « Toutes (4) », un clic sur une tournée n'affiche qu'elle et ouvre sa fiche (prochains arrêts avec heure prévue, livrés avec l'heure), un second clic en ajoute une (2 affichées), « Toutes » réaffiche tout ; aucune erreur dans la page. Corrigé pendant la recette : tracé limité à ce qui reste à livrer (les arrêts livrés reliés faisaient de grands zigzags) et cadrage sur ce qui reste à faire. Non regardés : thème sombre, téléphone, compte mini admin.
+  - **Reste** : avis d'Orso ; couleurs des tournées à revoir avec la nouvelle identité (DA-1).
 
 - [ ] **DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B).**
 
