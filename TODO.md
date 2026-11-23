@@ -226,6 +226,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
   **Qui : Claude — suivi des démos par le super admin et limite de débit ; Théo — relire la journée type (volumes, horaires) en essayant `/demo`.**
 
+  - 23 novembre 2026 au soir (Claude de Théo, site en ligne `638d16eb`) : passage Playwright sur les quatre espaces de `/demo` (ordinateur 1280 px clair, téléphone 390 px, ordinateur sombre). **Réussis, 8 sur 8 ouverts** : Commerçant (`/portal`), Gérant (`/dashboard`), Boulanger (`/bakery`), Livreur (`/driver`) sur ordinateur ; Commerçant, Gérant, Boulanger sur téléphone ; Commerçant en sombre (`data-theme="dark"`) ; 0 erreur JavaScript, 0 réponse 5xx, aucun débordement, ouverture en 3,5 à 14 s. **Puis `POST /api/demo/start` → 503 « Toutes les démos sont prises »** : les 20 places (`DEMO_MAX_SLOTS`) étaient prêtées, dont une douzaine par ces essais eux-mêmes (chaque navigateur neuf prend une place pour 4 h). Non vérifiés à cause de cela : Livreur sur téléphone, Gérant, Boulanger et Livreur en sombre. Constat pour la limite de débit : 20 ouvertures depuis des navigateurs neufs bloquent la démo publique pendant 4 h. Places non libérées à la main (données `demopool_`, consigne d'Orso) : elles se libèrent seules entre 21 h 45 et 1 h 25.
+
   - 19 novembre 2026, décision d'Orso : le lot 2 de Théo (pâtisserie, boutiques, stock) passe **avant** DEMO-1, dont la migration (`demo_pool_environments`) n'était pas encore écrite. Ses 6 migrations sont déjà sur `annona-dev` ; la migration DEMO-1 s'écrira par-dessus, après la fusion des PR #48 à #53.
 
   **En cours : Orso.**
