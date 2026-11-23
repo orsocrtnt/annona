@@ -11,7 +11,7 @@ import { DemoBar } from "@/features/demo/demo-bar";
 export default function DriverAppRootLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <DemoBar />
+      <DemoBar aboveBottomNav />
       <DriverAppLayout>
         <DriverGuard>{children}</DriverGuard>
       </DriverAppLayout>

@@ -10,9 +10,10 @@ const SPACE_PREFIX: Record<DemoPersona, string> = { client: "/portal", admin: "/
 
 /**
  * DEMO-1 : pastille flottante des comptes de démo — « Démo · changer d'espace · quitter », en bas au centre pour ne
- * recouvrir ni la barre latérale ni les en-têtes fixes. Invisible pour un vrai compte.
+ * recouvrir ni la barre latérale ni les en-têtes fixes. Invisible pour un vrai compte. `aboveBottomNav` : posée au-dessus
+ * d'une barre de navigation fixe en bas d'écran, à toutes les largeurs (application livreur).
  */
-export function DemoBar() {
+export function DemoBar({ aboveBottomNav = false }: { aboveBottomNav?: boolean } = {}) {
   const user = useAuthStore((state) => state.user);
   const pathname = usePathname();
   const [busy, setBusy] = useState<string | null>(null);
@@ -49,7 +50,11 @@ export function DemoBar() {
     <div
       role="region"
       aria-label="Démo"
-      className="fixed bottom-4 left-1/2 z-[60] w-max max-w-[calc(100vw-24px)] -translate-x-1/2 max-md:bottom-[calc(env(safe-area-inset-bottom)+5.5rem)]"
+      className={
+        aboveBottomNav
+          ? "fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] left-1/2 z-[60] w-max max-w-[calc(100vw-24px)] -translate-x-1/2"
+          : "fixed bottom-4 left-1/2 z-[60] w-max max-w-[calc(100vw-24px)] -translate-x-1/2 max-md:bottom-[calc(env(safe-area-inset-bottom)+5.5rem)]"
+      }
     >
       {open && (
         <nav
