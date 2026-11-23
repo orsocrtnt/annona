@@ -13,7 +13,7 @@
 | | Orso | Théo |
 |---|---|---|
 | Fait | **22** : RECETTE-V1, LOT1-D9, NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **7** : RECETTE-V1, LOT1-D9, HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **16** : CARTE-1, DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2, DISPATCH-OPTIM | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
+| À faire | **17** : CARTE-1, DA-1, ACCES-1, MOBILE-1, AUTH-GOOGLE, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2, DISPATCH-OPTIM | **2** : SEP-1, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -25,6 +25,7 @@
 - DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (regarder le socle dans le navigateur et dire ce qui cloche ; ensuite Claude migre les écrans un par un)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
+- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (4 enregistrements DNS chez Dovendi pour `mail.annona.fr` (voir RETOURS-2) ; ensuite Claude vérifie le domaine, fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
 - LOT2-D1 — Boutiques et comptes vendeuse (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
 - LOT2-D2 — Compte pâtissier (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
 - LOT2-D3 — Produits : création, recettes, durée de vente (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
@@ -41,15 +42,18 @@
 **À faire par Théo**
 
 - SEP-1 — Séparer complètement Annona de TutelLiv sur GitHub (relier le projet Vercel `annona` à `orsocrtnt/annona` (branche `base`) ; ensuite Orso : offre Pro, sort de `main` et `preproduction`, annona.fr)
-- AUTH-GOOGLE — Inscription des entreprises et connexion avec Google (brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche)
-- RETOURS-1 — Tour complet de l'application et notes de retouches (tour à la main (parcours qui écrivent, application Android), partie 2 de `docs/rapports/2026-11-16-tour-theo.md`)
+- RETOURS-1 — Tour complet de l'application et notes de retouches (finir le tour à la main sur Client, Boulanger, Livreur, Téléphone / application et super-admin (parcours qui écrivent compris), partie 2 de `docs/rapports/2026-11-16-tour-theo.md`)
 
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 21 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 23 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
+
+**Mise en ligne du 23 novembre 2026 au soir (Claude de Théo, à la demande d'Orso et de Théo)** : `base` à `638d16eb` (PR #72, #73, #75, #77, #78 : nouvelle identité, carte unique, démo publique, calcul des tournées) déployée en production Vercel (https://annona-5h7wreaus-track-app2.vercel.app, alias https://annona-gray.vercel.app). Avant : CI verte sur chaque PR ; migration `20261123120000_demo1_pool` lue comme appliquée sur `annona-dev` (table `demo_pool_environments` présente). Après : `/demo`, `/login` et `/api/health` en 200, « Voir la démo » sur la page de connexion ; clic réel (Playwright, Chrome, 1280 px) : « Gérant de la boulangerie » ouvre `/dashboard` de « Boulangerie de démonstration » en 6 s, 155 commandes, 4 tournées en cours, 0 erreur JavaScript, 0 réponse 5xx. Non vérifié : les trois autres espaces de démo, le téléphone, le thème sombre. **Projet Vercel toujours pas relié au dépôt (SEP-1)** : `vercel git connect` refusé par le garde-fou de Claude Code, à faire par Théo dans le tableau de bord.
+
+**Audit de la TODO du 23 novembre 2026 (Claude de Théo, PR #71)** : les 18 tâches ouvertes de l'après-midi relues une par une contre le code, Git, GitHub, Vercel, Resend et le DNS public : aucune tâche terminée oubliée. DNS de `mail.annona.fr` toujours absents (zone `annona.fr` chez Dovendi inchangée, numéro de série `2026100601` ; Resend « not_started »). Lignes « Qui » d'AUTH-GOOGLE et de RETOURS-1 corrigées. Branche `theo/mdp-comptes-demo` : une seule ligne de TODO, déjà dans `base`, sans lien avec la démo d'Orso : à supprimer, pas à fusionner. Les « pas faits » du lot 2 (super-admin et boutiques, prix restaurant par client pour une taille de gâteau, liste « après » de LOT2-D10) n'ont pas de tâche à eux : à reporter avant d'archiver LOT2-D10 (décision d'Orso).
 
 **Point du 23 novembre 2026** : LOT1-D9 close (Théo a vérifié sur téléphone, les lenteurs ont disparu) ; détail dans `docs/TODO-ARCHIVE.md`. RECETTE-V1 close aussi (menu « Comment y aller ? » validé par Théo sur un vrai Android) ; iPhone et notifications natives restent dans MOBILE-1.
 
@@ -259,6 +263,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
   **Qui : Théo — relier le projet Vercel `annona` à `orsocrtnt/annona` (branche `base`) ; ensuite Orso : offre Pro, sort de `main` et `preproduction`, annona.fr.**
 
+  - 23 novembre 2026 au soir (Claude de Théo) : projet toujours sans dépôt relié (aucun champ `link` dans `vercel api /v9/projects/annona`). `vercel git connect` refusé par le garde-fou de permissions de Claude Code : à faire par Théo dans le tableau de bord (Settings › Git › Connect Git Repository). `base` (`638d16eb`) redéployée à la main le même soir.
+
   - 16 novembre 2026 (session Claude de Théo, repris de la PR #43 fermée le 22 novembre) : `vercel git connect https://github.com/orsocrtnt/annona --scope track-app2` **refusé** par Vercel (« Failed to connect orsocrtnt/annona to project. Make sure… you have access to the repository »). Cause probable, non vérifiée : l'application GitHub de Vercel est installée sur le compte GitHub d'Orso, et seul le compte Vercel relié à ce compte GitHub peut s'en servir ; Théo a les droits d'écriture sur le dépôt, pas d'administration. Pistes : (a) Théo essaie par le tableau de bord (Settings › Git) ; (b) sinon, un « Deploy Hook » Vercel appelé par une action GitHub à chaque fusion dans `base` (le secret du dépôt doit être ajouté par Orso) ; (c) ou Orso devient membre de l'équipe `track-app2` (offre Pro). En attendant, redéploiement à la main (dernier : 21 novembre, `feb8034`).
 
   - 16 novembre 2026 (Claude d'Orso, dans Chrome, à la demande d'Orso) : l'application GitHub « Vercel » est **déjà installée** sur le compte `orsocrtnt` avec l'accès à **tous les dépôts** (github.com/settings/installations/139829141, après confirmation d'identité faite par Orso) : rien à changer côté GitHub. Le compte Vercel d'Orso n'appartient qu'à l'équipe TutelLiv (outil Vercel `list_teams`), pas à `track-app2` : le branchement du projet `annona` au dépôt revient à Théo. Non vérifié : que Vercel propose bien `orsocrtnt/annona` dans le compte de Théo.
@@ -277,6 +283,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 - [ ] **ACCES-1 — Accès et réponses du propriétaire.**
 
   **Qui : Orso — mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre).**
+
+  - 23 novembre 2026 (audit, Claude de Théo) : des trois conditions de fin, seules les mentions légales manquent : les quatre réponses sont données (`ROUND_MAX_STOPS = 110`) et la clé Resend est fournie depuis NOTIF-1 (13 novembre).
 
   - Réponses de Théo du 13 novembre 2026 (questions métier) : livraison par plage horaire, en deux tournées : **matin de 5h30 à 12h30**, **après-midi de 15h à 19h**. Par livreur : **60 à 70 points de livraison** en moyenne par tournée, **15 à 20 produits** par livraison.
   - Contrôle du code par Claude (13 novembre) : les deux plages sont acceptées par les tournées du lot 1 (`delivery-zone.service.ts`, le soir commence après le matin) ; 15 à 20 produits restent loin de `MAX_ORDER_LINES` (300). **Écart** : `ROUND_MAX_STOPS = 30` (`src/domains/order/round-generation.ts`) coupe en deux ou trois tournées un livreur à 60-70 arrêts ; à relever vers 70 (ou rendre réglable) par Orso, zone `src/domains/`. Durée : 65 arrêts × 3 min (`ROUND_STOP_SECONDS`) ≈ 3h15 plus les trajets, compatible avec la plage du matin. Les zones de démo du seed (5h30-11h, 16h-19h) diffèrent de ces plages : sans effet sur le code, à aligner si Orso le souhaite.
@@ -330,7 +338,9 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **AUTH-GOOGLE — Inscription des entreprises et connexion avec Google.**
 
-  **Qui : Théo — brancher le SMTP de son compte Resend sur `annona-dev` (tableau Supabase, `docs/AUTH_EMAIL_SETUP.md`, décision d'Orso du 15 novembre) pour l'inscription par e-mail ; ensuite Claude fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche.**
+  **Qui : Orso — 4 enregistrements DNS chez Dovendi pour `mail.annona.fr` (voir RETOURS-2) ; ensuite Claude vérifie le domaine, fait l'inscription par e-mail et la vérification d'isolation (PLA-01) et clôt la tâche.**
+
+  - 23 novembre 2026 (audit, Claude de Théo) : le SMTP Resend de Théo est branché sur `annona-dev` depuis le 22 novembre (modèles d'e-mail collés, `AUTH_EMAIL_LINKS_ENABLED` en place) ; ce qui bloque, ce sont les DNS de `mail.annona.fr`, toujours absents (zone `annona.fr` inchangée ; Resend : « not_started »).
 
   15 novembre 2026 (nuit, Claude d'Orso, dans Chrome, accord d'Orso) : Site URL de `annona-dev` passée de `http://localhost:3000` à `https://annona-gray.vercel.app` (Authentication › URL Configuration) ; vérifié en rechargeant la page ; les quatre Redirect URLs inchangées (`localhost:3000/**`, `localhost:3110/**`, `annona-gray.vercel.app/**`, `fr.annona.app://auth/callback**`). Effet : les liens des e-mails Supabase (`{{ .SiteURL }}`) visent le site en ligne ; la connexion Google en local reste autorisée. Non vérifié : un vrai e-mail de confirmation (attend le SMTP Resend de Théo). Même session : relecture des PR #24 à #32 de Théo, rien de bloquant ; `npm run check` sur `base` à jour (`c0d3c18`) : 860 tests, 859 réussis, 1 sauté, 0 échec. Reste relevé : schéma `fr.annona.app` absent de `ios/App/App/Info.plist` (fichier texte, modifiable sans Mac ; le Mac sert seulement à compiler et essayer), commentaire inexact dans `google-button.tsx` (le bouton se réactive à l'ouverture de la page Google, pas à sa fermeture), minuteries de `use-driver-action-queue.ts` (#28) jamais retirées de leur liste.
 
@@ -552,7 +562,9 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
 
 - [ ] **RETOURS-1 — Tour complet de l'application et notes de retouches.**
 
-  **Qui : Théo — tour à la main (parcours qui écrivent, application Android), partie 2 de `docs/rapports/2026-11-16-tour-theo.md`.**
+  **Qui : Théo — finir le tour à la main sur Client, Boulanger, Livreur, Téléphone / application et super-admin (parcours qui écrivent compris), partie 2 de `docs/rapports/2026-11-16-tour-theo.md`.**
+
+  - 23 novembre 2026 (audit, Claude de Théo) : le tour à la main a commencé le 21 novembre (`outputs/notes-tour.md`, hors Git) : Admin, Vente et Pâtissier notés, toutes les remarques traitées par RETOURS-2 ; les sections Client, Boulanger, Livreur, Téléphone / application et super-admin sont vides. Notes recopiées dans la partie 2 du rapport.
 
   - 22 novembre 2026 (session Claude de Théo) : **12 des 13 remarques de la partie 1 corrigées** (débordements sur téléphone, références internes et jargon à l'écran, sous-titre de Mes commandes, choix du jour et Production sur téléphone, catalogue client, pastille santé, champs sans nom, petites cibles) ; détail dans `docs/rapports/2026-11-16-tour-theo.md`, section « Corrections du 22 novembre ». Vérifié à 390 px par un script Playwright sur 13 pages (largeur 390 partout, aucun champ sans nom) ; `npm run check` sortie 0 (916 réussis, 0 échec). Remarque 10 non corrigée : logo de l'entreprise de démo (image stockée sur `annona-dev`), à remplacer par Orso dans Paramètres.
 
