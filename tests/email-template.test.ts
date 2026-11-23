@@ -105,7 +105,7 @@ test("les liens Auth restent propres à chaque type et les mentions de sécurit�
   for (const type of ["signup", "invite", "recovery"] as const) {
     const { html } = renderSupabaseAuthTemplate(type);
     assert.match(html, /personnel, temporaire et à usage unique/);
-    assert.match(html, /background:#0e1310/);
+    assert.match(html, /background:#0d0d12/);
     assert.ok(html.includes(`&amp;type=${type}`));
   }
 });
@@ -140,7 +140,7 @@ test("le bandeau du logo est une image blanche pleine largeur, pour rester blanc
   ];
   for (const html of renders) {
     assert.match(html, /<img src="https:\/\/annona\.fr\/brand\/email-bandeau-logo\.png" width="558" height="99" alt="Annona" style="display:block;width:100%;/);
-    assert.match(html, /class="email-logo-header"[^>]+border-bottom:1px solid #e4e8e5/, "bandeau visible aussi sur une carte blanche");
+    assert.match(html, /class="email-logo-header"[^>]+border-bottom:1px solid #e2e2e6/, "bandeau visible aussi sur une carte blanche");
   }
   const metadata = await sharp("public/brand/email-bandeau-logo.png").metadata();
   assert.deepEqual([metadata.width, metadata.height, metadata.hasAlpha], [1116, 198, false]);

@@ -178,7 +178,7 @@ export function RoundCard(props: RoundCardProps) {
                 {editable ? <GripVertical className="mt-1 h-4 w-4 shrink-0 cursor-grab text-muted-foreground" aria-hidden /> : null}
                 <span
                   className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white tabular-nums"
-                  style={{ background: stop.status === "INCIDENT" ? "#e5533f" : stop.status === "DELIVERED" ? "#a1aaa4" : color }}
+                  style={{ background: stop.status === "INCIDENT" ? "#e5533f" : stop.status === "DELIVERED" ? "#a1a1aa" : color }}
                   aria-hidden
                 >
                   {stop.sequence}

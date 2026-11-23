@@ -166,7 +166,7 @@ function SearchPanel({ onNavigate }: { onNavigate: (href: string) => void }) {
                           )}
                         >
                           <span
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e3f7ec] text-brand dark:bg-brand-subtle"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-subtle text-brand"
                             aria-hidden
                           >
                             <Icon className="h-[18px] w-[18px]" />
@@ -206,7 +206,7 @@ function AdminSearchDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const router = useRouter();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="top-3 max-w-xl translate-y-0 gap-0 overflow-hidden rounded-[1.5rem] border-border bg-card p-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 sm:top-[12vh] max-md:p-0 dark:bg-card">
+      <DialogContent className="top-3 max-w-xl translate-y-0 gap-0 overflow-hidden rounded-[1.5rem] border-border bg-card p-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 sm:top-[12vh] max-md:p-0">
         <DialogTitle className="sr-only">Recherche globale</DialogTitle>
         <DialogDescription className="sr-only">
           Entreprises, utilisateurs et commandes. Flèches pour choisir, Entrée pour ouvrir, Échap pour fermer.
@@ -248,7 +248,7 @@ export function AdminGlobalSearch() {
         aria-keyshortcuts="Meta+K Control+K"
         aria-label="Rechercher dans la plateforme"
         data-testid="admin-search-trigger"
-        className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[#5f6a63] transition-colors hover:bg-black/[0.055] hover:text-[#0e1310] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-muted-foreground dark:hover:bg-white/[0.08] dark:hover:text-foreground lg:w-64 lg:justify-start lg:gap-2 lg:border lg:border-black/[0.07] lg:bg-white/72 lg:px-4 lg:hover:bg-white xl:w-80 dark:lg:border-border dark:lg:bg-card dark:lg:hover:bg-muted"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-black/[0.055] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-white/[0.08] lg:w-64 lg:justify-start lg:gap-2 lg:border lg:border-black/[0.07] lg:bg-white/72 lg:px-4 lg:hover:bg-white xl:w-80 dark:lg:border-border dark:lg:bg-card dark:lg:hover:bg-muted"
       >
         <Search className="h-5 w-5 shrink-0 lg:h-4 lg:w-4" aria-hidden />
         <span className="hidden flex-1 text-left text-sm lg:inline">Rechercher…</span>

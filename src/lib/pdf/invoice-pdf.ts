@@ -56,22 +56,22 @@ export interface InvoicePdfLegalMentions {
   footer: string;
 }
 
-/* Couleurs Annona (DA Menthe). */
-const INK = rgb(0.055, 0.075, 0.063); // #0e1310
-const MINT = rgb(0, 0.831, 0.416); // #00d46a
-const BRAND = rgb(0.031, 0.471, 0.247); // #08783f
-const MUTED = rgb(0.408, 0.447, 0.42); // #68726b
-const SOFT = rgb(0.58, 0.612, 0.592); // #949c97
-const PALE = rgb(0.957, 0.98, 0.965); // #f4faf6
-const HAIRLINE = rgb(0.902, 0.918, 0.906); // #e6eae7
-const RULE = rgb(0.78, 0.8, 0.788); // #c7ccc9, filet de structure (tableau, total)
+/* Couleurs Annona (DA-1 : encre, Aube, gris neutres). */
+const INK = rgb(0.051, 0.051, 0.071); // #0d0d12
+const AUBE = rgb(1, 0.839, 0.039); // #ffd60a (Aube)
+const BRAND = INK; // texte de marque : encre (l'Aube n'est jamais du texte sur clair)
+const MUTED = rgb(0.42, 0.42, 0.463); // #6b6b76
+const SOFT = rgb(0.58, 0.58, 0.62); // #94949e
+const PALE = rgb(0.965, 0.965, 0.973); // #f6f6f8
+const HAIRLINE = rgb(0.886, 0.886, 0.902); // #e2e2e6
+const RULE = rgb(0.784, 0.784, 0.812); // #c8c8cf, filet de structure (tableau, total)
 
 const STATUS_TONE: Record<string, { fill: Color; dot: Color; text: Color }> = {
-  PAID: { fill: rgb(0.886, 0.973, 0.922), dot: MINT, text: BRAND },
+  PAID: { fill: rgb(1, 0.957, 0.761), dot: AUBE, text: BRAND },
   PENDING: { fill: rgb(0.996, 0.957, 0.886), dot: rgb(0.906, 0.6, 0.075), text: rgb(0.478, 0.329, 0.063) },
   OVERDUE: { fill: rgb(0.996, 0.906, 0.894), dot: rgb(0.851, 0.231, 0.18), text: rgb(0.702, 0.208, 0.165) },
 };
-const NEUTRAL_TONE = { fill: rgb(0.937, 0.945, 0.941), dot: SOFT, text: MUTED };
+const NEUTRAL_TONE = { fill: rgb(0.949, 0.949, 0.957), dot: SOFT, text: MUTED };
 
 const PAGE: [number, number] = [595, 842];
 const MARGIN = 56;
@@ -214,7 +214,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
     while (size > min && widthOf(value, { size, bold: isBold }) > width) size -= 0.5;
     return { size, lines: wrap(value, width, { size, bold: isBold }) };
   };
-  const accent = () => page.drawRectangle({ x: 0, y: PAGE[1] - 4, width: PAGE[0], height: 4, color: MINT });
+  const accent = () => page.drawRectangle({ x: 0, y: PAGE[1] - 4, width: PAGE[0], height: 4, color: AUBE });
 
   const companyName = legal?.seller.name.trim() || data.company.name?.trim() || "Entreprise";
   const statusLabel = data.statusLabel || (INVOICE_STATUS_LABELS[data.status as InvoiceStatus] ?? data.status);
@@ -404,7 +404,7 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
     y -= 16;
     const start = y + 10;
     for (const part of parts) { ensureRoom(14); text(part, MARGIN + 14, y, { size: 9, color }); y -= 13; }
-    page.drawRectangle({ x: MARGIN, y: y + 9, width: 2, height: Math.max(start - y - 9, 10), color: MINT });
+    page.drawRectangle({ x: MARGIN, y: y + 9, width: 2, height: Math.max(start - y - 9, 10), color: AUBE });
   };
   // Facture de période : mentions légales juste sous les totaux (première page), puis les livraisons.
   if (data.totals && legal?.mentions.length) note("Mentions légales", legal.mentions.join("\n"), MUTED);

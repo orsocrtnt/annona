@@ -79,8 +79,7 @@ test("contrastes WCAG AA du Light et du Dark", () => {
   for (const [name, set] of [["dark", dark], ["light", light]] as const) {
     for (const [fg, bg, min] of pairs) {
       if (name === "light" && fg === "--color-border") continue;
-      if (name === "light" && fg === "--color-warning") continue; // jeton Light historique, hors périmètre
-      const r = ratio(set.get(fg)!, set.get(bg)!);
+            const r = ratio(set.get(fg)!, set.get(bg)!);
       assert.ok(r >= min, `${name} ${fg} sur ${bg} : ${r.toFixed(2)} < ${min}`);
     }
   }
@@ -99,12 +98,12 @@ test("DESIGN-2 : bordures de champ, diagrammes et aplats d'état restent AA en S
     const r = ratio(dark.get(token)!, dark.get("--color-card")!);
     assert.ok(r >= 3, `${token} : ${r.toFixed(2)}`);
   }
-  // Light : les diagrammes gardent exactement l'encre et les gris d'avant.
-  assert.equal(light.get("--color-chart-ink"), "#0e1310");
-  assert.equal(light.get("--color-chart-mid"), "#7f8883");
-  assert.equal(light.get("--color-chart-soft"), "#d5dbd7");
-  assert.equal(light.get("--color-chart-todo"), "#c9d3cd");
-  assert.equal(light.get("--color-chart-track"), "#eef1ef");
+  // Light (DA-1) : diagrammes en encre Annona, gris de la plaquette, piste Brume.
+  assert.equal(light.get("--color-chart-ink"), "#0d0d12");
+  assert.equal(light.get("--color-chart-mid"), "#6b6b76");
+  assert.equal(light.get("--color-chart-soft"), "#d4d4da");
+  assert.equal(light.get("--color-chart-todo"), "#c8c8cf");
+  assert.equal(light.get("--color-chart-track"), "#f2f2f4");
   // Aplats d'état (KPI, alertes) : texte, texte atténué et statut lisibles sur chaque aplat.
   const tone = readFileSync(new URL("../src/components/ui/tone.ts", import.meta.url), "utf8");
   assert.doesNotMatch(tone, /gradient/);
@@ -122,7 +121,7 @@ test("DESIGN-2 : bordures de champ, diagrammes et aplats d'état restent AA en S
     for (const fg of ["--color-foreground", "--color-muted-foreground"]) {
       assert.ok(ratio(light.get(fg)!, surface) >= 4.5, `${fg} sur ${surface}`);
     }
-    assert.ok(ratio("#c43b2f", surface) >= 4.5, `valeur critique sur ${surface}`);
+    assert.ok(ratio("#b42318", surface) >= 4.5, `valeur critique sur ${surface}`);
   }
 });
 
@@ -234,16 +233,28 @@ test("la barre du portail tient à 320 px : thème et avatar passent dans le men
   assert.match(layout, /className="sm:hidden" data-testid="portal-mobile-account">[\s\S]*<Avatar[\s\S]*user\.firstName/);
 });
 
-test("Sora (titres DESIGN.md) est chargée par le seul portail ; le layout racine garde Inter", () => {
+test("DA-1 : une seule famille, Geist (et Geist Mono), chargée par le layout racine ; plus de Sora ni d'Inter", () => {
   const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-  assert.match(read("src/app/(client-portal)/portal-font.ts"), /Sora\(/);
-  const portalLayout = read("src/app/(client-portal)/layout.tsx");
-  // Variable et attribut portés sur <html> : les fenêtres Radix rendues dans <body> héritent de Sora.
-  assert.match(portalLayout, /documentElement[\s\S]*classList\.add\(sora\.variable\)[\s\S]*setAttribute\("data-portal"/);
-  assert.match(portalLayout, /classList\.remove\(sora\.variable\)[\s\S]*removeAttribute\("data-portal"\)/);
-  assert.match(css, /html\[data-portal\] :is\(h1, h2, h3, \[data-slot="dropdown-menu-label"\]\) \{\s*font-family: var\(--font-sora\)/);
-  assert.match(read("src/components/ui/dropdown-menu.tsx"), /data-slot="dropdown-menu-label"/);
-  assert.doesNotMatch(read("src/app/layout.tsx"), /Sora/);
+  const rootLayout = read("src/app/layout.tsx");
+  assert.match(rootLayout, /import \{ Geist, Geist_Mono \} from "next\/font\/google"/);
+  assert.match(rootLayout, /variable: "--font-sans"/);
+  assert.match(rootLayout, /variable: "--font-mono"/);
+  assert.doesNotMatch(rootLayout, /\bInter\b|Sora/);
+  assert.doesNotMatch(read("src/app/(client-portal)/layout.tsx"), /sora/i);
+  assert.doesNotMatch(read("src/features/auth/auth-shell.tsx"), /sora/i);
+  assert.doesNotMatch(css, /--font-sora/);
+  assert.match(css, /--font-sans: "Geist"/);
+});
+
+test("DA-1 : l'Aube est l'action principale, jamais du texte sur fond clair", () => {
+  assert.equal(light.get("--color-primary"), "#ffd60a");
+  assert.equal(dark.get("--color-primary"), "#ffd60a");
+  assert.equal(light.get("--color-primary-foreground"), "#0d0d12");
+  // Texte de marque et liens en clair : jamais l'Aube (1,4:1 sur blanc).
+  for (const token of ["--color-brand", "--color-success", "--color-warning", "--color-ring"]) {
+    assert.notEqual(light.get(token), "#ffd60a", `${token} ne doit pas être l'Aube en clair`);
+  }
+  assert.ok(ratio("#ffd60a", "#ffffff") < 3);
 });
 
 test("verre des cartes : valeurs historiques en repli hors portail, surfaces sombres en Dark", async () => {
@@ -259,9 +270,9 @@ test("verre des cartes : valeurs historiques en repli hors portail, surfaces som
   for (const name of ["--map-glass-bg", "--map-glass-border", "--map-glass-shadow", "--map-glass-button-bg", "--map-glass-button-fg"]) {
     assert.match(darkBlock, new RegExp(`${name}:`), `${name} absent du Dark`);
   }
-  // Le texte atténué du Dark (#a3aca6) doit rester lisible sur la surface de verre sombre (#1c1f1e).
-  assert.ok(ratio(dark.get("--color-muted-foreground")!, "#1c1f1e") >= 4.5);
-  assert.match(darkBlock, /--map-glass-bg: rgb\(28 31 30 \/ 0\.94\)/);
+  // Le texte atténué du sombre doit rester lisible sur la surface de verre sombre (#1a1a22).
+  assert.ok(ratio(dark.get("--color-muted-foreground")!, "#1a1a22") >= 4.5);
+  assert.match(darkBlock, /--map-glass-bg: rgb\(26 26 34 \/ 0\.94\)/);
 });
 
 test("cartes partagées : un fond blanc codé en dur avec un texte en jeton porte sa variante dark:", () => {

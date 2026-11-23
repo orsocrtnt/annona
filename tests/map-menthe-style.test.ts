@@ -19,10 +19,10 @@ const source = {
 test("MAP-4 : le style vectoriel est recoloré Menthe et nommé en français, sans toucher la source", () => {
   const style = toMentheStyle(source);
   const byId = Object.fromEntries(style.layers.map((layer) => [layer.id, layer])) as Record<string, { paint?: Record<string, unknown>; layout?: Record<string, unknown> }>;
-  assert.equal(byId.background!.paint!["background-color"], "#eef2ef");
-  assert.equal(byId.water!.paint!["fill-color"], "#c9dde6");
+  assert.equal(byId.background!.paint!["background-color"], "#f2f2f4");
+  assert.equal(byId.water!.paint!["fill-color"], "#d3dce4");
   assert.deepEqual(byId.label_city!.layout!["text-field"], ["coalesce", ["get", "name:fr"], ["get", "name"]]);
-  assert.equal(byId.label_city!.paint!["text-color"], "#3c4640");
+  assert.equal(byId.label_city!.paint!["text-color"], "#3d3d46");
   assert.equal(byId["highway-shield-non-us"]!.layout!["text-field"], "{ref}", "les numéros de route restent intacts");
   assert.equal((source.layers[0] as unknown as { paint: Record<string, string> }).paint["background-color"], "#fff");
 });
