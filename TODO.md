@@ -4,16 +4,16 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**25 tâches terminées sur 45 — 56 %**
+**25 tâches terminées sur 46 — 54 %**
 
-`███████████░░░░░░░░░` · 20 tâches restantes
+`███████████░░░░░░░░░` · 21 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
 | Fait | **22** : RECETTE-V1, LOT1-D9, NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **7** : RECETTE-V1, LOT1-D9, HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **16** : CARTE-1, DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2, DISPATCH-OPTIM | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
+| À faire | **17** : CARTE-1, DA-1, DEPLOY-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2, DISPATCH-OPTIM | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -23,6 +23,7 @@
 
 - CARTE-1 — Une seule carte des tournées pour le gérant (page « Carte » et tableau de bord) (regarder la carte (page « Carte » et tableau de bord) et dire ce qui cloche)
 - DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (regarder le socle dans le navigateur et dire ce qui cloche ; ensuite Claude migre les écrans un par un)
+- DEPLOY-1 — Mise en ligne automatique de `base` sur Vercel par GitHub Actions (remplace la liaison Git de SEP-1) (relire et fusionner la PR du workflow ; ensuite Théo vérifie le premier déploiement réel)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
 - LOT2-D1 — Boutiques et comptes vendeuse (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
@@ -47,9 +48,11 @@
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 21 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 23 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
+
+**Déploiement automatique (23 novembre 2026 au soir, DEPLOY-1)** : liaison Git Vercel impossible (dépôt d'Orso invisible depuis le compte de Théo, offre Hobby) ; à la place, workflow GitHub Actions `deploy-vercel.yml` en PR, à relire et fusionner par Orso. Secrets en place. Premier déploiement réel à vérifier après fusion (Théo). **Orso** : `VERCEL_AUTOMATION_BYPASS_SECRET`, exigé par les trois `cron-*.yml` (préproduction de l'ancien produit), manque dans le dépôt.
 
 **Point du 23 novembre 2026** : LOT1-D9 close (Théo a vérifié sur téléphone, les lenteurs ont disparu) ; détail dans `docs/TODO-ARCHIVE.md`. RECETTE-V1 close aussi (menu « Comment y aller ? » validé par Théo sur un vrai Android) ; iPhone et notifications natives restent dans MOBILE-1.
 
@@ -273,6 +276,18 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Fait le 8 novembre 2026 : branche par défaut du dépôt GitHub `orsocrtnt/annona` passée de `preproduction` à `base` (`gh api -X PATCH … default_branch=base` → `base`). La page du dépôt affiche désormais le README Annona. La description du dépôt (« Annona — plateforme SaaS de livraison ») ne citait déjà plus TutelLiv.
   - Liens restants constatés (non modifiés) : `main` du dépôt annona est le même commit que `main` de `orsocrtnt/tutelliv` (`af61494`) ; `preproduction` du dépôt annona porte l'ancien produit (README « # Tutelliv », 367 fichiers citant TutelLiv) ; annona.fr est servi par `tutelliv-preproduction` (Supabase). Les tâches planifiées GitHub échouent toutes les 5 min faute de secrets (aucun secret dans le dépôt annona) ; elles tournent maintenant depuis `base`, toujours sans secrets, donc sans effet.
   - Suite : décision du propriétaire sur `main` et `preproduction` (les remplacer par `base` demande un push et peut redéployer annona.fr), puis rattacher annona.fr à un projet Annona propre.
+
+- [ ] **DEPLOY-1 — Mise en ligne automatique de `base` sur Vercel par GitHub Actions (remplace la liaison Git de SEP-1).**
+
+  **En cours : Théo.**
+
+  **Qui : Orso — relire et fusionner la PR du workflow ; ensuite Théo vérifie le premier déploiement réel.**
+
+  - Contexte (23 novembre 2026) : la liaison Git Vercel ↔ GitHub est impossible depuis le compte Vercel de Théo (dépôt `orsocrtnt/annona` absent de la liste : l'application GitHub de Vercel est installée sur le compte d'Orso) et l'équipe `track-app2` est en offre Hobby (aucun second membre). Décision : déployer par GitHub Actions avec un jeton. Théo a créé le jeton « GitHub Actions annona » (équipe `track-app2`, expire le 24 novembre 2027) ; Orso a ajouté les secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID` et `VERCEL_PROJECT_ID` (vérifié par `gh secret list`).
+  - Fait (Claude de Théo, branche `theo/deploy-vercel`) : `.github/workflows/deploy-vercel.yml`. Push sur `base` et `workflow_dispatch` ; `permissions: contents: read` ; un déploiement à la fois, le plus récent l'emporte (pushs en attente remplacés, déploiement en cours jamais coupé) ; construction chez Vercel par `npx vercel@65.5.0 deploy --prod --yes --token` (ni `vercel pull` ni `vercel build`) ; jeton jamais affiché ; aucune commande Prisma ; URL du déploiement dans le résumé ; contrôle `/api/health` et `/login` en 200 ; arrêt sans déploiement si un secret manque.
+  - Vérifié dans Vercel avant la PR (lecture seule) : production sur `annona-dev` (les places de démo prises en cliquant sur le site en ligne apparaissent dans `annona-dev` à la minute près ; `DATABASE_URL` est de type Secret, illisible) ; crons de production actifs (`/api/cron/lock-orders` 16 h 05 UTC, `/api/cron/billing` 6 h 10 UTC, sur `annona-dev`, déjà le cas depuis le 15 novembre) ; domaines `annona-gray.vercel.app` et `annona-track-app2.vercel.app` seulement (ni annona.fr ni l'ancien produit) ; protection Vercel Authentication « Standard » (adresses de déploiement en 302, `annona-gray.vercel.app` public en 200). Les `cron-*.yml` visent la préproduction de l'ancien produit et exigent `VERCEL_AUTOMATION_BYPASS_SECRET`, absent du dépôt (signalé à Orso, seul à pouvoir l'ajouter) ; le nouveau workflow n'en a pas besoin.
+  - Vérifications : YAML valide (`js-yaml`) ; `npm run check` sortie 0 (951 tests, 943 réussis, 0 échec, 7 ignorés, après `npm run db:generate` : le client Prisma local ne connaissait pas encore la table de démo).
+  - **Non vérifié : le premier déploiement réel**, impossible avant la fusion. Après fusion, Théo (ou Claude) regarde l'onglet Actions : exécution verte, URL dans le résumé, site à jour. Si Vercel refuse le jeton, le recréer sur toute l'équipe.
 
 - [ ] **ACCES-1 — Accès et réponses du propriétaire.**
 
