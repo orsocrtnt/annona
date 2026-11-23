@@ -4,26 +4,27 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**25 tâches terminées sur 46 — 54 %**
+**25 tâches terminées sur 47 — 53 %**
 
-`███████████░░░░░░░░░` · 21 tâches restantes
+`███████████░░░░░░░░░` · 22 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
 | Fait | **22** : RECETTE-V1, LOT1-D9, NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **7** : RECETTE-V1, LOT1-D9, HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **16** : CARTE-1, DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2, DISPATCH-OPTIM | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
+| À faire | **18** : VIDEO-1, CARTE-1, DA-1, DEPLOY-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2, DISPATCH-OPTIM | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
 
 **À faire par Claude**
 
-- VIDEO-1 — Vidéo de présentation d'Annona pour les boulangeries, sur le modèle de la vidéo TutelLiv (texte de la voix à faire valider par Orso, puis montage (habillage nouvelle DA, voix, musique, rendu))
 - DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv (suivi des démos par le super admin et limite de débit ; Théo — relire la journée type (volumes, horaires) en essayant `/demo`)
 
 **À faire par Orso**
 
+- VIDEO-1 — Vidéo de présentation d'Annona pour les boulangeries, sur le modèle de la vidéo TutelLiv (regarder le montage v2 et valider le texte de la voix ; puis Claude : vraie voix (connecteur ElevenLabs à autoriser par Orso), retouches, version courte verticale)
 - CARTE-1 — Une seule carte des tournées pour le gérant (page « Carte » et tableau de bord) (regarder la carte (page « Carte » et tableau de bord) et dire ce qui cloche)
 - DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (regarder le socle dans le navigateur et dire ce qui cloche ; ensuite Claude migre les écrans un par un)
+- DEPLOY-1 — Mise en ligne automatique de `base` sur Vercel par GitHub Actions (remplace la liaison Git de SEP-1) (relire et fusionner la PR du workflow ; ensuite Théo vérifie le premier déploiement réel)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
 - LOT2-D1 — Boutiques et comptes vendeuse (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
@@ -48,11 +49,13 @@
 _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée selon qui doit agir ensuite. Cette jauge compte les tâches closes, sans pondération de leur taille. Recalcul et synchronisation des copies : `npm run todo:progress`, automatiquement avant `npm run docs:verify`._
 <!-- TODO_PROGRESS_END -->
 
-## Ce qu'il reste vraiment à faire (vue simple, à jour au 21 novembre 2026)
+## Ce qu'il reste vraiment à faire (vue simple, à jour au 23 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
 
-**Vidéo de présentation (23 novembre 2026, VIDEO-1)** : déroulé, accroche et fin décidés avec Orso ; 40 captures HD des vrais écrans faites sur la démo (nouvelle DA) ; premier montage v1 (voix temporaire) à regarder par Orso. Reste : avis sur le montage et le texte, puis vraie voix.
+**Vidéo de présentation (23 novembre 2026, VIDEO-1)** : déroulé, accroche et fin décidés avec Orso ; 40 captures HD des vrais écrans faites sur la démo (nouvelle DA) ; montage v2 refait sur le modèle de la v6 TutelLiv (ville 3D, typographie animée, bruitages ; voix de synthèse provisoire), `outputs/video-presentation/annona-presentation-v2.mp4`, à regarder par Orso. Reste : avis sur le montage et le texte, puis vraie voix (connecteur ElevenLabs à autoriser).
+
+**Déploiement automatique (23 novembre 2026 au soir, DEPLOY-1)** : liaison Git Vercel impossible (dépôt d'Orso invisible depuis le compte de Théo, offre Hobby) ; à la place, workflow GitHub Actions `deploy-vercel.yml` en PR, à relire et fusionner par Orso. Secrets en place. Premier déploiement réel à vérifier après fusion (Théo). **Orso** : `VERCEL_AUTOMATION_BYPASS_SECRET`, exigé par les trois `cron-*.yml` (préproduction de l'ancien produit), manque dans le dépôt.
 
 **Point du 23 novembre 2026** : LOT1-D9 close (Théo a vérifié sur téléphone, les lenteurs ont disparu) ; détail dans `docs/TODO-ARCHIVE.md`. RECETTE-V1 close aussi (menu « Comment y aller ? » validé par Théo sur un vrai Android) ; iPhone et notifications natives restent dans MOBILE-1.
 
@@ -173,7 +176,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
 - [ ] **VIDEO-1 — Vidéo de présentation d'Annona pour les boulangeries, sur le modèle de la vidéo TutelLiv.**
 
-  **Qui : Claude — texte de la voix à faire valider par Orso, puis montage (habillage nouvelle DA, voix, musique, rendu).**
+  **Qui : Orso — regarder le montage v2 et valider le texte de la voix ; puis Claude : vraie voix (connecteur ElevenLabs à autoriser par Orso), retouches, version courte verticale.**
 
   **En cours : Orso.**
 
@@ -183,7 +186,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - **Démo complétée à la main pour la vidéo** (environnement jetable, aucun e-mail : `sendTransactionalEmail` ignore les adresses de démo) : factures de novembre générées (84), deux boutiques (Centre-ville, Saint-Paul) et leurs envois du lendemain, une commande récurrente « Livraison du matin ». Les 20 environnements de démo étaient tous prêtés : remis libres à la demande d'Orso (même effet que « Quitter la démo » sur chacun).
   - **Serveur à part** pour ne pas gêner l'autre session : copie `../Annona-video` (branche `orso/video-presentation`), `NEXT_PUBLIC_APP_URL=http://127.0.0.1:3100 npx next dev --turbopack -p 3100 -H 127.0.0.1` (sinon « Origine de la requête refusée »).
   - **Premier montage fait (23 novembre, demandé par Orso avant de valider le texte)** : `outputs/video-presentation/annona-presentation-v1.mp4` (1 min 49, 1920×1080, 30 i/s ; version légère `-leger.mp4`). Moteur, fenêtres 3D et habillage repris de la v6 TutelLiv (`montage/engine.js`, `ui.js`, `hud.js`), scènes dans `montage/main.js`, accroche « tournée emmêlée » dessinée (60 arrêts fictifs, plus proche voisin + 2-opt, illustration), vrai logo de l'app (soleil + « annona » en Geist ; les PNG de `public/brand/logo-horizontal-*` sont encore l'ancien logo à empattements). **Voix temporaire** (voix « Thomas » du Mac, aucun crédit ElevenLabs), mots des sous-titres placés au prorata (pas d'alignement fin). Musique Sascha Ende (CC BY 4.0), -14 LUFS. Pour refaire : `node build.mjs`, `node render.mjs range 0 3256`, `./mix.sh`, `./encode.sh`. Vérifié : planche de 16 images tirées du fichier final.
-  - **Non vérifié / reste** : avis d'Orso sur le montage et le texte ; puis vraie voix (ElevenLabs), alignement des mots, bruitages, éventuel fond de carte comme la v6 ; version courte verticale ensuite. Défauts connus : la 4e carte « Vous, le gérant » arrive tard ; pas de fond de ville. Ancien logo dans `public/brand/logo-horizontal-*.png` (à signaler pour DA-1).
+  - **Montage v2 (23 novembre, demandé par Orso : la v1 ne lui plaît pas, s'inspirer vraiment de la v6 TutelLiv)** : `outputs/video-presentation/annona-presentation-v2.mp4` (1 min 48, 1920×1080, 30 i/s, 96 Mo ; version légère `-v2-leger.mp4`, 40 Mo). Tout est dans `outputs/video-presentation/montage2/` (hors dépôt), la v1 reste intacte dans `montage/`. Texte de la voix inchangé. Ce qui change : ville 3D de la v6 (MapLibre, tuiles OpenFreeMap) aux couleurs Annona, de nuit pour l'accroche et la fin, de jour derrière les écrans ; accroche sur Paris (60 arrêts fictifs, trajet emmêlé puis trajet propre tracé sur les vraies rues, illustration et pas le calcul d'Annona : `geo.mjs`, serveur public OSRM, seules des coordonnées tirées au hasard lui sont envoyées) ; veille avec messages qui s'empilent et grosse typographie ; carte jaune « Un seul outil » ; quatre appareils en 3D ; horloge 16:59 → 17:00 dans la scène ; les 4 tournées tracées sur tout Paris, puis plongée vers le livreur (tournée « Nord soir », trois arrêts, problème signalé) avec son téléphone ; fin de nuit avec les tournées en jaune ; flou de mouvement ; bruitages calés sur l'image (`sfx.mjs`) ; mots des sous-titres calés sur la voix (faster-whisper). Écrans : toujours les vraies captures de la démo. **Voix : synthèse locale provisoire** (Kokoro, modèle libre, voix « ff_siwis », rien n'est envoyé à un service) à la place de « Thomas » ; le connecteur ElevenLabs de la session a refusé l'accès (« Insufficient scope ») : à autoriser par Orso pour la vraie voix. Pour refaire : `uv run --with kokoro-onnx --with soundfile --with faster-whisper --with numpy python tts.py` (SPEED=0.9), `node build.mjs`, `node sfx.mjs`, `sh mix.sh`, `node render.mjs range 0 3245` (4 processus en parallèle : 17 à 28 min chacun), `sh encode.sh`. Vérifié : 3 246 images rendues sans erreur de page ; son à -14,0 LUFS, crête -1,4 dBFS ; trois planches de 12 images tirées du fichier final regardées une à une. **Non vérifié : la vidéo n'a été ni regardée en mouvement ni écoutée** (qualité de la voix Kokoro, niveau de la musique et des bruitages, rythme : à juger par Orso).
+  - **Non vérifié / reste** : avis d'Orso sur le montage v2 et le texte ; puis vraie voix (ElevenLabs, une fois le connecteur autorisé), version courte verticale. Défauts connus de la v2 : dans la scène des quatre espaces, la fenêtre « Vous » passe en partie derrière le téléphone ; les noms « Nord / Sud » des tournées sur la carte suivent la position des arrêts fictifs, pas les vraies tournées de la démo ; un court passage de carte seule entre la facture et la fin. Ancien logo dans `public/brand/logo-horizontal-*.png` (à signaler pour DA-1).
 
 - [ ] **CARTE-1 — Une seule carte des tournées pour le gérant (page « Carte » et tableau de bord).**
 
@@ -292,6 +296,18 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - Fait le 8 novembre 2026 : branche par défaut du dépôt GitHub `orsocrtnt/annona` passée de `preproduction` à `base` (`gh api -X PATCH … default_branch=base` → `base`). La page du dépôt affiche désormais le README Annona. La description du dépôt (« Annona — plateforme SaaS de livraison ») ne citait déjà plus TutelLiv.
   - Liens restants constatés (non modifiés) : `main` du dépôt annona est le même commit que `main` de `orsocrtnt/tutelliv` (`af61494`) ; `preproduction` du dépôt annona porte l'ancien produit (README « # Tutelliv », 367 fichiers citant TutelLiv) ; annona.fr est servi par `tutelliv-preproduction` (Supabase). Les tâches planifiées GitHub échouent toutes les 5 min faute de secrets (aucun secret dans le dépôt annona) ; elles tournent maintenant depuis `base`, toujours sans secrets, donc sans effet.
   - Suite : décision du propriétaire sur `main` et `preproduction` (les remplacer par `base` demande un push et peut redéployer annona.fr), puis rattacher annona.fr à un projet Annona propre.
+
+- [ ] **DEPLOY-1 — Mise en ligne automatique de `base` sur Vercel par GitHub Actions (remplace la liaison Git de SEP-1).**
+
+  **En cours : Théo.**
+
+  **Qui : Orso — relire et fusionner la PR du workflow ; ensuite Théo vérifie le premier déploiement réel.**
+
+  - Contexte (23 novembre 2026) : la liaison Git Vercel ↔ GitHub est impossible depuis le compte Vercel de Théo (dépôt `orsocrtnt/annona` absent de la liste : l'application GitHub de Vercel est installée sur le compte d'Orso) et l'équipe `track-app2` est en offre Hobby (aucun second membre). Décision : déployer par GitHub Actions avec un jeton. Théo a créé le jeton « GitHub Actions annona » (équipe `track-app2`, expire le 24 novembre 2027) ; Orso a ajouté les secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID` et `VERCEL_PROJECT_ID` (vérifié par `gh secret list`).
+  - Fait (Claude de Théo, branche `theo/deploy-vercel`) : `.github/workflows/deploy-vercel.yml`. Push sur `base` et `workflow_dispatch` ; `permissions: contents: read` ; un déploiement à la fois, le plus récent l'emporte (pushs en attente remplacés, déploiement en cours jamais coupé) ; construction chez Vercel par `npx vercel@65.5.0 deploy --prod --yes --token` (ni `vercel pull` ni `vercel build`) ; jeton jamais affiché ; aucune commande Prisma ; URL du déploiement dans le résumé ; contrôle `/api/health` et `/login` en 200 ; arrêt sans déploiement si un secret manque.
+  - Vérifié dans Vercel avant la PR (lecture seule) : production sur `annona-dev` (les places de démo prises en cliquant sur le site en ligne apparaissent dans `annona-dev` à la minute près ; `DATABASE_URL` est de type Secret, illisible) ; crons de production actifs (`/api/cron/lock-orders` 16 h 05 UTC, `/api/cron/billing` 6 h 10 UTC, sur `annona-dev`, déjà le cas depuis le 15 novembre) ; domaines `annona-gray.vercel.app` et `annona-track-app2.vercel.app` seulement (ni annona.fr ni l'ancien produit) ; protection Vercel Authentication « Standard » (adresses de déploiement en 302, `annona-gray.vercel.app` public en 200). Les `cron-*.yml` visent la préproduction de l'ancien produit et exigent `VERCEL_AUTOMATION_BYPASS_SECRET`, absent du dépôt (signalé à Orso, seul à pouvoir l'ajouter) ; le nouveau workflow n'en a pas besoin.
+  - Vérifications : YAML valide (`js-yaml`) ; `npm run check` sortie 0 (951 tests, 943 réussis, 0 échec, 7 ignorés, après `npm run db:generate` : le client Prisma local ne connaissait pas encore la table de démo).
+  - **Non vérifié : le premier déploiement réel**, impossible avant la fusion. Après fusion, Théo (ou Claude) regarde l'onglet Actions : exécution verte, URL dans le résumé, site à jour. Si Vercel refuse le jeton, le recréer sur toute l'équipe.
 
 - [ ] **ACCES-1 — Accès et réponses du propriétaire.**
 
