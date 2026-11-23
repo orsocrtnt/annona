@@ -1,0 +1,99 @@
+name: Mise en ligne (Vercel)
+
+# SEP-1 / DEPLOY-1 (23 novembre 2026) : le projet Vercel `annona` (équipe `track-app2`, compte de Théo, offre Hobby)
+# ne peut pas être relié au dépôt `orsocrtnt/annona` : l'application GitHub de Vercel est installée sur le compte
+# d'Orso, invisible depuis le compte Vercel de Théo, et une équipe Hobby n'a qu'un membre. Ce workflow remplace la
+# liaison : chaque push sur `base` (protégée : PR et CI verte obligatoires) est envoyé à Vercel, qui construit et met
+# en production comme un `vercel deploy --prod` lancé à la main.
+#
+# - Construction chez Vercel, avec les variables du projet : ni `vercel pull` ni `vercel build` ici, les variables de
+#   production ne transitent pas par GitHub.
+# - Publie le code et rien d'autre : aucune commande Prisma (ni migrate, ni db push, ni seed). Une migration
+#   s'applique à la main, annoncée dans sa tâche, AVANT la fusion du code qui en a besoin.
+# - Le jeton ne passe que par l'option --token, jamais affiché (pas de echo, pas de set -x).
+# - Production Vercel = base `annona-dev` ; Vercel y lance aussi les crons de vercel.json chaque jour
+#   (/api/cron/lock-orders à 16 h 05 UTC, /api/cron/billing à 6 h 10 UTC). Domaine : annona-gray.vercel.app ; ce
+#   projet ne sert ni annona.fr ni la préproduction de l'ancien produit.
+#
+# Secrets du dépôt (Settings › Secrets and variables › Actions, ajoutés par Orso le 23 novembre 2026) :
+#   VERCEL_TOKEN       jeton « GitHub Actions annona » de Théo, limité à l'équipe track-app2, expire le 24/11/2027
+#   VERCEL_ORG_ID      identifiant de l'équipe track-app2
+#   VERCEL_PROJECT_ID  identifiant du projet annona
+# Sans ces secrets, le workflow s'arrête avec un avertissement, sans rien déployer.
+on:
+  push:
+    branches: [base]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Un seul déploiement à la fois, et le plus récent l'emporte : GitHub ne garde en attente que le dernier push ; ceux
+# qui attendaient entre-temps sont annulés. Le déploiement en cours n'est pas coupé (cancel-in-progress: false) :
+# l'annuler n'arrêterait pas la construction chez Vercel, qui pourrait alors finir APRÈS la plus récente et
+# remettre une version plus ancienne en production.
+concurrency:
+  group: deploy-vercel-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Production Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TELEMETRY_DISABLED: "1"
+      SITE_URL: https://annona-gray.vercel.app
+    steps:
+      - name: Vérifier les secrets
+        id: secrets
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::warning::Secrets VERCEL_TOKEN, VERCEL_ORG_ID ou VERCEL_PROJECT_ID absents : rien n'est déployé."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Récupérer le code
+        if: steps.secrets.outputs.ready == 'true'
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        if: steps.secrets.outputs.ready == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Envoyer à Vercel (construction et mise en production)
+        if: steps.secrets.outputs.ready == 'true'
+        id: deploy
+        run: |
+          url=$(npx --yes vercel@65.5.0 deploy --prod --yes --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Mise en production Vercel"
+            echo ""
+            echo "- Déploiement : $url"
+            echo "- Site : $SITE_URL"
+            echo "- Commit : \`${GITHUB_SHA::8}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Vérifier le site en ligne
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            health=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$SITE_URL/api/health" || true)
+            login=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$SITE_URL/login" || true)
+            echo "Essai $attempt : /api/health $health, /login $login"
+            if [ "$health" = "200" ] && [ "$login" = "200" ]; then
+              echo "- Vérifié : \`/api/health\` et \`/login\` répondent 200" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Le site ne répond pas 200 après la mise en ligne."
+          exit 1
