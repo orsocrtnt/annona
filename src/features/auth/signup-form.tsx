@@ -23,7 +23,7 @@ import {
 } from "@/lib/validations/auth";
 
 /** Mêmes champs que la connexion : 52 px, bordure contrastée en Light comme en Dark. */
-const inputClass = "h-[52px] rounded-[14px] border-[#858f88] bg-card px-4 text-base dark:border-[#6b746f]";
+const inputClass = "h-[52px] rounded-[14px] border-[#85858f] bg-card px-4 text-base dark:border-input";
 
 type SignupFormProps =
   | { step: "start" }

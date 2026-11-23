@@ -41,7 +41,7 @@ export function AppleNavbar({
         data-glass
         className={cn(
           light
-            ? "relative mx-auto flex min-h-14 items-center gap-2 overflow-visible rounded-[18px] border border-black/[0.07] bg-white/80 px-2.5 py-2 text-[#0e1310] shadow-[0_12px_44px_rgba(14,19,16,0.06)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/72 dark:border-white/10 dark:bg-card/85 dark:text-foreground dark:shadow-[0_12px_44px_rgba(0,0,0,0.35)] dark:supports-[backdrop-filter]:bg-card/80 sm:px-3"
+            ? "relative mx-auto flex min-h-14 items-center gap-2 overflow-visible rounded-[18px] border border-black/[0.07] bg-white/80 px-2.5 py-2 text-foreground shadow-[0_12px_44px_rgba(13,13,18,0.06)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/72 dark:border-white/10 dark:bg-card/85 dark:shadow-[0_12px_44px_rgba(0,0,0,0.35)] dark:supports-[backdrop-filter]:bg-card/80 sm:px-3"
             : "relative mx-auto flex min-h-14 items-center gap-2 overflow-visible rounded-[18px] border border-white/[0.09] bg-[#101118]/[0.94] px-2.5 py-2 text-white shadow-[0_18px_50px_rgba(9,12,20,0.2)] backdrop-blur-2xl transition-[border-color,box-shadow] duration-500 ease-out hover:border-white/[0.15] hover:shadow-[0_22px_60px_rgba(9,12,20,0.28)] supports-[backdrop-filter]:bg-[#101118]/[0.92] motion-reduce:transition-none sm:px-3",
           maxWidthClassName,
           innerClassName
@@ -159,12 +159,12 @@ export function AppleNavbarLink({
     light ? "focus-visible:ring-ring" : "focus-visible:ring-white/80",
     light
       ? active
-        ? "font-semibold text-[#0e1310] dark:text-foreground"
-        : "text-[#5f6a63] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:text-foreground"
+        ? "font-semibold text-foreground"
+        : "text-muted-foreground hover:text-foreground"
       : active
         ? "text-white"
         : "text-white/55 hover:text-white",
-    disabled && (light ? "cursor-not-allowed text-[#a3aca6] hover:text-[#a3aca6] dark:text-text-tertiary dark:hover:text-text-tertiary" : "cursor-not-allowed text-white/30 hover:text-white/30"),
+    disabled && (light ? "cursor-not-allowed text-muted-foreground/60 hover:text-muted-foreground/60 dark:text-text-tertiary dark:hover:text-text-tertiary" : "cursor-not-allowed text-white/30 hover:text-white/30"),
     className
   );
 
@@ -177,7 +177,7 @@ export function AppleNavbarLink({
             aria-hidden
             className={cn(
               "pointer-events-none absolute inset-x-2 bottom-[3px] origin-center scale-x-0 rounded-full bg-gradient-to-r from-transparent to-transparent opacity-0 transition-[transform,opacity] duration-300 ease-out group-hover:scale-x-100 group-hover:opacity-100 group-focus-visible:scale-x-100 group-focus-visible:opacity-100 motion-reduce:transition-none",
-              light ? "h-[2px] via-[#00a855] dark:via-brand" : "h-px via-[#ff6847] shadow-[0_0_7px_rgba(255,91,57,0.9)]",
+              light ? "h-[2px] via-brand" : "h-px via-[#ff6847] shadow-[0_0_7px_rgba(255,91,57,0.9)]",
               active && (light ? "scale-x-100 opacity-100" : "scale-x-100 opacity-80")
             )}
           />
@@ -222,4 +222,4 @@ export const appleNavbarActionClass =
 
 /** Variantes claires (espaces connectés, DA Menthe). */
 export const appleNavbarIconButtonLightClass =
-  "inline-flex h-10 w-10 max-md:h-11 max-md:w-11 shrink-0 items-center justify-center rounded-xl text-[#5f6a63] transition-[background-color,color] duration-300 ease-out hover:bg-black/[0.05] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-white/[0.08] dark:hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none";
+  "inline-flex h-10 w-10 max-md:h-11 max-md:w-11 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-[background-color,color] duration-300 ease-out hover:bg-black/[0.05] hover:text-foreground dark:hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none";

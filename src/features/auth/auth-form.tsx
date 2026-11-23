@@ -77,7 +77,7 @@ interface AuthFormProps {
 
 /** Champs de la connexion : 52 px de haut, bordure contrastée (3:1) en Light comme en Dark. */
 const loginInputClass =
-  "h-[52px] rounded-[14px] border-[#858f88] bg-card px-4 text-base dark:border-[#6b746f]";
+  "h-[52px] rounded-[14px] border-[#85858f] bg-card px-4 text-base dark:border-input";
 
 export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null);

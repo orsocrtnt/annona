@@ -35,7 +35,7 @@ import { AccessToggleButton } from "@/features/admin/access/access-toggle-button
 
 const LINES: ReadonlyArray<DailyLine<"orders" | "delivered">> = [
   { key: "orders", label: "Commandes créées", short: "Commandes", ...CHART_COLORS.blue },
-  { key: "delivered", label: "Livraisons livrées", short: "Livrées", ...CHART_COLORS.green },
+  { key: "delivered", label: "Livraisons livrées", short: "Livrées", ...CHART_COLORS.ink },
 ];
 
 type Company = PlatformCompanyFile;

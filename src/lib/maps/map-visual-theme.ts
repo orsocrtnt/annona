@@ -1,19 +1,18 @@
 /**
- * Direction « Suivi en direct » (planche A) : plan Menthe, repères encre, livreurs vert vif,
- * trajets verts. Le vert du trajet est un cran plus soutenu que celui de la charte pour garder
- * un contraste d'au moins 3:1 sur le plan comme sur son liseré blanc.
+ * DA-1 « En direct » : plan gris neutre, repères encre, livreur en Aube (le soleil qui pulse),
+ * trajet encre en Clair et Aube en Sombre : au moins 3:1 sur le plan comme sur son liseré.
  */
 export const MAP_VISUAL_THEME = {
-  ink: "#0e1310",
-  inkSoft: "#3f4842",
-  muted: "#a1aaa4",
-  mutedLight: "#d5dbd7",
+  ink: "#0d0d12",
+  inkSoft: "#3d3d46",
+  muted: "#a1a1aa",
+  mutedLight: "#d4d4da",
   surface: "#ffffff",
-  land: "#eef2ef",
-  brand: "#00d46a",
-  route: "#08a052",
+  land: "#f2f2f4",
+  brand: "#ffd60a",
+  route: "#0d0d12",
   routeHalo: "#ffffff",
-  danger: "#e5533f",
+  danger: "#e5484d",
 } as const;
 
 export const MAP_ROUTE_STYLE = {
@@ -35,18 +34,18 @@ export const MAP_ROUTE_STYLE = {
 
 export type MapPaletteTheme = "light" | "dark";
 
-/** Version sombre de la palette : encre et surface s'inversent, le trajet passe au vert pastel des jetons Dark. */
+/** Version sombre de la palette : encre et surface s'inversent, le trajet passe en Aube. */
 export const MAP_VISUAL_THEME_DARK = {
-  ink: "#eef1ef",
-  inkSoft: "#c3cbc6",
-  muted: "#7f8983",
-  mutedLight: "#3c4440",
+  ink: "#ffffff",
+  inkSoft: "#c8c8d0",
+  muted: "#80808a",
+  mutedLight: "#3a3a44",
   surface: "#1a1a22",
-  land: "#181c1a",
-  brand: "#3dd68c",
-  route: "#3dd68c",
-  routeHalo: "#141716",
-  danger: "#f08a82",
+  land: "#14141a",
+  brand: "#ffd60a",
+  route: "#ffd60a",
+  routeHalo: "#0d0d12",
+  danger: "#ff8589",
 } as const;
 
 export type MapPalette = { [K in keyof typeof MAP_VISUAL_THEME]: string };

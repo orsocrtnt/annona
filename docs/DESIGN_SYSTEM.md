@@ -97,4 +97,4 @@ Vouvoiement pour les commerçants ; tutoiement possible dans l'app livreur. Un b
 
 ## Migration en cours (DA-1)
 
-Fait : jetons clair et sombre, Geist, logo et icônes web, boutons, champs, teintes d'état. Reste, écran par écran avec recette navigateur clair et sombre (suivi dans `TODO.md`, tâche DA-1) : couleurs codées en dur des écrans (verts de l'ancienne direction), page d'accueil publique (`.landing`), visite guidée (`.tour-adapt`), style des cartes (`src/lib/maps/`), e-mails et PDF (logo PNG), icônes des applications natives.
+Fait : jetons clair et sombre, Geist, logo et icônes web, boutons, champs, teintes d'état ; le 23 novembre, plus aucun vert de l'ancienne direction dans `src/` (menus, accueil super-admin, cartes, PDF, e-mails ; CSS de l'ancienne landing supprimé). Reste (suivi dans `TODO.md`, tâche DA-1) : recette navigateur clair et sombre écran par écran, logos PNG des e-mails et PDF, icônes des applications natives.

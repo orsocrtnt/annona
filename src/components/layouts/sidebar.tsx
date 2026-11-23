@@ -56,7 +56,7 @@ function SidebarNavLink({
             premium
               ? isActive
                 ? "text-brand"
-                : "text-[#7b8780] group-hover:text-[#0e1310] dark:text-muted-foreground dark:group-hover:text-foreground"
+                : "text-muted-foreground group-hover:text-foreground"
               : isActive
                 ? "text-brand"
                 : "text-muted-foreground group-hover:text-foreground"
@@ -91,8 +91,8 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
       premium
         ? isActive
           ? // Page active sobre : surface à peine teintée et filet, sans aplat vert ni halo ; seule l'icône garde le vert de sélection.
-            "bg-[#f1f5f2] text-[#0e1310] ring-1 ring-inset ring-[#e4ebe6] dark:bg-muted dark:text-foreground dark:ring-border"
-          : "text-[#5f6a63] hover:bg-[#f1f5f2] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground"
+            "bg-muted text-foreground ring-1 ring-inset ring-border"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
         : isActive
           ? "bg-brand-subtle text-brand"
           : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -142,7 +142,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
       className={cn(
         "fixed z-40 flex flex-col transition-all duration-300",
         premium
-          ? "bottom-3 left-3 top-3 rounded-3xl border border-[#e4ebe6] bg-white text-[#0e1310] shadow-[0_10px_30px_rgba(15,50,30,0.06)] dark:border-border dark:bg-card dark:text-foreground dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+          ? "bottom-3 left-3 top-3 rounded-3xl border border-border bg-white text-foreground shadow-[0_10px_30px_rgba(13,13,18,0.06)] dark:bg-card dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
           : "inset-y-0 left-0 border-r border-border bg-card",
         sidebarCollapsed ? (premium ? "w-[80px]" : "w-[72px]") : (premium ? "w-[264px]" : "w-64"),
         "hidden lg:flex"
@@ -151,7 +151,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
       <div
         className={cn(
           "flex h-16 items-center justify-between px-4",
-          premium ? "border-b border-[#eef2ef] dark:border-border" : "border-b border-border"
+          premium ? "border-b border-border" : "border-b border-border"
         )}
       >
         {premium ? (
@@ -176,7 +176,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
               ? "flex h-11 w-11 items-center justify-center rounded-full transition-colors"
               : "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
             premium
-              ? "text-[#7b8780] hover:bg-[#f1f5f2] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground"
+              ? "text-muted-foreground hover:bg-muted hover:text-foreground"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
             sidebarCollapsed && "mx-auto"
           )}
@@ -207,7 +207,7 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
       </ScrollArea>
 
       {footer && !sidebarCollapsed && (
-        <div className={cn("p-4", premium ? "border-t border-[#eef2ef] dark:border-border" : "border-t border-border")}>{footer}</div>
+        <div className={cn("p-4", premium ? "border-t border-border" : "border-t border-border")}>{footer}</div>
       )}
     </aside>
   );

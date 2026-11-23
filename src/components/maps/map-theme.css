@@ -5,7 +5,7 @@
  */
 :root[data-theme="dark"] .leaflet-map-host .leaflet-container,
 :root[data-theme="dark"] .leaflet-map-host--vector .leaflet-container {
-  background: #181c1a;
+  background: #14141a;
 }
 
 /* Plan raster de secours en Sombre : inversé puis désaturé pour rester assorti. */
@@ -16,8 +16,8 @@
 
 :root[data-theme="dark"] .leaflet-map-host--uber .leaflet-popup-content-wrapper,
 :root[data-theme="dark"] .leaflet-map-host--uber .leaflet-popup-tip {
-  background: var(--color-popover, #212524);
-  color: var(--color-popover-foreground, #eef1ef);
+  background: var(--color-popover, #22222b);
+  color: var(--color-popover-foreground, #ffffff);
 }
 
 :root[data-theme="dark"] .leaflet-map-host--uber .leaflet-popup-content-wrapper {
@@ -26,12 +26,12 @@
 }
 
 :root[data-theme="dark"] .driver-map-pulse {
-  background: rgb(61 214 140 / 22%);
+  background: rgb(255 214 10 / 22%);
 }
 
 /* Focus clavier visible sur les repères. */
 .leaflet-marker-icon:focus-visible {
-  outline: 3px solid var(--color-ring, #3dd68c);
+  outline: 3px solid var(--color-ring, #ffd60a);
   outline-offset: 3px;
   border-radius: 8px;
 }
