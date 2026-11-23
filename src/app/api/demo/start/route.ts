@@ -1,5 +1,10 @@
-import { NextResponse } from "next/server";
-import { DemoPoolFullError, findDemoLease, leaseDemoEnvironment } from "@/domains/demo/demo-pool.service";
+import { after, NextResponse } from "next/server";
+import {
+  DemoPoolFullError,
+  findDemoLease,
+  leaseDemoEnvironment,
+  prepareSpareDemoEnvironment,
+} from "@/domains/demo/demo-pool.service";
 import { readDemoLeaseCookie, writeDemoLeaseCookie } from "@/lib/demo/demo-lease-cookie";
 
 /** Reconstruire une journée prend quelques secondes. */
@@ -15,6 +20,8 @@ export async function POST() {
   try {
     const lease = await leaseDemoEnvironment();
     await writeDemoLeaseCookie(lease.token);
+    // Réserve pour le visiteur suivant, après la réponse (il n'attendra pas la reconstruction).
+    after(() => prepareSpareDemoEnvironment().catch((error) => console.error("[demo] réserve non préparée", error)));
     return NextResponse.json({ ok: true, reused: false, expiresAt: lease.expiresAt });
   } catch (error) {
     if (error instanceof DemoPoolFullError) {

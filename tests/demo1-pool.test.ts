@@ -117,3 +117,14 @@ test("DEMO-1 garde-fous : mot de passe, comptes et suppressions refusés aux com
   assert.match(middleware, /demoBlockedApiReason\(request\.method, pathname\)/);
   assert.match(middleware, /if \(!auth \|\| isDemoCompanyId\(auth\.user\.companyId\)\)/);
 });
+
+test("DEMO-1 : une réserve fraîche est prêtée sans attendre ; un environnement déjà utilisé n'en est jamais une", () => {
+  const pool = read("src/domains/demo/demo-pool.service.ts");
+  assert.match(pool, /WHERE "state" = 'READY' AND "prepared_at" > \$\{freshAfter\}/);
+  // Rendu par « Quitter » ou préparation ratée : date de préparation effacée, donc reconstruit au prochain prêt.
+  assert.match(pool, /export async function releaseDemoLease[\s\S]*?preparedAt: null/);
+  assert.match(pool, /lastError: String\(error\)[\s\S]*?\}/);
+  assert.equal((pool.match(/preparedAt: null/g) ?? []).length >= 3, true);
+  // La réserve se prépare après la réponse au visiteur.
+  assert.match(read("src/app/api/demo/start/route.ts"), /after\(\(\) => prepareSpareDemoEnvironment\(\)/);
+});

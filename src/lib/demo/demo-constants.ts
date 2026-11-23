@@ -12,6 +12,8 @@ export const DEMO_LEASE_COOKIE = "annona-demo-lease";
 export const DEMO_LEASE_MS = 4 * 60 * 60 * 1000;
 /** Nombre maximal d'environnements de démo (visiteurs simultanés). */
 export const DEMO_MAX_SLOTS = 20;
+/** Une réserve préparée depuis moins longtemps est prêtée telle quelle (la journée reste à l'heure, à 30 min près). */
+export const DEMO_FRESH_MS = 30 * 60 * 1000;
 /** Un environnement resté « en préparation » plus longtemps est considéré comme abandonné (échec, coupure). */
 export const DEMO_PREPARING_STALE_MS = 10 * 60 * 1000;
 

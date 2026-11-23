@@ -11,6 +11,7 @@ import { prisma } from "@/services/prisma/client";
 import { demoPoolPrefix } from "@/domains/demo/demo-scenario";
 import { provisionDemoEnvironment } from "@/domains/demo/demo-provision.service";
 import {
+  DEMO_FRESH_MS,
   DEMO_LEASE_MS,
   DEMO_MAX_SLOTS,
   DEMO_PREPARING_STALE_MS,
@@ -62,16 +63,17 @@ export async function findDemoLease(token: string | null | undefined, now = new 
 }
 
 /** Réserve un environnement libre (état PREPARING, prêt déjà posé) ; en crée un s'il en manque. */
-async function claimEnvironment(leaseKeyHash: string, now: Date): Promise<{ id: string; slot: number }> {
-  const expires = new Date(now.getTime() + DEMO_LEASE_MS);
+async function claimEnvironment(leaseKeyHash: string | null, now: Date): Promise<{ id: string; slot: number }> {
+  const expires = leaseKeyHash ? new Date(now.getTime() + DEMO_LEASE_MS) : null;
   const staleBefore = new Date(now.getTime() - DEMO_PREPARING_STALE_MS);
+  const freshAfter = new Date(now.getTime() - DEMO_FRESH_MS);
   const claimed = await prisma.$queryRaw<Array<{ id: string; slot: number }>>`
     UPDATE "demo_pool_environments"
-    SET "state" = 'PREPARING', "lease_key_hash" = ${leaseKeyHash}, "leased_at" = ${now},
+    SET "state" = 'PREPARING', "lease_key_hash" = ${leaseKeyHash}, "leased_at" = ${leaseKeyHash ? now : null},
         "lease_expires_at" = ${expires}, "last_error" = NULL, "updated_at" = ${now}
     WHERE "id" = (
       SELECT "id" FROM "demo_pool_environments"
-      WHERE "state" = 'READY'
+      WHERE ("state" = 'READY' AND ("prepared_at" IS NULL OR "prepared_at" <= ${freshAfter}))
          OR ("state" = 'LEASED' AND "lease_expires_at" < ${now})
          OR ("state" = 'PREPARING' AND "updated_at" < ${staleBefore})
       ORDER BY "slot"
@@ -93,7 +95,7 @@ async function claimEnvironment(leaseKeyHash: string, now: Date): Promise<{ id: 
           companyId: demoCompanyIdForSlot(slot),
           state: "PREPARING",
           leaseKeyHash,
-          leasedAt: now,
+          leasedAt: leaseKeyHash ? now : null,
           leaseExpiresAt: expires,
         },
         select: { id: true, slot: true },
@@ -105,13 +107,64 @@ async function claimEnvironment(leaseKeyHash: string, now: Date): Promise<{ id: 
   throw new DemoPoolFullError();
 }
 
+/** Environnement de réserve préparé il y a moins de DEMO_FRESH_MS : prêté tel quel, sans attendre. */
+async function leaseFreshEnvironment(leaseKeyHash: string, now: Date) {
+  const expires = new Date(now.getTime() + DEMO_LEASE_MS);
+  const freshAfter = new Date(now.getTime() - DEMO_FRESH_MS);
+  const leased = await prisma.$queryRaw<Array<{ slot: number; company_id: string; lease_expires_at: Date }>>`
+    UPDATE "demo_pool_environments"
+    SET "state" = 'LEASED', "lease_key_hash" = ${leaseKeyHash}, "leased_at" = ${now},
+        "lease_expires_at" = ${expires}, "updated_at" = ${now}
+    WHERE "id" = (
+      SELECT "id" FROM "demo_pool_environments"
+      WHERE "state" = 'READY' AND "prepared_at" > ${freshAfter}
+      ORDER BY "prepared_at" DESC
+      LIMIT 1
+      FOR UPDATE SKIP LOCKED
+    )
+    RETURNING "slot", "company_id", "lease_expires_at"`;
+  return leased[0] ?? null;
+}
+
 /**
- * Prête un environnement au visiteur : réservation, reconstruction à l'heure du moment, puis prêt.
- * Renvoie le jeton à poser en cookie (jamais conservé en clair).
+ * Prépare un environnement de réserve (après un prêt, en tâche de fond) : le prochain visiteur n'attend pas.
+ * Rien à faire si une réserve fraîche existe déjà ; sinon reprend un environnement libre ou en ouvre un nouveau.
+ */
+export async function prepareSpareDemoEnvironment(now = new Date()) {
+  const freshAfter = new Date(now.getTime() - DEMO_FRESH_MS);
+  const fresh = await prisma.demoPoolEnvironment.count({ where: { state: "READY", preparedAt: { gt: freshAfter } } });
+  if (fresh > 0) return null;
+  let env: { id: string; slot: number };
+  try {
+    env = await claimEnvironment(null, now);
+  } catch (error) {
+    if (error instanceof DemoPoolFullError) return null;
+    throw error;
+  }
+  try {
+    await provisionDemoEnvironment(env.slot, now);
+    await prisma.demoPoolEnvironment.update({
+      where: { id: env.id },
+      data: { state: "READY", preparedAt: new Date(), leaseKeyHash: null, leasedAt: null, leaseExpiresAt: null },
+    });
+    return env.slot;
+  } catch (error) {
+    await prisma.demoPoolEnvironment
+      .update({ where: { id: env.id }, data: { state: "READY", preparedAt: null, lastError: String(error).slice(0, 500) } })
+      .catch(() => undefined);
+    throw error;
+  }
+}
+
+/**
+ * Prête un environnement au visiteur : la réserve fraîche s'il y en a une, sinon réservation, reconstruction à
+ * l'heure du moment, puis prêt. Renvoie le jeton à poser en cookie (jamais conservé en clair).
  */
 export async function leaseDemoEnvironment(now = new Date()) {
   const token = randomBytes(32).toString("hex");
   const leaseKeyHash = hashDemoLeaseToken(token);
+  const fresh = await leaseFreshEnvironment(leaseKeyHash, now);
+  if (fresh) return { token, companyId: fresh.company_id, slot: fresh.slot, expiresAt: fresh.lease_expires_at, ms: 0 };
   const env = await claimEnvironment(leaseKeyHash, now);
   try {
     const { companyId, ms } = await provisionDemoEnvironment(env.slot, now);
@@ -126,18 +179,21 @@ export async function leaseDemoEnvironment(now = new Date()) {
     await prisma.demoPoolEnvironment
       .update({
         where: { id: env.id },
-        data: { state: "READY", leaseKeyHash: null, leasedAt: null, leaseExpiresAt: null, lastError: String(error).slice(0, 500) },
+        data: { state: "READY", preparedAt: null, leaseKeyHash: null, leasedAt: null, leaseExpiresAt: null, lastError: String(error).slice(0, 500) },
       })
       .catch(() => undefined);
     throw error;
   }
 }
 
-/** « Quitter la démo » : l'environnement redevient libre ; il sera reconstruit au prochain prêt. */
+/**
+ * « Quitter la démo » : l'environnement redevient libre ; il sera reconstruit avant d'être prêté de nouveau
+ * (`preparedAt` effacé : un environnement déjà utilisé n'est jamais une réserve fraîche).
+ */
 export async function releaseDemoLease(token: string | null | undefined) {
   if (!isDemoLeaseToken(token)) return;
   await prisma.demoPoolEnvironment.updateMany({
     where: { leaseKeyHash: hashDemoLeaseToken(token) },
-    data: { state: "READY", leaseKeyHash: null, leasedAt: null, leaseExpiresAt: null },
+    data: { state: "READY", preparedAt: null, leaseKeyHash: null, leasedAt: null, leaseExpiresAt: null },
   });
 }
