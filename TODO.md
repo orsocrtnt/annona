@@ -4,16 +4,16 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**25 tâches terminées sur 46 — 54 %**
+**25 tâches terminées sur 47 — 53 %**
 
-`███████████░░░░░░░░░` · 21 tâches restantes
+`███████████░░░░░░░░░` · 22 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
 | Fait | **22** : RECETTE-V1, LOT1-D9, NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **7** : RECETTE-V1, LOT1-D9, HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **17** : CARTE-1, DA-1, DEPLOY-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2, DISPATCH-OPTIM | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
+| À faire | **18** : VIDEO-1, CARTE-1, DA-1, DEPLOY-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2, DISPATCH-OPTIM | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -21,6 +21,7 @@
 
 **À faire par Orso**
 
+- VIDEO-1 — Vidéo de présentation d'Annona pour les boulangeries, sur le modèle de la vidéo TutelLiv (regarder le montage v2 et valider le texte de la voix ; puis Claude : vraie voix (connecteur ElevenLabs à autoriser par Orso), retouches, version courte verticale)
 - CARTE-1 — Une seule carte des tournées pour le gérant (page « Carte » et tableau de bord) (regarder la carte (page « Carte » et tableau de bord) et dire ce qui cloche)
 - DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (regarder le socle dans le navigateur et dire ce qui cloche ; ensuite Claude migre les écrans un par un)
 - DEPLOY-1 — Mise en ligne automatique de `base` sur Vercel par GitHub Actions (remplace la liaison Git de SEP-1) (relire et fusionner la PR du workflow ; ensuite Théo vérifie le premier déploiement réel)
@@ -51,6 +52,8 @@ _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée
 ## Ce qu'il reste vraiment à faire (vue simple, à jour au 23 novembre 2026)
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
+
+**Vidéo de présentation (23 novembre 2026, VIDEO-1)** : déroulé, accroche et fin décidés avec Orso ; 40 captures HD des vrais écrans faites sur la démo (nouvelle DA) ; montage v2 refait sur le modèle de la v6 TutelLiv (ville 3D, typographie animée, bruitages ; voix de synthèse provisoire), `outputs/video-presentation/annona-presentation-v2.mp4`, à regarder par Orso. Reste : avis sur le montage et le texte, puis vraie voix (connecteur ElevenLabs à autoriser).
 
 **Déploiement automatique (23 novembre 2026 au soir, DEPLOY-1)** : liaison Git Vercel impossible (dépôt d'Orso invisible depuis le compte de Théo, offre Hobby) ; à la place, workflow GitHub Actions `deploy-vercel.yml` en PR, à relire et fusionner par Orso. Secrets en place. Premier déploiement réel à vérifier après fusion (Théo). **Orso** : `VERCEL_AUTOMATION_BYPASS_SECRET`, exigé par les trois `cron-*.yml` (préproduction de l'ancien produit), manque dans le dépôt.
 
@@ -171,6 +174,21 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
+- [ ] **VIDEO-1 — Vidéo de présentation d'Annona pour les boulangeries, sur le modèle de la vidéo TutelLiv.**
+
+  **Qui : Orso — regarder le montage v2 et valider le texte de la voix ; puis Claude : vraie voix (connecteur ElevenLabs à autoriser par Orso), retouches, version courte verticale.**
+
+  **En cours : Orso.**
+
+  - **Décisions d'Orso (23 novembre 2026, point par point)** : public = les boulangeries à qui on vend Annona ; accroche « la tournée emmêlée » (60 arrêts avant 7 h, le trajet se démêle) ; fin « Essayez la démo sur annona.fr », comme si la démo publique y était déjà ; vrais écrans de l'app avec la nouvelle DA (DA-1), pas d'habillage fictif. Modèle : `TutelLiv-GPT/outputs/brag/tutelliv-explication-v6.mp4` (16:9, voix off, sous-titres mot à mot, écrans en 3D sur la carte).
+  - **Déroulé proposé (≈ 2 min)** : accroche, retour à la veille (commandes par téléphone), quatre espaces, commande avant 17 h (CLI), verrouillage à 17 h et total à produire (BOU), préparation par client et par tournée, tournée et livreur (LIV), boutiques (lot 2), facture par période, fin. Premier jet de la voix proposé dans la conversation, vérifié contre le cahier des charges (pas de « tournée optimale » : DISPATCH-OPTIM). **À valider par Orso.**
+  - **Captures faites (23 novembre)**, hors dépôt dans `outputs/video-presentation/` (scripts `capture.mjs`, `capture-fill.mjs`, `fill-demo.mjs` ; images `hd/`, planches `sheet-*.jpg`) : 40 écrans HD des quatre espaces, ordinateur 1440×900 ×2 et téléphone 390×844 ×3, sur la démo (`/api/demo/start` puis `/api/demo/persona`), sans aucun envoi.
+  - **Démo complétée à la main pour la vidéo** (environnement jetable, aucun e-mail : `sendTransactionalEmail` ignore les adresses de démo) : factures de novembre générées (84), deux boutiques (Centre-ville, Saint-Paul) et leurs envois du lendemain, une commande récurrente « Livraison du matin ». Les 20 environnements de démo étaient tous prêtés : remis libres à la demande d'Orso (même effet que « Quitter la démo » sur chacun).
+  - **Serveur à part** pour ne pas gêner l'autre session : copie `../Annona-video` (branche `orso/video-presentation`), `NEXT_PUBLIC_APP_URL=http://127.0.0.1:3100 npx next dev --turbopack -p 3100 -H 127.0.0.1` (sinon « Origine de la requête refusée »).
+  - **Premier montage fait (23 novembre, demandé par Orso avant de valider le texte)** : `outputs/video-presentation/annona-presentation-v1.mp4` (1 min 49, 1920×1080, 30 i/s ; version légère `-leger.mp4`). Moteur, fenêtres 3D et habillage repris de la v6 TutelLiv (`montage/engine.js`, `ui.js`, `hud.js`), scènes dans `montage/main.js`, accroche « tournée emmêlée » dessinée (60 arrêts fictifs, plus proche voisin + 2-opt, illustration), vrai logo de l'app (soleil + « annona » en Geist ; les PNG de `public/brand/logo-horizontal-*` sont encore l'ancien logo à empattements). **Voix temporaire** (voix « Thomas » du Mac, aucun crédit ElevenLabs), mots des sous-titres placés au prorata (pas d'alignement fin). Musique Sascha Ende (CC BY 4.0), -14 LUFS. Pour refaire : `node build.mjs`, `node render.mjs range 0 3256`, `./mix.sh`, `./encode.sh`. Vérifié : planche de 16 images tirées du fichier final.
+  - **Montage v2 (23 novembre, demandé par Orso : la v1 ne lui plaît pas, s'inspirer vraiment de la v6 TutelLiv)** : `outputs/video-presentation/annona-presentation-v2.mp4` (1 min 48, 1920×1080, 30 i/s, 96 Mo ; version légère `-v2-leger.mp4`, 40 Mo). Tout est dans `outputs/video-presentation/montage2/` (hors dépôt), la v1 reste intacte dans `montage/`. Texte de la voix inchangé. Ce qui change : ville 3D de la v6 (MapLibre, tuiles OpenFreeMap) aux couleurs Annona, de nuit pour l'accroche et la fin, de jour derrière les écrans ; accroche sur Paris (60 arrêts fictifs, trajet emmêlé puis trajet propre tracé sur les vraies rues, illustration et pas le calcul d'Annona : `geo.mjs`, serveur public OSRM, seules des coordonnées tirées au hasard lui sont envoyées) ; veille avec messages qui s'empilent et grosse typographie ; carte jaune « Un seul outil » ; quatre appareils en 3D ; horloge 16:59 → 17:00 dans la scène ; les 4 tournées tracées sur tout Paris, puis plongée vers le livreur (tournée « Nord soir », trois arrêts, problème signalé) avec son téléphone ; fin de nuit avec les tournées en jaune ; flou de mouvement ; bruitages calés sur l'image (`sfx.mjs`) ; mots des sous-titres calés sur la voix (faster-whisper). Écrans : toujours les vraies captures de la démo. **Voix : synthèse locale provisoire** (Kokoro, modèle libre, voix « ff_siwis », rien n'est envoyé à un service) à la place de « Thomas » ; le connecteur ElevenLabs de la session a refusé l'accès (« Insufficient scope ») : à autoriser par Orso pour la vraie voix. Pour refaire : `uv run --with kokoro-onnx --with soundfile --with faster-whisper --with numpy python tts.py` (SPEED=0.9), `node build.mjs`, `node sfx.mjs`, `sh mix.sh`, `node render.mjs range 0 3245` (4 processus en parallèle : 17 à 28 min chacun), `sh encode.sh`. Vérifié : 3 246 images rendues sans erreur de page ; son à -14,0 LUFS, crête -1,4 dBFS ; trois planches de 12 images tirées du fichier final regardées une à une. **Non vérifié : la vidéo n'a été ni regardée en mouvement ni écoutée** (qualité de la voix Kokoro, niveau de la musique et des bruitages, rythme : à juger par Orso).
+  - **Non vérifié / reste** : avis d'Orso sur le montage v2 et le texte ; puis vraie voix (ElevenLabs, une fois le connecteur autorisé), version courte verticale. Défauts connus de la v2 : dans la scène des quatre espaces, la fenêtre « Vous » passe en partie derrière le téléphone ; les noms « Nord / Sud » des tournées sur la carte suivent la position des arrêts fictifs, pas les vraies tournées de la démo ; un court passage de carte seule entre la facture et la fin. Ancien logo dans `public/brand/logo-horizontal-*.png` (à signaler pour DA-1).
+
 - [ ] **CARTE-1 — Une seule carte des tournées pour le gérant (page « Carte » et tableau de bord).**
 
   **Qui : Orso — regarder la carte (page « Carte » et tableau de bord) et dire ce qui cloche.**
@@ -224,6 +242,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 - [ ] **DEMO-1 — Version de démo d'Annona, comme celle de TutelLiv.**
 
   **Qui : Claude — suivi des démos par le super admin et limite de débit ; Théo — relire la journée type (volumes, horaires) en essayant `/demo`.**
+
+  - **Manques vus en préparant la vidéo (23 novembre, VIDEO-1)** : une démo neuve n'a ni boutique, ni facture, ni commande récurrente, et la page Factures affiche « Mentions légales à compléter ». Pour qu'un visiteur retrouve ce que montre la vidéo, la journée de démo devrait les fournir. Le pool de 20 environnements se remplit vite (chaque `/api/demo/start` sans cookie en prend un pour 4 h).
 
   - 19 novembre 2026, décision d'Orso : le lot 2 de Théo (pâtisserie, boutiques, stock) passe **avant** DEMO-1, dont la migration (`demo_pool_environments`) n'était pas encore écrite. Ses 6 migrations sont déjà sur `annona-dev` ; la migration DEMO-1 s'écrira par-dessus, après la fusion des PR #48 à #53.
 
