@@ -71,7 +71,10 @@ function Framing({ rounds, depot }: Pick<DeliveryMapInnerProps, "rounds" | "depo
   useEffect(() => {
     const points: Array<[number, number]> = [];
     for (const round of rounds) {
-      for (const stop of located(round)) points.push([stop.latitude!, stop.longitude!]);
+      // Tournée en cours : cadrée sur ce qui reste à faire ; terminée (ou pas encore localisée) : sur tous ses arrêts.
+      const remaining = remainingPath(located(round), depot);
+      if (remaining.length > 0) points.push(...remaining);
+      else for (const stop of located(round)) points.push([stop.latitude!, stop.longitude!]);
       if (round.driverPosition) points.push([round.driverPosition.latitude, round.driverPosition.longitude]);
     }
     if (points.length === 0 && depot) points.push([depot.latitude, depot.longitude]);
