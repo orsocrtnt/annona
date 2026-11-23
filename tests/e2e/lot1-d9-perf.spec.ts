@@ -62,7 +62,7 @@ const SPACES: Array<{ space: string; account: string; login: string; home: strin
       { screen: "Tournées", path: "/dashboard/rounds" },
       { screen: "Clients", path: "/dashboard/merchants", firstLink: /^\/dashboard\/merchants\/(?!new)[^/?]+$/ },
       { screen: "Catalogue", path: "/dashboard/catalog" },
-      ...(WITH_LOT1 ? [{ screen: "Promotions", path: "/dashboard/promotions" }, { screen: "Suivi livreurs", path: "/dashboard/tracking" }] : []),
+      ...(WITH_LOT1 ? [{ screen: "Promotions", path: "/dashboard/promotions" }, { screen: "Carte", path: "/dashboard/tracking" }] : []),
       { screen: "Factures", path: "/dashboard/invoices", firstLink: /^\/dashboard\/invoices\/[^/?]+$/ },
       { screen: "Support", path: "/support" },
       { screen: "Gestion des comptes", path: "/users" },

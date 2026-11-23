@@ -711,10 +711,30 @@ export const fr = {
     noPosition: "Position indisponible",
     manageRounds: "Gérer les tournées",
   },
-  /** Lot 1, demande 5 : suivi des livreurs. */
+  /** CARTE-1 : carte unique du gérant (tournées et livreurs), en grand et sur le tableau de bord. */
+  deliveryMap: {
+    filterLabel: "Tournées affichées sur la carte",
+    all: (count: number) => `Toutes (${count})`,
+    hint: "Touchez une tournée pour ne voir qu'elle ; touchez-en d'autres pour les ajouter.",
+    progress: (delivered: number, total: number) => `${delivered}/${total}`,
+    openFull: "Ouvrir la carte",
+    legendDelivered: "Livré",
+    legendNext: "À livrer (ordre de passage)",
+    legendIncident: "Problème",
+    legendDepot: "Laboratoire",
+    legendDriver: "Livreur",
+    noRounds: "Aucune tournée ce jour-là.",
+    stopTooltip: (round: string, sequence: number, merchant: string, status: string) => `${round} · arrêt ${sequence} · ${merchant} · ${status}`,
+    stopStatus: { PENDING: "à livrer", DELIVERED: "livré", INCIDENT: "problème signalé" } as Record<string, string>,
+    roundsTitle: "Tournées du jour",
+    noDriver: "Sans livreur",
+    notStarted: "Pas encore partie",
+    finished: "Terminée",
+  },
+  /** Lot 1, demande 5 : suivi des livreurs (page « Carte » depuis CARTE-1). */
   tracking: {
-    title: "Suivi livreurs",
-    subtitle: "Position des livreurs en tournée et trajet jusqu'à leurs prochains arrêts.",
+    title: "Carte des tournées",
+    subtitle: "Toutes les tournées du jour, la position des livreurs et leur trajet jusqu'aux prochains arrêts.",
     refreshed: (time: string) => `Mis à jour à ${time} · actualisation toutes les 15 s`,
     empty: "Aucun livreur en tournée pour le moment.",
     emptyHint: "La position d'un livreur n'est suivie que pendant une tournée démarrée.",

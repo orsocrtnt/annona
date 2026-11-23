@@ -17,7 +17,8 @@ import { useRoundMutation, useRoundsDay } from "@/features/rounds/hooks";
 import { RoundCard, type DragState } from "@/features/rounds/round-card";
 import { RoundJournal } from "@/features/rounds/round-journal";
 import { RoundsOverview } from "@/features/rounds/rounds-overview";
-import { ROUND_COLORS, RoundsMap } from "@/features/rounds/rounds-map";
+import { DeliveryMap, roundColor } from "@/features/delivery-map/delivery-map";
+import { normalizeVisible, soloRoundId, type VisibleRounds } from "@/features/delivery-map/visible-rounds";
 import { deadlineLabel } from "@/lib/format/delivery-date";
 import { fr } from "@/lib/i18n/fr";
 
@@ -39,7 +40,8 @@ export function RoundsContent() {
   const params = useSearchParams();
   const date = params.get("date") ?? parisDateKey(1);
   const day = useRoundsDay(date);
-  const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
+  // CARTE-1 : tournées affichées sur la carte ; une seule = celle choisie dans la liste.
+  const [visible, setVisible] = useState<VisibleRounds>("all");
   const [drag, setDrag] = useState<DragState | null>(null);
 
   const setDate = useCallback(
@@ -47,7 +49,7 @@ export function RoundsContent() {
       const next = new URLSearchParams(params.toString());
       next.set("date", value);
       router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-      setSelectedRoundId(null);
+      setVisible("all");
     },
     [params, pathname, router]
   );
@@ -56,7 +58,7 @@ export function RoundsContent() {
   const roundById = useMemo(() => new Map((data?.rounds ?? []).map((round) => [round.id, round])), [data]);
   const colorOf = useMemo(() => {
     const map = new Map<string, string>();
-    (data?.rounds ?? []).forEach((round, index) => map.set(round.id, ROUND_COLORS[index % ROUND_COLORS.length]!));
+    (data?.rounds ?? []).forEach((round, index) => map.set(round.id, roundColor(index)));
     return map;
   }, [data]);
 
@@ -107,6 +109,8 @@ export function RoundsContent() {
   if (day.isLoading && !data) return <PageSkeleton />;
 
   const draftWithDriver = (data?.rounds ?? []).filter((round) => round.status === "DRAFT" && round.driverId && round.stops.length > 0).length;
+  const roundIds = (data?.rounds ?? []).map((round) => round.id);
+  const selectedRoundId = visible === "all" ? null : soloRoundId(normalizeVisible(visible, roundIds), roundIds);
   const mapRounds = (data?.rounds ?? []).map((round) => ({
     id: round.id,
     name: round.name,
@@ -217,7 +221,7 @@ export function RoundsContent() {
                               selected={selectedRoundId === round.id}
                               busy={mutation.isPending}
                               drag={drag}
-                              onSelect={() => setSelectedRoundId((value) => (value === round.id ? null : round.id))}
+                              onSelect={() => setVisible(selectedRoundId === round.id ? "all" : [round.id])}
                               onAssign={(driverId) => run({ type: "assign", roundId: round.id, driverId })}
                               onReorder={(stopId, position) => reorder(round, stopId, position)}
                               onMove={(stopId, roundId, position) => run({ type: "move", stopId, roundId, position })}
@@ -234,9 +238,8 @@ export function RoundsContent() {
               <aside className="space-y-2 xl:sticky xl:top-20 xl:self-start" aria-label={t.map}>
                 <h2 className="text-lg font-semibold">{t.map}</h2>
                 <p className="text-xs text-muted-foreground">{t.mapHint}</p>
-                <div className="overflow-hidden rounded-xl border">
-                  <RoundsMap depot={data.depot} rounds={mapRounds} selectedRoundId={selectedRoundId} height={520} />
-                </div>
+                {/* CARTE-1 : même carte que la page « Carte » ; la tournée choisie dans la liste est seule affichée. */}
+                <DeliveryMap depot={data.depot} rounds={mapRounds} height={520} visible={visible} onVisibleChange={setVisible} />
               </aside>
             </div>
           )}

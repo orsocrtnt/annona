@@ -14,8 +14,8 @@ export function useRoundsDay(date: string) {
 }
 
 /** ADM-08 : suivi en direct, rafraîchi toutes les 15 s (et au retour sur l'onglet). */
-export function useLiveDashboard() {
-  return useQuery({ queryKey: ROUND_KEYS.live, queryFn: roundsApi.live, refetchInterval: 15_000, refetchOnWindowFocus: true });
+export function useLiveDashboard({ enabled = true }: { enabled?: boolean } = {}) {
+  return useQuery({ queryKey: ROUND_KEYS.live, queryFn: roundsApi.live, refetchInterval: 15_000, refetchOnWindowFocus: true, enabled });
 }
 
 /** Toute écriture relit le jour (ordre, numéros et journal viennent du serveur). */
