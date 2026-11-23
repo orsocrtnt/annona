@@ -145,9 +145,8 @@ function haversineKm(a: { latitude: number; longitude: number }, b: { latitude: 
  * les vraies tournées (2-opt + Or-opt, `improveOpenPath`, DISPATCH-OPTIM), temps à vol d'oiseau. Mesuré le 23 novembre
  * 2026 sur une journée : 1 814 min de route pour 30 tournées (plus proche voisin seul : 2 043 ; calcul complet
  * `orderRoundStops` : 1 835), construction en 0,2 s (calcul complet : 1,7 s).
- * Nom d'origine gardé pour ne pas entrer en conflit avec `orso/demo-1-lot2`.
  */
-function nearestNeighbourOrder<T extends { latitude: number; longitude: number }>(stops: readonly T[]): T[] {
+function demoRoundOrder<T extends { latitude: number; longitude: number }>(stops: readonly T[]): T[] {
   const remaining = [...stops];
   const ordered: T[] = [];
   let current: { latitude: number; longitude: number } = DEMO_SCENARIO.depot;
@@ -429,7 +428,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
 
         const phase = slotPhase(offset, zone, period, clockNow);
         const window = phase.window;
-        const sequence = nearestNeighbourOrder(ordering);
+        const sequence = demoRoundOrder(ordering);
         const span = window.end - window.start - 20;
         const roundId = id("round", dayKey(day), zone, period);
         const withRound = !tomorrowOpen;
