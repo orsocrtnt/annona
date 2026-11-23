@@ -1,17 +1,18 @@
 /**
  * Qualité du calcul des tournées (RG-09, ADM-06) : à quelle distance de la meilleure tournée est-on ?
  *
- * Le calcul (`planRounds` via `planSlotRounds` et `orderRoundStops`) est une insertion au moindre coût, sans
- * amélioration ensuite. Ces tests le mesurent sur des adresses de Paris (rues de la démo, tirage fixe) avec les
+ * Le calcul (`planRounds` via `planSlotRounds` et `orderRoundStops`) insère les arrêts au moindre coût, les plus
+ * éloignés du laboratoire d'abord, puis raccourcit chaque tournée par 2-opt + Or-opt (`round-improve.ts`). Ces tests le mesurent sur des adresses de Paris (rues de la démo, tirage fixe) avec les
  * temps à vol d'oiseau (30 km/h, détour de 40 %), départ du laboratoire de la démo (rue de la Roquette).
  *
  * - Tests ordinaires : garde-fous qui passent aujourd'hui (écart à l'optimum exact borné, temps de calcul,
  *   toutes les commandes placées dans le créneau).
- * - Tests `todo` : défauts mesurés le 23 novembre 2026, qui échouent tant que le calcul n'est pas amélioré
- *   (ils n'empêchent pas `npm test` de passer). Voir la tâche DISPATCH-OPTIM de `TODO.md`.
+ * - Tests `todo` : défauts encore ouverts, qui échouent tant qu'ils ne sont pas traités (ils n'empêchent pas
+ *   `npm test` de passer). Voir la tâche DISPATCH-OPTIM de `TODO.md`.
  */
 import assert from "node:assert/strict";
 import test from "node:test";
+import { improveOpenPath } from "../src/lib/dispatch/round-improve";
 import { orderRoundStops, planSlotRounds, ROUND_MAX_STOPS } from "../src/domains/order/round-generation";
 import { DEMO_STREETS_NORTH, DEMO_STREETS_SOUTH } from "../src/domains/demo/demo-scenario-data";
 import { createTravelTimeState, estimateTravelMatrix, ROUTE_MATRIX_MAX_POINTS, straightLineSeconds, type GeoPoint } from "../src/lib/dispatch/travel-time";
@@ -96,15 +97,16 @@ function twoOptSeconds(route: GeoPoint[]) {
 
 const average = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
 
-test("RG-09, ADM-06 : sur 7 arrêts, l'ordre calculé reste proche de l'optimum exact (écart moyen < 8 %)", () => {
+test("RG-09, ADM-06 : sur 7 arrêts, l'ordre calculé colle à l'optimum exact (écart moyen < 2 %)", () => {
   const gaps = Array.from({ length: 40 }, (_, index) => {
     const points = parisPoints(7, index + 1);
     const ids = orderRoundStops({ start: DEPOT, stops: stopsOf(points), travelSeconds: travel });
     return drivingSeconds(orderedPoints(points, ids)) / optimalSeconds(points) - 1;
   });
-  // Mesuré le 23 novembre 2026 : moyenne 4,6 %, pire cas 27 % (sur 150 cas de 8 arrêts), optimum trouvé une fois sur trois.
-  assert.ok(average(gaps) < 0.08, `écart moyen ${(average(gaps) * 100).toFixed(1)} %`);
-  assert.ok(Math.max(...gaps) < 0.35, `pire écart ${(Math.max(...gaps) * 100).toFixed(1)} %`);
+  // 150 cas de 8 arrêts, 23 novembre 2026 : avant DISPATCH-OPTIM moyenne 4,6 %, pire 27 %, optimum 53 fois ;
+  // après : moyenne 0,6 %, pire 12,6 %, optimum 127 fois.
+  assert.ok(average(gaps) < 0.02, `écart moyen ${(average(gaps) * 100).toFixed(1)} %`);
+  assert.ok(Math.max(...gaps) < 0.15, `pire écart ${(Math.max(...gaps) * 100).toFixed(1)} %`);
 });
 
 test("RG-09 : un créneau de 140 commandes est calculé en moins de 2 s, chaque commande une seule fois, dans le créneau", () => {
@@ -123,8 +125,7 @@ test("RG-09 : un créneau de 140 commandes est calculé en moins de 2 s, chaque 
 });
 
 test(
-  "à améliorer : une tournée de 65 arrêts ne se raccourcit plus de 2 % par un simple 2-opt",
-  { todo: "mesuré le 23 novembre 2026 : 4,6 % de route en moins en moyenne, jusqu'à 9 %" },
+  "DISPATCH-OPTIM : une tournée de 65 arrêts ne se raccourcit plus de 2 % par un simple 2-opt (avant : 4,6 % en moyenne, jusqu'à 9 %)",
   () => {
     const gains = Array.from({ length: 10 }, (_, index) => {
       const points = parisPoints(65, (index + 1) * 7);
@@ -136,8 +137,7 @@ test(
 );
 
 test(
-  "à améliorer : les mêmes adresses donnent la même longueur de tournée, quels que soient les identifiants des commandes",
-  { todo: "mesuré le 23 novembre 2026 : de 121 à 138 min de route pour les mêmes 65 adresses (ordre d'insertion = ordre des identifiants)" },
+  "DISPATCH-OPTIM : les mêmes adresses donnent la même longueur de tournée, quels que soient les identifiants (avant : 121 à 138 min)",
   () => {
     const points = parisPoints(65, 99);
     const lengths = Array.from({ length: 12 }, (_, draw) => {
@@ -151,7 +151,7 @@ test(
 
 test(
   "à décider avec Théo : 140 commandes du matin se répartissent en tournées de taille voisine",
-  { todo: "mesuré le 23 novembre 2026 : 92 et 48 arrêts ; la grande finit à 12h28 pour un créneau qui ferme à 12h30, l'autre à 9h45" },
+  { todo: "mesuré le 23 novembre 2026 après DISPATCH-OPTIM : 99 et 41 arrêts (le moins de tournées possible, sans équilibrage)" },
   () => {
     const rounds = planSlotRounds({ orders: stopsOf(parisPoints(140, 140)), depot: DEPOT, windowStart: WINDOW_START, windowEnd: WINDOW_END, travelSeconds: travel });
     const sizes = rounds.map((round) => round.orderIds.length);
@@ -175,3 +175,30 @@ test(
     assert.equal(calls > 0 && !matrix.approximate, true, "matrice routière jamais demandée");
   }
 );
+
+test("DISPATCH-OPTIM : l'amélioration décroise une tournée et ne rallonge jamais le trajet", () => {
+  // Sur une ligne : 0 km (départ), puis 3, 1, 2, 4 km → 1, 2, 3, 4.
+  const line = (km: number) => ({ latitude: 48.8566, longitude: 2.3 + km * 0.0137 });
+  const points = [3, 1, 2, 4].map(line);
+  assert.deepEqual(improveOpenPath(line(0), points, travel).map((index) => [3, 1, 2, 4][index]), [1, 2, 3, 4]);
+  for (let seed = 1; seed <= 20; seed += 1) {
+    const sample = parisPoints(25, seed * 3);
+    const improved = improveOpenPath(DEPOT, sample, travel);
+    assert.deepEqual([...improved].sort((a, b) => a - b), sample.map((_, index) => index), "chaque arrêt une seule fois");
+    assert.ok(drivingSeconds(improved.map((index) => sample[index]!)) <= drivingSeconds(sample));
+  }
+});
+
+test("DISPATCH-OPTIM : temps asymétriques (sens uniques) et départ inconnu", () => {
+  // Matrice routière asymétrique : aller de a vers b coûte 1, revenir 100.
+  const order = ["s", "a", "b", "c"];
+  const seconds = (from: string, to: string) => (order.indexOf(to) === order.indexOf(from) + 1 ? 1 : 100);
+  assert.deepEqual(improveOpenPath("s", ["c", "b", "a"], seconds).map((index) => ["c", "b", "a"][index]), ["a", "b", "c"]);
+  // Sans départ, le premier arrêt est libre : la tournée commence où elle coûte le moins.
+  assert.deepEqual(improveOpenPath(null, ["c", "a", "b"], seconds).map((index) => ["c", "a", "b"][index]), ["a", "b", "c"]);
+});
+
+test("DISPATCH-OPTIM : l'amélioration ne fait jamais manquer un créneau tenu par le calcul", () => {
+  const rounds = planSlotRounds({ orders: stopsOf(parisPoints(70, 3)), depot: DEPOT, windowStart: WINDOW_START, windowEnd: WINDOW_START + 2.5 * 3_600_000, travelSeconds: travel });
+  for (const round of rounds) for (const arrival of round.arrivals) assert.ok(arrival !== null && arrival <= WINDOW_START + 2.5 * 3_600_000);
+});
