@@ -196,8 +196,8 @@ test("déconnexion : nettoyer l'état local après succès, signaler un échec f
     const { useAuth } = load<{ useAuth: () => { logout: () => Promise<void> } }>("src/hooks/use-auth.ts", {
       react: { useCallback: (fn: unknown) => fn },
       "@/stores/auth.store": { useAuthStore: () => ({ user: { companyId }, logout: () => events.push("store") }) },
-      // DEMO-1 : la démo est rendue après la fin de session, jamais si la déconnexion a échoué.
-      "@/lib/demo/demo-logout": { releaseDemoOnLogout: async (id: string) => { assert.equal(id, companyId); events.push("demo"); } },
+      // DEMO-1 : la démo est rendue après la fin de session et avant la redirection, jamais si la déconnexion a échoué.
+      "@/lib/demo/demo-logout": { releaseDemoOnLogout: async (user: { companyId: string }) => { assert.equal(user.companyId, companyId); events.push("demo"); } },
       "@/services/supabase/client": { createClient: () => ({ auth: { signOut: async () => { events.push("signout"); return { error: failed ? new Error("offline") : null }; } } }) },
       "next/navigation": { useRouter: () => ({ push: (url: string) => { assert.equal(url, "/login"); events.push("redirect"); } }) },
       "@tanstack/react-query": { useQueryClient: () => ({ clear: () => events.push("cache") }) },

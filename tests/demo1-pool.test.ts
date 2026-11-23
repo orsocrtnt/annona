@@ -81,7 +81,7 @@ test("DEMO-1 : connexion sans identifiants par lien généré côté serveur, sa
   assert.match(session, /findDemoLease\(leaseToken\)/);
   assert.doesNotMatch(session, /signInWithOtp|inviteUserByEmail/);
   // La page de connexion mène à la démo.
-  assert.match(read("src/features/auth/auth-form.tsx"), /<Button asChild[^>]*>\s*<Link href="\/demo">Essayer la démo<\/Link>/);
+  assert.match(read("src/features/auth/auth-form.tsx"), /<Link\s+href="\/demo"[^>]*>\s*Essayer la démo\s*<\/Link>/);
 });
 
 test("DEMO-1 garde-fous : aucun e-mail vers une adresse de la démo, aucune notification depuis la démo", async () => {
@@ -187,17 +187,20 @@ test("DEMO-1 : état d'une démo pour le suivi (utilisée, en préparation, libr
 test("DEMO-1 : se déconnecter rend la démo (bouton « Quitter » et déconnexion ordinaire)", async (t) => {
   assert.match(read("src/features/demo/demo-bar.tsx"), /fetch\("\/api\/demo\/leave", \{ method: "POST" \}\)/);
   // Déconnexion ordinaire (menu du compte) : la démo est rendue, un vrai compte n'appelle rien.
-  assert.match(read("src/hooks/use-auth.ts"), /await releaseDemoOnLogout\(user\?\.companyId\)/);
+  assert.match(read("src/hooks/use-auth.ts"), /await releaseDemoOnLogout\(user\)/);
   const { releaseDemoOnLogout } = await import("@/lib/demo/demo-logout");
   const calls: Array<[string, string | undefined]> = [];
   t.mock.method(globalThis, "fetch", async (url: string, init?: RequestInit) => {
     calls.push([url, init?.method]);
     throw new Error("réseau coupé");
   });
-  for (const id of [null, undefined, "cmabc123"]) await releaseDemoOnLogout(id);
-  assert.deepEqual(calls, []);
-  await releaseDemoOnLogout("demopool_04_company");
+  for (const companyId of [null, undefined, "cmabc123"]) await releaseDemoOnLogout({ companyId });
+  assert.deepEqual(calls, [], "vrai compte (super admin sans entreprise compris)");
+  await releaseDemoOnLogout({ companyId: "demopool_04_company" });
   assert.deepEqual(calls, [["/api/demo/leave", "POST"]], "un échec réseau ne bloque pas la déconnexion");
+  // Trouvé à la recette du 23 novembre : déconnexion cliquée avant que la page connaisse le compte.
+  for (const unknown of [null, undefined]) await releaseDemoOnLogout(unknown);
+  assert.equal(calls.length, 3, "compte pas encore connu : la démo est rendue quand même");
   const leave = read("src/app/api/demo/leave/route.ts");
   assert.match(leave, /await releaseDemoLease\(token\);\s*await clearDemoLeaseCookie\(\);/);
   // Une démo remise à neuf est préparée après la réponse, pour le visiteur suivant.
