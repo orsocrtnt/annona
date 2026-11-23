@@ -342,6 +342,13 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
                 </Link>
               </p>
             )}
+            {/* DEMO-1 : démo ouverte à tous, sans identifiants. */}
+            <p className="mt-2 text-center text-sm text-text-secondary">
+              Envie d&apos;essayer d&apos;abord ?{" "}
+              <Link href="/demo" className="inline-flex min-h-11 items-center font-medium text-brand hover:underline">
+                Voir la démo
+              </Link>
+            </p>
             </>
           )}
 

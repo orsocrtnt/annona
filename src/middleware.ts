@@ -10,11 +10,12 @@ import {
 } from "@/lib/permissions/page-access";
 import { resolveServerAuthForAuthId } from "@/lib/api/server-auth";
 import { miniAdminModules } from "@/lib/permissions/mini-admin";
+import { DEMO_LEASE_COOKIE, demoBlockedApiReason, isDemoCompanyId } from "@/lib/demo/demo-constants";
 
 const NO_STORE = "no-store";
 
 /**
- * Sujet de la garde de pages mémorisé 5 s par authId + persona + session de démo :
+ * Sujet de la garde de pages mémorisé 5 s par authId + cookie de prêt de démo (DEMO-1) :
  * absorbe les rafales de préchargement (une relecture en base au lieu d'une par lien).
  * Les API relisent toujours la base : une suspension reste immédiate pour les données.
  */
@@ -23,21 +24,22 @@ const SUBJECT_MAX_ENTRIES = 500;
 const subjectCache = new Map<string, { subject: PageAccessSubject | null; until: number }>();
 const subjectInflight = new Map<string, Promise<PageAccessSubject | null>>();
 
-async function loadSubject(authId: string): Promise<PageAccessSubject | null> {
-  const auth = await resolveServerAuthForAuthId(authId);
+async function loadSubject(authId: string, demoLeaseToken: string | undefined): Promise<PageAccessSubject | null> {
+  const auth = await resolveServerAuthForAuthId(authId, demoLeaseToken);
   if (!auth) return null;
   // Lot 1, demande 4 : fonctionnalités d'un mini admin, relues en base comme le rôle.
   return { role: auth.user.role.systemRole, permissions: auth.permissions, modules: miniAdminModules(auth.user) };
 }
 
 async function resolvePageSubject(request: NextRequest, authId: string): Promise<PageAccessSubject | null> {
-  const key = authId;
+  const demoLeaseToken = request.cookies.get(DEMO_LEASE_COOKIE)?.value;
+  const key = `${authId}:${demoLeaseToken ?? ""}`;
   const now = Date.now();
   const hit = subjectCache.get(key);
   if (hit && hit.until > now) return hit.subject;
   let pending = subjectInflight.get(key);
   if (!pending) {
-    pending = loadSubject(authId).finally(() => subjectInflight.delete(key));
+    pending = loadSubject(authId, demoLeaseToken).finally(() => subjectInflight.delete(key));
     subjectInflight.set(key, pending);
   }
   const subject = await pending;
@@ -109,7 +111,19 @@ export async function middleware(request: NextRequest) {
   const isApiRoute = pathname.startsWith("/api");
 
   // API : header auth-id déjà posé (cache JWT / getClaims, pas de getUser par appel).
-  if (isApiRoute) return supabaseResponse;
+  if (isApiRoute) {
+    // DEMO-1 : mot de passe, comptes et suppressions refusés aux comptes de démo. Relecture en base seulement
+    // pour un porteur du cookie de prêt qui tente une de ces mutations (jamais pour les autres requêtes).
+    const demoLeaseToken = request.cookies.get(DEMO_LEASE_COOKIE)?.value;
+    const demoReason = user && demoLeaseToken ? demoBlockedApiReason(request.method, pathname) : null;
+    if (demoReason) {
+      const auth = await resolveServerAuthForAuthId(user!.id, demoLeaseToken).catch(() => null);
+      if (!auth || isDemoCompanyId(auth.user.companyId)) {
+        return withSessionCookies(NextResponse.json({ error: demoReason }, { status: 403 }), supabaseResponse);
+      }
+    }
+    return supabaseResponse;
+  }
 
   if (isProtectedPagePath(pathname)) {
     if (!user) return withSessionCookies(loginRedirect(request, pathname), supabaseResponse);

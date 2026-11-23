@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
+import { DemoBar } from "@/features/demo/demo-bar";
 import { BackOfficeLayout } from "@/components/layouts/back-office-layout";
 import { getNavItemsForRole } from "@/features/navigation/get-nav-items";
 import { adminNavItems, companyNavItems } from "@/features/navigation/nav-config";
@@ -39,11 +40,14 @@ export default function BackOfficeRootLayout({ children }: { children: React.Rea
   }, [user, permissions, pathname, isSuperAdmin, adminBadges]);
 
   return (
-    <BackOfficeLayout
-      navItems={navItems}
-      headerActions={isSuperAdmin ? <AdminGlobalSearch /> : undefined}
-    >
-      {children}
-    </BackOfficeLayout>
+    <>
+      <DemoBar />
+      <BackOfficeLayout
+        navItems={navItems}
+        headerActions={isSuperAdmin ? <AdminGlobalSearch /> : undefined}
+      >
+        {children}
+      </BackOfficeLayout>
+    </>
   );
 }

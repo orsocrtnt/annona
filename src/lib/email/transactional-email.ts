@@ -1,4 +1,5 @@
 import { renderTextEmailHtml, ANNONA_REPLY_TO } from "./email-template";
+import { isDemoEmailAddress } from "@/lib/demo/demo-constants";
 
 const EMAIL_TIMEOUT_MS = 10_000;
 const EMAIL_IDEMPOTENCY_KEY_MAX = 256;
@@ -198,6 +199,10 @@ export async function sendTransactionalEmail(
 ) {
   const env = options.env ?? process.env;
   const configuration = getTransactionalEmailConfiguration(env);
+  // DEMO-1 : aucune adresse de la démo ne reçoit d'e-mail, même en mode test (destinataire remplacé ensuite).
+  if (isDemoEmailAddress(input.to)) {
+    return { status: "disabled" as const, mode: configuration.mode, reason: "Adresse de démonstration : aucun envoi." };
+  }
   if (!configuration.enabled) {
     return { status: "disabled" as const, mode: configuration.mode, reason: configuration.reason };
   }

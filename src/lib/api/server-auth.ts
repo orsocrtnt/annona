@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@/services/supabase/server";
 import { extractPermissionSlugs, getUserByAuthId } from "@/domains/user/user.service";
 import { syncUserFromSupabase, UserNotProvisionedError } from "@/domains/auth/auth.service";
@@ -10,6 +10,8 @@ import type { SystemRole } from "@prisma/client";
 import type { UserWithRole } from "@/types";
 import { isAccountActive, AccountUnavailableError } from "@/lib/auth/account-access";
 import { ANNONA_AUTH_ID_HEADER } from "@/lib/auth/auth-headers";
+import { DEMO_LEASE_COOKIE, isDemoCompanyId } from "@/lib/demo/demo-constants";
+import { hasActiveDemoLease } from "@/domains/demo/demo-pool.service";
 
 export interface ServerAuthContext {
   authId: string;
@@ -19,6 +21,7 @@ export interface ServerAuthContext {
 
 async function resolveUserFromAuthId(
   authId: string,
+  demoLeaseToken: string | undefined,
   email?: string
 ): Promise<ServerAuthContext | null> {
   // Aucun cache inter-requêtes : une modification validée en base est relue
@@ -33,6 +36,8 @@ async function resolveUserFromAuthId(
     }
   }
   if (!user || !isAccountActive(user)) return null;
+  // DEMO-1 : un compte de démo ne s'ouvre qu'avec le cookie de prêt de son environnement (une démo par visiteur).
+  if (isDemoCompanyId(user.companyId) && !(await hasActiveDemoLease(user.companyId, demoLeaseToken))) return null;
 
   return {
     authId,
@@ -46,8 +51,11 @@ async function resolveUserFromAuthId(
  * compte et entreprise actifs, rôle et permissions. Ne lit jamais
  * l'en-tête interne : le middleware l'appelle avec l'authId qu'il vient de valider.
  */
-export async function resolveServerAuthForAuthId(authId: string): Promise<ServerAuthContext | null> {
-  return resolveUserFromAuthId(authId);
+export async function resolveServerAuthForAuthId(
+  authId: string,
+  demoLeaseToken?: string
+): Promise<ServerAuthContext | null> {
+  return resolveUserFromAuthId(authId, demoLeaseToken);
 }
 
 /**
@@ -57,9 +65,10 @@ export async function resolveServerAuthForAuthId(authId: string): Promise<Server
 const loadAuthContext = cache(async (): Promise<ServerAuthContext | null> => {
   const headerList = await headers();
   const authIdFromMiddleware = headerList.get(ANNONA_AUTH_ID_HEADER);
+  const demoLeaseToken = (await cookies()).get(DEMO_LEASE_COOKIE)?.value;
 
   if (authIdFromMiddleware) {
-    return resolveUserFromAuthId(authIdFromMiddleware);
+    return resolveUserFromAuthId(authIdFromMiddleware, demoLeaseToken);
   }
 
   const supabase = await createClient();
@@ -71,6 +80,7 @@ const loadAuthContext = cache(async (): Promise<ServerAuthContext | null> => {
 
   return resolveUserFromAuthId(
     authUser.id,
+    demoLeaseToken,
     authUser.email ?? undefined
   );
 });

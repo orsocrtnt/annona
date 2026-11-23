@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isCrossOriginMutation, isOriginCheckExempt } from "../src/lib/security/origin-check";
 import * as pageAccess from "../src/lib/permissions/page-access";
 import * as miniAdminModule from "../src/lib/permissions/mini-admin";
+import * as demoConstantsModule from "../src/lib/demo/demo-constants";
 
 // SEC-6 : une mutation (POST, PUT, PATCH, DELETE) venue d'une autre origine est refusée
 // par le middleware, sauf webhook Stripe et crons authentifiés par secret.
@@ -72,6 +73,8 @@ function loadMiddleware(calls: string[]) {
   runInNewContext(source, { exports: module.exports, module, process, require: (id: string) => {
     // Lot 1, demande 4 : règles des mini admins, module pur réel.
     if (id === "@/lib/permissions/mini-admin") return miniAdminModule;
+    // DEMO-1 : nom du cookie de prêt de démo, module pur réel.
+    if (id === "@/lib/demo/demo-constants") return demoConstantsModule;
     assert.ok(id in deps, `Unexpected dependency ${id}`);
     return deps[id];
   } });

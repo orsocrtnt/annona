@@ -2,7 +2,7 @@
 // remise à l'heure de Paris, client et livreur de démo avec quelque chose à essayer, contraintes d'unicité du schéma.
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildDemoScenario, demoPoolPrefix, DEMO_SCENARIO } from "@/domains/demo/demo-scenario";
+import { buildDemoScenario, demoPersonaUserId, demoPoolPrefix, DEMO_SCENARIO } from "@/domains/demo/demo-scenario";
 
 // Lundi 16 novembre 2026 (heure d'hiver : Paris = UTC+1).
 const at = (hour: number, minute = 0) => new Date(Date.UTC(2026, 10, 16, hour - 1, minute));
@@ -55,7 +55,7 @@ test("DEMO-1 : identifiants propres à l'environnement, déterministes, contrain
   assert.ok(ids(first).every((value) => !otherIds.has(value)));
   assert.notEqual(first.company.slug, other.company.slug);
   assert.equal(new Set(first.users.map((user) => user.email)).size, first.users.length);
-  assert.ok(first.users.every((user) => user.email.endsWith("@example.com")));
+  assert.ok(first.users.every((user) => user.email.endsWith("@demo.annona.example")));
 
   const unique = <T>(values: T[]) => new Set(values).size === values.length;
   assert.ok(unique(first.orders.map((order) => `${order.merchantId}|${time(order.deliveryDate)}|${order.slotId}`)));
@@ -85,9 +85,7 @@ test("DEMO-1 : à 9h, tournées du matin en cours — arrêts déjà passés liv
     }
     for (const stop of stops.filter((item) => item.status === "PENDING")) assert.equal(orders.get(stop.orderId)?.status, "PREPARED");
   }
-  // Après-midi pas encore parti, historique terminé, lendemain commandé mais pas verrouillé avant 17h.
-  const todayEvening = scenario.rounds.filter((round) => time(round.date) === todayDb && String(round.slotId).endsWith("_soir"));
-  assert.ok(todayEvening.every((round) => round.status === "ASSIGNED"));
+  // Historique terminé, lendemain commandé mais pas verrouillé avant 17h.
   assert.ok(scenario.rounds.filter((round) => time(round.date) < todayDb).every((round) => round.status === "COMPLETED"));
   const tomorrow = scenario.orders.filter((order) => time(order.deliveryDate) === tomorrowDb);
   assert.ok(tomorrow.length > 0 && tomorrow.every((order) => order.status === "VALIDATED" && order.lockedAt === null));
@@ -124,5 +122,35 @@ test("DEMO-1 : un compte par espace à essayer, le client rattaché à son comme
   assert.deepEqual([...personas].sort(), ["admin", "baker", "client", "driver"]);
   const roles = Object.fromEntries(scenario.users.filter((user) => user.persona).map((user) => [user.persona, user.role]));
   assert.deepEqual(roles, { admin: "ADMIN", baker: "BAKER", driver: "DRIVER", client: "MERCHANT" });
-  assert.equal(scenario.users.filter((user) => user.role === "DRIVER").length, 2);
+  assert.equal(scenario.users.filter((user) => user.role === "DRIVER").length, 4);
+  // La page /demo retrouve le compte de chaque espace sans recalculer la journée.
+  for (const user of scenario.users) if (user.persona) assert.equal(user.id, demoPersonaUserId(7, user.persona));
+});
+
+test("DEMO-1 : à toute heure, les quatre tournées du jour sont en cours, chacune avec son livreur et des arrêts des deux côtés", () => {
+  for (const [hour, minute] of [[0, 30], [3, 0], [9, 0], [13, 0], [16, 30], [21, 0], [23, 45]] as const) {
+    const now = at(hour, minute);
+    const scenario = buildDemoScenario({ slot: 6, now });
+    const today = scenario.rounds.filter((round) => time(round.date) === todayDb);
+    assert.equal(today.length, 4, `${hour}h${minute}`);
+    assert.ok(today.every((round) => round.status === "IN_PROGRESS"), `${hour}h${minute}`);
+    assert.equal(new Set(today.map((round) => round.driverId)).size, 4);
+    const orders = new Map(scenario.orders.map((order) => [order.id, order]));
+    const progress = today.map((round) => {
+      const stops = scenario.stops.filter((stop) => stop.roundId === round.id);
+      const delivered = stops.filter((stop) => stop.status === "DELIVERED");
+      assert.ok(delivered.length > 0 && delivered.length < stops.length, `${round.id} à ${hour}h${minute}`);
+      for (const stop of delivered) {
+        assert.ok(time(stop.deliveredAt) <= now.getTime());
+        assert.equal(orders.get(stop.orderId)?.status, "DELIVERED");
+      }
+      for (const stop of stops.filter((item) => item.status === "PENDING")) {
+        assert.ok(time(stop.estimatedArrivalAt) > now.getTime() - 15 * 60_000, "les arrêts à faire ne sont pas déjà en retard");
+        assert.equal(orders.get(stop.orderId)?.status, "PREPARED");
+        assert.ok(time(orders.get(stop.orderId)?.preparedAt) <= now.getTime());
+      }
+      return delivered.length / stops.length;
+    });
+    assert.ok(new Set(progress.map((value) => Math.round(value * 10))).size >= 2, "des stades d'avancement différents");
+  }
 });

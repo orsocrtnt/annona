@@ -26,6 +26,9 @@ import {
 } from "@/domains/demo/demo-scenario-data";
 import { addCalendarDays, parisParts, parisWallTimeToUtc, type CalendarDate } from "@/lib/time/paris";
 
+/** Domaine de toutes les adresses de la démo : réservé (RFC 2606), jamais livrable, refusé par la garde d'envoi. */
+export const DEMO_EMAIL_DOMAIN = "demo.annona.example";
+
 export const DEMO_PERSONAS = ["admin", "baker", "driver", "client"] as const;
 export type DemoPersona = (typeof DEMO_PERSONAS)[number];
 
@@ -44,8 +47,13 @@ export const DEMO_SCENARIO = {
   cutoff: 17 * 60,
   morningPreparedAt: 4 * 60 + 30,
   eveningPreparedAt: 13 * 60 + 30,
-  /** Après 19h, la tournée du soir du livreur de démo garde ses derniers arrêts à faire (sinon rien à essayer). */
-  lateDriverClock: 18 * 60 + 15,
+  /**
+   * Avancement des tournées du jour hors de leur créneau (demande d'Orso du 23 novembre 2026 : « plus de courses en
+   * cours pour mieux comprendre ») : à toute heure, les quatre tournées du jour roulent, chacune à un stade différent.
+   * Dans son créneau, une tournée suit l'heure réelle ; en dehors, son créneau est décalé pour que maintenant tombe à
+   * cette fraction du parcours. La tournée du soir Nord est celle du livreur de démo.
+   */
+  liveProgress: { nord_matin: 0.7, sud_matin: 0.45, nord_soir: 0.55, sud_soir: 0.3 },
   depot: { latitude: 48.8547, longitude: 2.3725, address: "8 rue de la Roquette", postalCode: "75011" },
 } as const;
 
@@ -103,6 +111,11 @@ const slugify = (value: string) =>
 export function demoPoolPrefix(slot: number): string {
   if (!Number.isInteger(slot) || slot < 1 || slot > 99) throw new RangeError("Environnement de démo : numéro 1 à 99.");
   return `demopool_${pad(slot)}_`;
+}
+
+/** Compte à ouvrir pour essayer un espace (page /demo) : identifiant stable d'une reconstruction à l'autre. */
+export function demoPersonaUserId(slot: number, persona: DemoPersona): string {
+  return `${demoPoolPrefix(slot)}user_${persona}`;
 }
 
 /** Générateur pseudo-aléatoire déterministe (mulberry32). */
@@ -171,25 +184,38 @@ type MerchantPlan = {
 
 type SlotPhase = {
   round: RoundStatus;
+  /** Créneau de la tournée ce jour-là (minutes depuis minuit, éventuellement décalé pour la démo). */
+  window: { start: number; end: number };
   /** Arrêts livrés jusqu'à cette heure (minutes), `null` : aucun. */
   deliveredUntil: number | null;
   prepared: boolean;
+  /** Heure de préparation des commandes (minutes). */
+  preparedAt: number;
 };
 
 /**
- * État d'une tournée du jour selon l'heure : à venir, en cours (arrêts déjà livrés), terminée. Les jours passés sont
- * terminés ; le lendemain n'est pas encore parti.
+ * État d'une tournée : jours passés terminés, lendemain pas encore parti. Le jour même, la tournée est toujours en
+ * cours (DEMO_SCENARIO.liveProgress) : à l'heure réelle dans son créneau, sinon sur un créneau décalé autour de
+ * maintenant, de même durée.
  */
-function slotPhase(dayOffset: number, period: PeriodKey, clock: number, keepPlayable: boolean): SlotPhase {
-  const window = period === "matin" ? DEMO_SCENARIO.morning : DEMO_SCENARIO.evening;
-  const preparedAt = period === "matin" ? DEMO_SCENARIO.morningPreparedAt : DEMO_SCENARIO.eveningPreparedAt;
-  if (dayOffset < 0) return { round: "COMPLETED", deliveredUntil: window.end, prepared: true };
-  if (dayOffset > 0) return { round: "DRAFT", deliveredUntil: null, prepared: false };
-  const effective = keepPlayable && clock >= window.end ? DEMO_SCENARIO.lateDriverClock : clock;
-  const prepared = effective >= preparedAt;
-  if (effective < window.start) return { round: "ASSIGNED", deliveredUntil: null, prepared };
-  if (effective < window.end) return { round: "IN_PROGRESS", deliveredUntil: effective, prepared: true };
-  return { round: "COMPLETED", deliveredUntil: window.end, prepared: true };
+function slotPhase(dayOffset: number, zone: ZoneKey, period: PeriodKey, clock: number): SlotPhase {
+  const base = period === "matin" ? DEMO_SCENARIO.morning : DEMO_SCENARIO.evening;
+  const basePreparedAt = period === "matin" ? DEMO_SCENARIO.morningPreparedAt : DEMO_SCENARIO.eveningPreparedAt;
+  const window = { start: base.start, end: base.end };
+  if (dayOffset < 0) return { round: "COMPLETED", window, deliveredUntil: window.end, prepared: true, preparedAt: basePreparedAt };
+  if (dayOffset > 0) return { round: "DRAFT", window, deliveredUntil: null, prepared: false, preparedAt: basePreparedAt };
+  if (clock >= base.start && clock < base.end) {
+    return { round: "IN_PROGRESS", window, deliveredUntil: clock, prepared: true, preparedAt: basePreparedAt };
+  }
+  const duration = base.end - base.start;
+  const start = clock - Math.round(duration * DEMO_SCENARIO.liveProgress[`${zone}_${period}`]);
+  return {
+    round: "IN_PROGRESS",
+    window: { start, end: start + duration },
+    deliveredUntil: clock,
+    prepared: true,
+    preparedAt: start - (base.start - basePreparedAt),
+  };
 }
 
 export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): DemoScenario {
@@ -278,7 +304,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
     const firstName = DEMO_FIRST_NAMES[index % DEMO_FIRST_NAMES.length]!;
     const lastName = DEMO_LAST_NAMES[(index * 7) % DEMO_LAST_NAMES.length]!;
     const merchantId = id("merchant", pad(index + 1, 3));
-    const email = `${slugify(name)}.${pad(slot)}@example.com`;
+    const email = `${slugify(name)}.${pad(slot)}@${DEMO_EMAIL_DOMAIN}`;
     const lat = Math.round((latitude + (random() - 0.5) * 0.0024) * 1e6) / 1e6;
     const lng = Math.round((longitude + (random() - 0.5) * 0.0034) * 1e6) / 1e6;
 
@@ -333,19 +359,23 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
   for (const price of merchantPrices) unitPrice.set(`${price.merchantId}:${price.productId}`, price.priceCents);
   const priceFor = (merchantId: string, product: string) => unitPrice.get(`${merchantId}:${product}`) ?? unitPrice.get(product)!;
 
-  // Comptes : un par rôle à essayer, plus le second livreur. Le client de démo est le premier client du matin Nord.
+  // Comptes : un par rôle à essayer, plus trois livreurs (un par tournée). Le client de démo est le premier client du matin Nord.
   const clientPlan = plans[0]!;
   const clientMerchant = merchants[0]!;
   const [clientFirst, clientLast] = String(clientMerchant.contactName).split(" ") as [string, string];
-  const email = (who: string) => `demo-${pad(slot)}-${who}@example.com`;
+  const email = (who: string) => `demo-${pad(slot)}-${who}@${DEMO_EMAIL_DOMAIN}`;
   const users: DemoScenarioUser[] = [
     { id: id("user", "admin"), persona: "admin", email: email("admin"), firstName: "Camille", lastName: "Durand", phone: "0601020304", role: "ADMIN", merchantId: null },
     { id: id("user", "baker"), persona: "baker", email: email("boulanger"), firstName: "Bastien", lastName: "Fournier", phone: "0601020305", role: "BAKER", merchantId: null },
     { id: id("user", "driver"), persona: "driver", email: email("livreur"), firstName: "Mathis", lastName: "Moreau", phone: "0611000001", role: "DRIVER", merchantId: null },
     { id: id("user", "driver2"), persona: null, email: email("livreur-2"), firstName: "Lina", lastName: "Garcia", phone: "0611000002", role: "DRIVER", merchantId: null },
     { id: id("user", "client"), persona: "client", email: email("client"), firstName: clientFirst, lastName: clientLast, phone: String(clientMerchant.contactPhone), role: "MERCHANT", merchantId: clientPlan.id },
+    { id: id("user", "driver3"), persona: null, email: email("livreur-3"), firstName: "Yanis", lastName: "Petit", phone: "0611000003", role: "DRIVER", merchantId: null },
+    { id: id("user", "driver4"), persona: null, email: email("livreur-4"), firstName: "Inès", lastName: "Robert", phone: "0611000004", role: "DRIVER", merchantId: null },
   ];
-  const driverFor = (zone: ZoneKey) => (zone === "nord" ? users[2]!.id : users[3]!.id);
+  // Un livreur par tournée : les quatre tournées du jour roulent en même temps. Le livreur de démo fait le soir Nord.
+  const driverFor = (zone: ZoneKey, period: PeriodKey) =>
+    zone === "nord" ? (period === "soir" ? users[2]!.id : users[5]!.id) : period === "soir" ? users[3]!.id : users[6]!.id;
 
   // Commande récurrente : le deuxième client du matin Nord, du lundi au samedi.
   const recurringPlan = plans[1]!;
@@ -397,9 +427,8 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
         });
         if (!ordering.length) continue;
 
-        const keepPlayable = offset === 0 && zone === "nord" && period === "soir";
-        const phase = slotPhase(offset, period, clockNow, keepPlayable);
-        const window = period === "matin" ? DEMO_SCENARIO.morning : DEMO_SCENARIO.evening;
+        const phase = slotPhase(offset, zone, period, clockNow);
+        const window = phase.window;
         const sequence = nearestNeighbourOrder(ordering);
         const span = window.end - window.start - 20;
         const roundId = id("round", dayKey(day), zone, period);
@@ -452,7 +481,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
             createdById: recurring ? null : plan === clientPlan ? clientUserId : adminId,
             validatedAt,
             lockedAt: locked ? previous(DEMO_SCENARIO.cutoff) : null,
-            preparedAt: phase.prepared ? at(period === "matin" ? DEMO_SCENARIO.morningPreparedAt : DEMO_SCENARIO.eveningPreparedAt) : null,
+            preparedAt: phase.prepared ? at(phase.preparedAt) : null,
             deliveredAt: deliveredMinute !== null ? at(deliveredMinute) : null,
           });
 
@@ -477,7 +506,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
             id: roundId,
             date: dbDate(day),
             slotId: slotId(zone, period),
-            driverId: driverFor(zone),
+            driverId: driverFor(zone, period),
             name: `Tournée ${zone === "nord" ? "Nord" : "Sud"} ${period}`,
             status: roundStatus,
             startedAt: roundStatus === "IN_PROGRESS" || roundStatus === "COMPLETED" ? at(window.start) : null,
@@ -492,7 +521,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
     id: companyId,
     slug: `demo-pool-${pad(slot)}`,
     name: "Boulangerie de démonstration",
-    email: `contact-demo-${pad(slot)}@example.com`,
+    email: `contact-demo-${pad(slot)}@${DEMO_EMAIL_DOMAIN}`,
     phone: "0140000000",
     address: DEMO_SCENARIO.depot.address,
     city: "Paris",

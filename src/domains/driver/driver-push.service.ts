@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { isDemoCompanyId } from "@/lib/demo/demo-constants";
 import {
   canSendTo,
   getNativePushConfig,
@@ -56,6 +57,8 @@ export async function saveDriverPushSubscription(
   input: { endpoint: string; keys: { p256dh: string; auth: string } },
   db: Pick<typeof prisma, "driverPushSubscription"> = prisma
 ) {
+  // DEMO-1 : aucun appareil d'un visiteur de la démo n'est abonné (aucune notification envoyée par la démo).
+  if (isDemoCompanyId(user.companyId)) return;
   // Même navigateur repris par un autre livreur : l'abonnement change de compte, il n'est jamais partagé.
   const data = { userId: user.id, companyId: user.companyId, p256dh: input.keys.p256dh, auth: input.keys.auth };
   await db.driverPushSubscription.upsert({
@@ -107,6 +110,7 @@ export async function deliverDriverMissionPush(
 ) {
   const input = readPayload(payload);
   if (!input) throw permanentJobError("DRIVER_PUSH_PAYLOAD_INVALID");
+  if (isDemoCompanyId(input.companyId)) throw skippedJobError("DRIVER_PUSH_DEMO");
   const config = deps.config === undefined ? getDriverPushConfig() : deps.config;
   const nativeConfig = deps.nativeConfig ?? getNativePushConfig();
   if (!config && !nativePushConfigured(nativeConfig)) throw skippedJobError("DRIVER_PUSH_NOT_CONFIGURED");

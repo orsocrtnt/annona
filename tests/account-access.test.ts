@@ -13,6 +13,7 @@ import * as userService from "../src/domains/user/user.service";
 import * as authValidation from "../src/lib/validations/auth";
 import * as normalize from "../src/lib/auth/normalize-email";
 import { prisma } from "../src/services/prisma/client";
+import * as demoConstants from "../src/lib/demo/demo-constants";
 
 // Real TS modules, isolated instances, external I/O replaced explicitly.
 // React cache is identity here: each call represents a new HTTP request.
@@ -72,7 +73,10 @@ function environment() {
     const server = load<typeof import("../src/lib/api/server-auth")>("src/lib/api/server-auth.ts", {
       ...deps,
       react: { cache: (fn: unknown) => fn },
-      "next/headers": { headers: async () => ({ get: () => headerId }) },
+      "next/headers": { headers: async () => ({ get: () => headerId }), cookies: async () => ({ get: () => undefined }) },
+      // DEMO-1 : garde des comptes de démo (sans cookie de prêt, jamais ouverts).
+      "@/lib/demo/demo-constants": demoConstants,
+      "@/domains/demo/demo-pool.service": { hasActiveDemoLease: async () => false },
       "@/lib/auth/auth-headers": { ANNONA_AUTH_ID_HEADER: "x-test-auth" },
       "@/domains/auth/auth.service": { ...authService, syncUserFromSupabase: async () => { if (syncError) throw syncError; return current; } },
       "@/lib/permissions/rbac": rbac,
