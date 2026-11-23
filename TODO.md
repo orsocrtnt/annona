@@ -4,16 +4,16 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**25 tâches terminées sur 43 — 58 %**
+**25 tâches terminées sur 45 — 56 %**
 
-`████████████░░░░░░░░` · 18 tâches restantes
+`███████████░░░░░░░░░` · 20 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
 | Fait | **22** : RECETTE-V1, LOT1-D9, NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **7** : RECETTE-V1, LOT1-D9, HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **14** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2 | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
+| À faire | **16** : CARTE-1, DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2, DISPATCH-OPTIM | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -21,7 +21,8 @@
 
 **À faire par Orso**
 
-- DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (relire la plaquette et la valider ou dire ce qui cloche ; ensuite Claude l'applique au code)
+- CARTE-1 — Une seule carte des tournées pour le gérant (page « Carte » et tableau de bord) (regarder la carte (page « Carte » et tableau de bord) et dire ce qui cloche)
+- DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B) (regarder le socle dans le navigateur et dire ce qui cloche ; ensuite Claude migre les écrans un par un)
 - ACCES-1 — Accès et réponses du propriétaire (mentions légales des factures, plus tard (questions métier de Théo répondues le 13 novembre))
 - MOBILE-1 — Applications iOS et Android (Capacitor) (comptes Apple Developer et Google Play (décidé le 16 novembre) ; Claude — compilation iOS sur le simulateur du Mac d'Orso ; Firebase plus tard)
 - LOT2-D1 — Boutiques et comptes vendeuse (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
@@ -35,6 +36,7 @@
 - LOT2-D9 — Commandes de gâteaux des particuliers en boutique (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
 - LOT2-D10 — Pâtisseries pour les restaurants (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
 - RETOURS-2 — Retouches des notes du tour de Théo (`outputs/notes-tour.md`, 21 novembre) (4 enregistrements DNS chez Dovendi pour `mail.annona.fr` (e-mail de l'accès Vente) ; ensuite Claude vérifie le domaine et Théo crée un accès Vente pour voir l'e-mail arriver)
+- DISPATCH-OPTIM — Le calcul des tournées est-il optimal ? (RG-09, ADM-06) (dire si on améliore le calcul maintenant ; Théo — dire s'il faut des tournées de taille voisine ou le moins de tournées possible)
 
 **À faire par Théo**
 
@@ -50,6 +52,8 @@ _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
 
 **Point du 23 novembre 2026** : LOT1-D9 close (Théo a vérifié sur téléphone, les lenteurs ont disparu) ; détail dans `docs/TODO-ARCHIVE.md`. RECETTE-V1 close aussi (menu « Comment y aller ? » validé par Théo sur un vrai Android) ; iPhone et notifications natives restent dans MOBILE-1.
+
+**Calcul des tournées mesuré (23 novembre 2026, DISPATCH-OPTIM)** : il n'est pas optimal. Trajets 4 à 5 % plus longs que nécessaire en moyenne (jusqu'à 9 % sur une tournée de 65 arrêts), résultat qui varie de 10 à 14 % selon les identifiants des commandes, tournées déséquilibrées (92 et 48 arrêts pour 140 commandes), et temps routiers jamais utilisés au-delà de 60 commerces. Tests dans `tests/dispatch-optimisation.test.ts`. À décider : Orso (améliorer maintenant ?) et Théo (équilibrer les tournées ?).
 
 **Point du 22 novembre 2026 (nuit, Claude de Théo en autonomie)**
 
@@ -127,10 +131,11 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 - Hébergement (SEP-1) : rien à faire côté GitHub (application Vercel déjà installée sur ton compte, avec accès à tous les dépôts, vérifié le 16 novembre) ; base : `annona-dev` jusqu'au premier vrai client (décidé le 16 novembre). Plus tard : offre Pro avant les vrais clients, sort de `main` et `preproduction`, rattachement d'annona.fr.
 - AUTH-GOOGLE : avant les vrais clients, publier l'application Google (encore en mode Test : seuls Orso et Théo peuvent se connecter avec Google). Site URL de `annona-dev` passée à `https://annona-gray.vercel.app` le 15 novembre (Claude d'Orso, dans Chrome) ; SMTP Resend : Théo, avec son compte (décision d'Orso du 15 novembre). (Théo a accepté l'invitation Supabase le 15 novembre et s'en sert : la garder.)
 - MOBILE-1 : ouvrir les comptes **Apple Developer** (99 $ par an) et **Google Play Console** (25 $ une fois), décidé le 16 novembre. Un seul compte de chaque suffit pour plusieurs applications, mais toutes s'affichent sous le même nom de vendeur (compte « organisation » = nom de la société, numéro D-U-N-S gratuit). Google Play : un compte personnel récent doit faire tester l'application par au moins 12 personnes pendant 14 jours (test fermé) avant de pouvoir la publier ; un compte organisation y échappe.
-- DA-1 : relire la plaquette d'identité (canvas, page « Plaquette », 12 planches) et la valider ou dire ce qui cloche. La partager à Théo si tu veux son avis (menu Share).
+- DA-1 : socle de la nouvelle identité posé le 23 novembre (branche `orso/da-1-identite` : couleurs, Geist, logo soleil, boutons, champs). Le regarder dans le navigateur et dire ce qui cloche ; ensuite Claude migre les écrans un par un.
 - Plus tard : mentions légales des factures (ACCES-1) ; projet Firebase pour les notifications sur téléphone (MOBILE-1, reporté le 16 novembre).
 
 **2. Théo**
+- Pour info (23 novembre, Claude d'Orso, PR `orso/fix-catalogue-pains`) : le catalogue des commerçants n'affichait plus aucun pain depuis le lot 2. Dans `merchant-catalog.service.ts`, `NOT: { pastryFormat: "LARGE" }` écartait aussi les produits au format NULL (tous les pains) ; remplacé par `OR: [{ pastryFormat: null }, { pastryFormat: { not: "LARGE" } }]`. Constaté sur `annona-dev` avec le commerçant de la démo (0 catégorie, puis 7 catégories et 100 articles après correction, par l'API `/api/portal/catalog`). Test `tests/cli03-catalog-breads.test.ts`.
 - Site redéployé le 21 novembre avec `base` à jour (`feb8034`, voir « Mise en ligne » ci-dessous). Pour la suite : `git worktree add ../annona-vercel origin/base`, `vercel link --project annona --scope track-app2`, `vercel deploy --prod`. **Relier le projet Vercel `annona` à `orsocrtnt/annona`** (Vercel › Settings › Git › Connect Git Repository, branche de production `base`) : l'application GitHub de Vercel a déjà accès au dépôt (vérifié le 16 novembre), et le compte Vercel d'Orso n'est pas dans ton équipe `track-app2`, donc c'est à toi. Ensuite, plus de redéploiement à la main. Si Vercel ne propose pas le dépôt, le dire à Orso.
 - Pour info (16 novembre, Claude d'Orso, accord d'Orso) : deux retouches dans ton travail, PR `orso/petits-correctifs` : commentaire de `google-button.tsx` (le bouton se réactive dès l'ouverture de la page Google) ; minuteries N2 de `use-driver-action-queue.ts` déplacées dans `network-back-retries.ts` (retirées quand elles partent, remplacées à chaque retour du réseau), test `tests/recette-v1-network-back-retries.test.ts`.
 - AUTH-GOOGLE : brancher le SMTP Resend de **ton** compte Resend sur `annona-dev` (décision d'Orso du 15 novembre) : Supabase › Authentication › Emails › SMTP Settings, valeurs dans `docs/AUTH_EMAIL_SETUP.md` (hôte `smtp.resend.com`, port 465, utilisateur `resend`, mot de passe = une clé Resend dédiée, restreinte à l'envoi). L'expéditeur doit être sur un domaine vérifié **dans ton compte Resend** : `mail.annona.fr` créé le 21 novembre, en attente des DNS d'Orso (étapes dans RETOURS-2 ci-dessous). Ensuite, coller les trois modèles de `docs/operations/email/supabase/` et couper le suivi des clics chez Resend. Puis Claude fait l'inscription par e-mail et clôt la tâche.
@@ -143,7 +148,7 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 **3. Claude**
 - RETOURS-2 / AUTH-GOOGLE : dès qu'Orso a posé les DNS, vérifier le domaine `mail.annona.fr` dans le compte Resend de Théo (connecteur Resend). La clé « envoi seulement » peut être créée par Théo lui-même (Resend › API Keys) ou par Claude. Image des étapes à envoyer à Orso : `outputs/smtp-etapes-orso.png` (hors Git).
-- DA-1 : une fois la plaquette validée par Orso, appliquer la nouvelle identité (couleurs, police Geist, logo soleil, écrans) en commençant par `globals.css` et `docs/DESIGN_SYSTEM.md`.
+- DA-1 : verts retirés le 23 novembre ; reste la recette navigateur clair et sombre écran par écran, les logos PNG des e-mails et PDF, les icônes natives.
 - MOBILE-1 : application iOS compilée pour le simulateur le 16 novembre (iOS 26.5 installé sur le Mac d'Orso). Reste : la lancer sur le simulateur, essayer la connexion Google et le menu « Comment y aller ? » (Plans). En pause : Orso a demandé de garder son processeur libre ; lui demander le feu vert avant de relancer le simulateur ou le serveur local.
 - DEMO-1 : lots 2 et 3 faits et essayés sur `annona-dev` le 23 novembre (PR #73) ; suite : suivi des démos par le super admin, limite de débit.
 - Recette finale faite le 15 novembre (RECETTE-V1, `docs/rapports/2026-11-15-recette-v1.md`) : dix critères réussis sur `base` à jour, dans le navigateur (12/12) et dans l'application Android sur émulateur. Prochaine passe : sur un vrai téléphone, une fois MOBILE-1 avancée.
@@ -163,9 +168,48 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
+- [ ] **CARTE-1 — Une seule carte des tournées pour le gérant (page « Carte » et tableau de bord).**
+
+  **Qui : Orso — regarder la carte (page « Carte » et tableau de bord) et dire ce qui cloche.**
+
+  **En cours : Orso.**
+
+  - **Demande d'Orso (23 novembre 2026)** : une seule carte chez le gérant, la principale et sa copie sur le tableau de bord, qui réunit « Suivi livreurs » et les tournées ; claire (« pour le moment c'est hyper brouillon ») ; cliquer sur la tournée X ou Y pour la voir, toutes activables, mais pouvoir n'en voir qu'une.
+  - **Fait le 23 novembre (Claude d'Orso, branche `orso/carte-1`)** : composant unique `src/features/delivery-map/` (`DeliveryMap`, données `useDeliveryMapData`, sélection `visible-rounds.ts`) à la place des trois cartes (`rounds-map*`, `tracking-map*` supprimés). Un bouton par tournée (couleur, nom, avancement livrés/total) et « Toutes » : toucher une tournée quand toutes sont affichées n'affiche qu'elle, toucher d'autres tournées les ajoute ou les retire, « Toutes » réaffiche tout ; les tournées masquées ne sont pas dessinées ; recadrage sur les tournées affichées. Arrêts : à livrer numérotés (liseré de la couleur de la tournée), livrés en petit point gris, problème en rouge « ! » ; livreur (initiales, couleur de sa tournée) et son trajet vers les prochains arrêts ; légende sous la carte.
+  - Page « Carte » (`/dashboard/tracking`, entrée de menu « Suivi livreurs » renommée « Carte ») : toutes les tournées du jour (pas seulement celles en cours), carte en grand et liste des tournées affichées ; toucher un livreur sur la carte ou une tournée dans la liste n'affiche qu'elle et ouvre sa fiche (prochains arrêts avec heure prévue, livrés avec l'heure, problèmes). Tableau de bord : même carte, plus petite, avec « Ouvrir la carte ». Page « Tournées » (planification) : même carte, la tournée choisie dans la liste est seule affichée.
+  - Mini admin (lot 1, demande 4) : chaque source n'est lue que si le compte y a droit ; avec seulement « Suivi des livreurs », la carte est reconstruite à partir du suivi (tournées en cours).
+  - Tracé : seulement ce qui reste à livrer, depuis le dernier arrêt fait (ou le laboratoire) ; une tournée terminée ne laisse que ses points gris (constaté en recette : les arrêts livrés reliés faisaient de grands zigzags).
+  - Tests : `tests/carte1-visible-rounds.test.ts` **5/5** ; libellés « Carte » dans `lot1-d4-mini-admin`, `lot1-d5-tracking` et les E2E `lot1-recette`, `lot1-d9-perf` (**E2E non lancés**) ; `npm run check` **sortie 0** (929 tests, 928 réussis, 1 ignoré).
+  - **Recette navigateur le 23 novembre** (Playwright, Chromium 1440×900, gérant de la démo sur `annona-dev`, branche d'aperçu locale démo + DA-1 + CARTE-1) : tableau de bord → « Ouvrir la carte » → page « Carte » : « Toutes (4) », un clic sur une tournée n'affiche qu'elle et ouvre sa fiche (prochains arrêts avec heure prévue, livrés avec l'heure), un second clic en ajoute une (2 affichées), « Toutes » réaffiche tout ; aucune erreur dans la page. Corrigé pendant la recette : tracé limité à ce qui reste à livrer (les arrêts livrés reliés faisaient de grands zigzags) et cadrage sur ce qui reste à faire. Non regardés : thème sombre, téléphone, compte mini admin.
+  - **Reste** : avis d'Orso ; couleurs des tournées à revoir avec la nouvelle identité (DA-1).
+
+  - **23 novembre 2026** : couleurs des tournées sans vert (sarcelle et vert olive remplacés par bleu ciel, ocre, indigo et gris pierre ; jaune laissé au livreur), à la demande d'Orso (« encore des détails verts »). Vérifié : `npx tsc --noEmit` et `npm run lint` ; recette navigateur faite sur la branche d'aperçu.
+
 - [ ] **DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B).**
 
-  **Qui : Orso — relire la plaquette et la valider ou dire ce qui cloche ; ensuite Claude l'applique au code.**
+  **Qui : Orso — regarder le socle dans le navigateur et dire ce qui cloche ; ensuite Claude migre les écrans un par un.**
+
+  **En cours : Orso.**
+
+  - **23 novembre 2026, socle posé (Claude d'Orso, branche `orso/da-1-identite`, à la demande d'Orso : « lance la refonte de la DA en te basant sur la plaquette, on itérera ensuite »)** :
+    - Jetons clair et sombre réécrits dans `src/app/globals.css` d'après les planches 04 à 06 : fond blanc / encre `#0D0D12`, Brume `#F2F2F4`, gris `#6B6B76`, Aube `#FFD60A` pour l'action principale (texte encre dessus, jamais en texte sur clair), `brand` = encre en clair et Aube en sombre, une seule alerte (`#B42318`, pastille `#E5484D`), attention en Aube foncée `#7A5C00`, focus encre (Aube en sombre). Couleurs nommées `aube`, `encre`, `brume`, `retard`. Rayons : champs 14 px, cartes 24 px ; titres serrés (−4/−3/−2 %).
+    - Police : **Geist** et **Geist Mono** (`next/font/google`, `src/app/layout.tsx`) ; Inter et Sora retirées (`portal-font.ts` supprimé, portail et connexion simplifiés).
+    - Logo : `BrandMark` (soleil sur l'horizon, SVG) et `BrandLogo` (symbole + « annona ») dans `src/components/brand/`, à la place des PNG verts dans la barre latérale, l'en-tête, la barre du site public, la connexion et l'inscription. Icônes web régénérées (carré encre, soleil Aube, horizon blanc) : `src/app/icon.png`, `apple-icon.png`, `favicon.ico`, `public/apple-touch-icon*.png` ; `public/brand/annona-symbole*.svg`.
+    - Composants : boutons tous ronds (Aube gras, `secondary` = encre, contour), champs et listes déroulantes en aplat Brume 44 px avec bordure encre au focus (contour visible en sombre), teintes d'état `tone.ts` sans vert ni bleu.
+    - Doc : `docs/DESIGN_SYSTEM.md` réécrit (palette bleue et Menthe supprimées).
+    - Tests : `tests/theme-tokens.test.ts` adapté (diagrammes, Geist, règle « l'Aube n'est jamais du texte sur clair ») **16/16** ; `tests/apple-icon.test.ts` **3/3** ; couleurs attendues des E2E `design2-theme` et `portal-theme` mises à jour (**E2E non lancés**). `npm run check` **sortie 0** (925 tests, 924 réussis, 1 ignoré, 0 échec).
+    - Coup d'œil le 23 novembre (serveur local lancé à la demande d'Orso, capture Playwright de `/login` en clair) : Geist chargée (police calculée `Geist`), logo soleil, icône encre et bouton Aube conformes. Écart vu : les champs de la connexion ont leur propre style (contour, fond blanc) et pas encore l'aplat Brume. Capture Chrome impossible (une autre extension bloque). Reste à regarder : espaces connectés, thème sombre.
+    - **Reste (écrans un par un)** : verts codés en dur de `src/features/admin/home/` (KPI, liste, courbe), `admin-global-search.tsx`, `apple-navbar` et des écrans du back-office (`#f5f8f6`, `#0e1310`…) ; page d'accueil publique (`.landing`, `public/landing/`) et visite guidée (`.tour-adapt`) dans `globals.css` (la landing garde son fond sombre `#1c1f1e`, testé par `tests/apple-icon.test.ts`) ; style des cartes (`src/lib/maps/menthe-style.ts`, `map-visual-theme.ts`) ; e-mails et PDF (`email-template.ts`, `invoice-pdf.ts`, logos PNG de `public/brand/` avec le mot « annona » à redessiner) ; icônes Android et iOS (MOBILE-1) ; `driver.webmanifest` (couleurs de thème).
+
+  - **23 novembre 2026, revue complète des verts (Claude d'Orso, branche `orso/da-1-identite`, à la demande d'Orso : « il y a encore des détails verts, fais une review complète »)** :
+    - Méthode : relevé de toutes les couleurs dont le vert domine dans `src/` (verts francs et gris teintés de vert de l'ancienne palette, jusqu'à `#f5f8f6`), puis remplacement par les jetons DA-1. Il ne reste que le logo Google (`#34A853`, obligatoire) et les couleurs de tournée de `rounds-map.tsx` (fichier supprimé par CARTE-1, traitées sur `orso/carte-1`).
+    - Menus et cadres : barre latérale, en-têtes, menu mobile, portail commerçant, application livreur, barre du site, recherche globale, accueil super-admin (KPI, liste, signal, fiche entreprise), carte de logo, support (bulles), statut de position du livreur → `foreground`, `muted-foreground`, `muted`, `border`, `brand-subtle`. Variantes `dark:` devenues identiques retirées. Ombres teintées vertes → encre.
+    - Courbe « Livraisons livrées » : série `ink` (encre, Aube en sombre) au lieu du vert. Badge « Vendeur » : Brume.
+    - Cartes : plan neutre (`menthe-style.ts`, nom historique gardé), repères encre, livreur et halo en Aube, trajet encre en clair et Aube en sombre (`map-visual-theme.ts`, `map-theme.css`).
+    - PDF (facture, relevé) et e-mails : encre, Aube, gris neutres (statut « Payée » sur Aube pâle).
+    - `globals.css` : CSS mort de l'ancienne landing, de la mini-démo et de `.tour-adapt` supprimé (plus aucun composant ne l'utilise ; test de fond de landing retiré de `tests/apple-icon.test.ts`). Cases à cocher en encre (Aube en sombre). Écran de lancement natif (`capacitor.config.ts`, copie iOS) sur fond blanc.
+    - Vérifications : `npm run check` **sortie 0** (923 tests, 0 échec). Empreintes du PDF de `tests/facturx-pdf.test.ts` mises à jour (couleurs voulues), tests de carte et d'e-mail adaptés. **Non vérifié** : recette navigateur écran par écran en clair et sombre, E2E. Images inutilisées de `public/landing/` laissées en place.
+    - **Reste** : logos PNG des e-mails et PDF (`public/brand/`) à redessiner ; icônes Android et iOS (MOBILE-1) ; couleurs vives restantes hors vert (badges de rôle rouge, ambre, rose, bleu ; courbes bleue et orange) à revoir avec Orso.
 
   - **Contexte (18 novembre 2026)** : Orso juge « pourrie » la DA verte actuelle (`src/app/globals.css`, `docs/DESIGN_SYSTEM.md`, encore marquée provisoire « DESIGN-1 »). Elle avait été faite pour l'ancien produit (coursiers).
   - **Exploration faite avec Orso, pas à pas**, sur un canvas Claude privé d'Orso (lien non écrit ici, dépôt public ; page « Pistes ») : 12 pistes « métier » (four, kraft, devanture…), trois synthèses, puis six familles modernes. Diagnostic d'Orso : les pistes métier sont trop rétro et déguisées, pas assez belles, pas assez fortes ; ressenti visé à l'ouverture de l'app : « simple et rapide ». Familles retenues : Net (néo-banque) et Livraison (suivi en direct), puis leur **croisement**, choisi par Orso.
@@ -557,3 +601,20 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
   - **E-mail de l'accès Vente (SMTP)** : domaine `mail.annona.fr` créé le 21 novembre dans le compte Resend de Théo (région eu-west-1, suivi des clics et des ouvertures coupé ; un sous-domaine pour ne pas toucher au DKIM d'`annona.fr` déjà chez Resend côté Orso). Reste : (1) Orso ajoute 4 enregistrements DNS sur `annona.fr` (`resend._domainkey.mail` TXT, `send.mail` MX et TXT, `rsend.mail` CNAME ; valeurs exactes dans la liste « 1. Orso » en tête de fichier), (2) vérifier le domaine, (3) créer une clé Resend « envoi seulement » limitée à ce domaine, (4) Supabase `annona-dev` › Authentication › Emails › SMTP : hôte `smtp.resend.com`, port 465, utilisateur `resend`, mot de passe = la clé, expéditeur `no-reply@mail.annona.fr`, (5) `AUTH_EMAIL_LINKS_ENABLED=true` sur Vercel. Les étapes 4 et 5 ne sont pas faisables par l'agent (jeton Supabase dans le coffre Windows, équipe Vercel hors de portée de l'outil).
   - Vérifications : `tests/retours1-tour-theo.test.ts` 7/7 (classement des commandes, regroupement du stock, « pour qui », allergènes non déclarés, libellé « Vente », classement par rayon) ; `tests/lot2-d6-d8-stock.test.ts` adapté (pâtisserie avant boulangerie) ; `npx tsc --noEmit` sans erreur ; `npm run check` sortie 0 (920 tests : 913 réussis, 0 échec, 7 ignorés).
   - Non vérifié : clic réel dans le navigateur (aucun serveur lancé) sur les six écrans, en clair et en sombre, sur tablette et téléphone.
+
+- [ ] **DISPATCH-OPTIM — Le calcul des tournées est-il optimal ? (RG-09, ADM-06)**
+
+  **Qui : Orso — dire si on améliore le calcul maintenant ; Théo — dire s'il faut des tournées de taille voisine ou le moins de tournées possible.**
+
+  - **Demande d'Orso (23 novembre 2026)** : une série de tests sur l'organisation des tournées, pour savoir si le calcul est le plus optimisé possible.
+  - **Fait le 23 novembre (Claude d'Orso, branche `orso/dispatch-optim-tests`)** : `tests/dispatch-optimisation.test.ts`, 6 tests sur des adresses de Paris (rues de la démo, tirage fixe), départ du laboratoire de la démo, temps à vol d'oiseau. Deux garde-fous qui passent ; quatre défauts en test `todo` (ils échouent tant que le calcul n'est pas amélioré, sans faire échouer `npm test`). Aucun code de production modifié.
+  - **Réponse : non, ce n'est pas le plus optimisé possible.** Le calcul (`src/lib/dispatch/round-planner.ts`, appelé par `src/domains/order/round-generation.ts`) insère les arrêts un par un à la place qui coûte le moins, sans amélioration ensuite. Mesures (banc d'essai hors dépôt, puis tests) :
+    - Petites tournées (8 arrêts, 150 cas, comparées à la meilleure tournée calculée exactement) : 4,6 % de route en trop en moyenne, 27 % dans le pire cas ; meilleure tournée trouvée une fois sur trois.
+    - Tournées réelles (65 arrêts, 20 cas) : une amélioration classique après coup (2-opt + Or-opt : décroiser les trajets, déplacer un petit groupe d'arrêts) raccourcit la route de 4,6 % en moyenne, jusqu'à 9 % (de 135 à 127 min sur une tournée de 70 arrêts).
+    - Même liste d'adresses, identifiants des commandes tirés au hasard : de 121 à 138 min de route (14 % d'écart). Tous les arrêts d'un créneau ont la même heure limite, donc ils sont insérés dans l'ordre de leurs identifiants, qui n'a rien à voir avec la géographie.
+    - Répartition : 140 commandes du matin donnent 92 et 48 arrêts ; la grande tournée finit à 12h28 pour un créneau qui ferme à 12h30, l'autre à 9h45. 220 commandes : 94, 94 et 32. Le calcul remplit d'abord une tournée (choix voulu : le moins de tournées possible), il n'équilibre pas.
+    - Temps routiers : la matrice OSRM n'est demandée qu'en dessous de 60 points (`ROUTE_MATRIX_MAX_POINTS`), et elle est demandée pour toutes les commandes du jour, tous créneaux confondus. Avec 60 à 70 arrêts par tournée, une vraie journée est donc toujours calculée à vol d'oiseau (30 km/h, détour de 40 %), qu'un service OSRM soit configuré ou non.
+    - Temps de calcul : 48 ms pour 70 commandes, 0,3 s pour 140, 1,6 s pour 220 : pas un problème.
+  - **Pistes, par ordre de rapport gain / effort** (non faites, en attente de la décision d'Orso) : (1) passe 2-opt + Or-opt sur chaque tournée après le calcul, aussi pour « Recalculer l'ordre » : environ 5 % de route en moins, quelques dizaines de lignes, module pur testable ; (2) insérer d'abord les arrêts les plus éloignés du laboratoire (ou plusieurs essais) au lieu de l'ordre des identifiants : supprime l'écart de 14 % ; (3) demander la matrice par créneau et par morceaux de 60 points au plus (ou relever la limite si le service OSRM le permet) ; (4) si Théo le veut : équilibrer les tournées d'un créneau (échange d'arrêts entre tournées voisines).
+  - **Vérifications** : `node --import tsx --test tests/dispatch-optimisation.test.ts` : 6 tests, 2 réussis, 0 échec, 4 `todo` (2-opt : 3,7 % de gain moyen ; identifiants : 9,8 % d'écart ; tailles 92 / 48 ; matrice jamais demandée). `npm run check` : sortie 0 (931 tests : 926 réussis, 0 échec, 1 sauté, 4 `todo`).
+  - **Non vérifié** : écart avec de vrais temps routiers (aucun appel au service OSRM fait) ; adresses des vrais clients (aucun encore).

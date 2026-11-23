@@ -93,7 +93,7 @@ export function GoogleButton({ intent, onError }: { intent: "login" | "signup"; 
       onClick={start}
       disabled={pending}
       aria-busy={pending}
-      className="flex h-[52px] w-full items-center justify-center gap-3 rounded-full border border-[#858f88] bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:opacity-60 dark:border-[#6b746f]"
+      className="flex h-[52px] w-full items-center justify-center gap-3 rounded-full border border-[#85858f] bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand disabled:opacity-60 dark:border-input"
     >
       <GoogleMark />
       {pending ? "Ouverture de Google…" : "Continuer avec Google"}

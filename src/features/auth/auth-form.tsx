@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { useSearchParams } from "next/navigation";
 import type { UseFormReturn } from "react-hook-form";
 import { useForm } from "react-hook-form";
@@ -23,7 +24,6 @@ import type {
 } from "@/lib/validations/auth";
 import { clearPendingCredentials } from "@/lib/storage/pending-credentials";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { AuthShell } from "@/features/auth/auth-shell";
 import type { LoginContext } from "@/features/auth/login-space";
 import { useApplyLoginSession } from "@/features/auth/login-session";
@@ -77,7 +77,7 @@ interface AuthFormProps {
 
 /** Champs de la connexion : 52 px de haut, bordure contrastée (3:1) en Light comme en Dark. */
 const loginInputClass =
-  "h-[52px] rounded-[14px] border-[#858f88] bg-card px-4 text-base dark:border-[#6b746f]";
+  "h-[52px] rounded-[14px] border-[#85858f] bg-card px-4 text-base dark:border-input";
 
 export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
   const [error, setError] = useState<string | null>(null);
@@ -252,8 +252,9 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
           {mode === "login" && (
             <div className="mb-4 flex justify-center" aria-hidden>
               {/* Icône Annona (version claire ou sombre selon le thème). */}
-              <Image src="/brand/icone-app-fond-clair.png" alt="" width={56} height={56} priority className="h-14 w-14 rounded-[18px] shadow-sm ring-1 ring-border dark:hidden" />
-              <Image src="/brand/icone-app-fond-sombre.png" alt="" width={56} height={56} className="hidden h-14 w-14 rounded-[18px] ring-1 ring-border dark:block" />
+              <span className="grid h-14 w-14 place-items-center rounded-[18px] bg-encre text-white shadow-sm ring-1 ring-border">
+                <BrandMark size={38} />
+              </span>
             </div>
           )}
           <h1 className={mode === "login" ? "text-balance text-center text-[clamp(32px,5.6vw,48px)] font-bold leading-[1.04] tracking-[-0.04em]" : "text-balance text-[clamp(26px,4.4vw,36px)] font-bold leading-[1.08] tracking-[-0.035em]"}>

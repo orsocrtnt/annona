@@ -25,7 +25,7 @@ export function CompanyBrand({ href, className, compact = false }: { href: strin
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt="" aria-hidden className="h-8 w-8 shrink-0 rounded-lg border border-black/5 bg-white object-contain" data-testid="company-logo" />
       ) : null}
-      <span className={cn("truncate font-semibold tracking-tight text-[#0e1310] dark:text-foreground", compact ? "text-sm" : "text-base")}>{name}</span>
+      <span className={cn("truncate font-semibold tracking-tight text-foreground", compact ? "text-sm" : "text-base")}>{name}</span>
     </Link>
   );
 }

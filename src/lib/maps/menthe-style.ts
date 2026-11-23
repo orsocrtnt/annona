@@ -1,27 +1,27 @@
 import type { StyleSpecification } from "maplibre-gl";
 
 /**
- * Recolore le style vectoriel « Positron » (OpenFreeMap) aux teintes de la direction Menthe :
- * terre vert très pâle, eau bleu-gris, parcs verts, routes blanches, libellés en français.
+ * Recolore le style vectoriel « Positron » (OpenFreeMap) aux teintes de DA-1 (nom de fichier historique) :
+ * terre Brume, eau bleu-gris, parcs gris un cran plus soutenu, routes blanches, libellés en français.
  * Fonction pure : le style source est lu tel quel, une copie modifiée est renvoyée.
  */
 export const MENTHE_MAP_PAINT: Record<string, Record<string, unknown>> = {
-  background: { "background-color": "#eef2ef" },
-  park: { "fill-color": "#d9eadd", "fill-opacity": 1 },
-  water: { "fill-color": "#c9dde6" },
-  waterway: { "line-color": "#c9dde6" },
-  landuse_residential: { "fill-color": "#e9eeea" },
-  landcover_wood: { "fill-color": "#d9eadd" },
-  building: { "fill-color": "#e2e8e3" },
+  background: { "background-color": "#f2f2f4" },
+  park: { "fill-color": "#e6e6ea", "fill-opacity": 1 },
+  water: { "fill-color": "#d3dce4" },
+  waterway: { "line-color": "#d3dce4" },
+  landuse_residential: { "fill-color": "#ededf0" },
+  landcover_wood: { "fill-color": "#e6e6ea" },
+  building: { "fill-color": "#e4e4e8" },
   highway_minor: { "line-color": "#ffffff" },
-  highway_major_casing: { "line-color": "#dde3de" },
+  highway_major_casing: { "line-color": "#dcdce2" },
   highway_major_inner: { "line-color": "#ffffff" },
   highway_major_subtle: { "line-color": "#ffffff" },
-  highway_motorway_casing: { "line-color": "#d3dbd5" },
-  highway_motorway_inner: { "line-color": "#fbfcfb" },
-  highway_motorway_subtle: { "line-color": "#fbfcfb" },
-  railway_transit: { "line-color": "#dfe4e0" },
-  railway: { "line-color": "#dfe4e0" },
+  highway_motorway_casing: { "line-color": "#d4d4da" },
+  highway_motorway_inner: { "line-color": "#fbfbfc" },
+  highway_motorway_subtle: { "line-color": "#fbfbfc" },
+  railway_transit: { "line-color": "#e0e0e5" },
+  railway: { "line-color": "#e0e0e5" },
 };
 
 /** Thème de la carte : suit le thème Clair / Sombre résolu de l'application. */
@@ -29,42 +29,42 @@ export type MapTheme = "light" | "dark";
 
 /**
  * Variante sombre du même plan (encre + pastel) : mêmes couches, mêmes libellés, teintes alignées sur
- * les jetons Dark (`--color-background` #141716). Routes plus claires que la terre pour rester lisibles.
+ * les jetons Dark (`--color-background` #0d0d12). Routes plus claires que la terre pour rester lisibles.
  */
 export const MENTHE_MAP_PAINT_DARK: Record<string, Record<string, unknown>> = {
-  background: { "background-color": "#181c1a" },
-  park: { "fill-color": "#1c2a22", "fill-opacity": 1 },
-  water: { "fill-color": "#16252d" },
-  waterway: { "line-color": "#16252d" },
-  landuse_residential: { "fill-color": "#1b1f1d" },
-  landcover_wood: { "fill-color": "#1c2a22" },
+  background: { "background-color": "#14141a" },
+  park: { "fill-color": "#18181f", "fill-opacity": 1 },
+  water: { "fill-color": "#141b24" },
+  waterway: { "line-color": "#141b24" },
+  landuse_residential: { "fill-color": "#17171d" },
+  landcover_wood: { "fill-color": "#18181f" },
   // Bâtiments sans contour : de près, les traits clairs d'origine rendaient le plan chargé.
-  building: { "fill-color": "#1e2321", "fill-outline-color": "#1e2321" },
-  highway_minor: { "line-color": "#323936" },
-  highway_major_casing: { "line-color": "#141716" },
-  highway_major_inner: { "line-color": "#3c4440" },
-  highway_major_subtle: { "line-color": "#3c4440" },
-  highway_motorway_casing: { "line-color": "#141716" },
-  highway_motorway_inner: { "line-color": "#48524d" },
-  highway_motorway_subtle: { "line-color": "#48524d" },
-  railway_transit: { "line-color": "#2a302d" },
-  railway: { "line-color": "#2a302d" },
+  building: { "fill-color": "#1c1c23", "fill-outline-color": "#1c1c23" },
+  highway_minor: { "line-color": "#2c2c35" },
+  highway_major_casing: { "line-color": "#0d0d12" },
+  highway_major_inner: { "line-color": "#3a3a44" },
+  highway_major_subtle: { "line-color": "#3a3a44" },
+  highway_motorway_casing: { "line-color": "#0d0d12" },
+  highway_motorway_inner: { "line-color": "#474752" },
+  highway_motorway_subtle: { "line-color": "#474752" },
+  railway_transit: { "line-color": "#24242c" },
+  railway: { "line-color": "#24242c" },
   // Couches laissées aux teintes claires de Positron : ramenées dans l'encre pour ne plus briller.
-  railway_dashline: { "line-color": "#202523" },
-  railway_transit_dashline: { "line-color": "#202523" },
-  tunnel_motorway_casing: { "line-color": "#141716" },
-  tunnel_motorway_inner: { "line-color": "#2c3330" },
-  road_area_pier: { "fill-color": "#1b1f1d" },
-  road_pier: { "line-color": "#1b1f1d" },
-  "aeroway-area": { "fill-color": "#1b1f1d" },
-  "aeroway-runway": { "line-color": "#2c3330" },
-  "aeroway-runway-casing": { "line-color": "#141716" },
-  "aeroway-taxiway": { "line-color": "#2c3330" },
-  landcover_ice_shelf: { "fill-color": "#1b1f1d" },
-  landcover_glacier: { "fill-color": "#1b1f1d" },
-  boundary_2: { "line-color": "#3a423e" },
-  boundary_3: { "line-color": "#3a423e" },
-  boundary_disputed: { "line-color": "#3a423e" },
+  railway_dashline: { "line-color": "#1c1c22" },
+  railway_transit_dashline: { "line-color": "#1c1c22" },
+  tunnel_motorway_casing: { "line-color": "#0d0d12" },
+  tunnel_motorway_inner: { "line-color": "#2a2a33" },
+  road_area_pier: { "fill-color": "#17171d" },
+  road_pier: { "line-color": "#17171d" },
+  "aeroway-area": { "fill-color": "#17171d" },
+  "aeroway-runway": { "line-color": "#2a2a33" },
+  "aeroway-runway-casing": { "line-color": "#0d0d12" },
+  "aeroway-taxiway": { "line-color": "#2a2a33" },
+  landcover_ice_shelf: { "fill-color": "#17171d" },
+  landcover_glacier: { "fill-color": "#17171d" },
+  boundary_2: { "line-color": "#383842" },
+  boundary_3: { "line-color": "#383842" },
+  boundary_disputed: { "line-color": "#383842" },
 };
 
 /**
@@ -79,11 +79,11 @@ export const MENTHE_MAP_HIDDEN_DARK = new Set([
 ]);
 
 /** Noms des petites rues, plus discrets en Sombre que ceux des grands axes. */
-const DARK_MINOR_LABEL = "#7f8983";
+const DARK_MINOR_LABEL = "#80808a";
 
 const SYMBOL_COLORS = {
-  light: { city: "#3c4640", other: "#a3ada6", default: "#7a857e", halo: "#f4f7f5" },
-  dark: { city: "#d7ded9", other: "#7f8983", default: "#a3aca6", halo: "#141716" },
+  light: { city: "#3d3d46", other: "#a1a1aa", default: "#7a7a84", halo: "#f6f6f8" },
+  dark: { city: "#d8d8de", other: "#80808a", default: "#a3a3ad", halo: "#0d0d12" },
 } as const;
 
 const FRENCH_NAME = ["coalesce", ["get", "name:fr"], ["get", "name"]];

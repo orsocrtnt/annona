@@ -26,13 +26,13 @@ export interface StatementPdfData {
   totals: { total: number; paid: number; remaining: number };
 }
 
-const INK = rgb(0.055, 0.075, 0.063);
-const MINT = rgb(0, 0.831, 0.416);
-const MUTED = rgb(0.408, 0.447, 0.42);
-const SOFT = rgb(0.58, 0.612, 0.592);
-const PALE = rgb(0.957, 0.98, 0.965);
-const HAIRLINE = rgb(0.902, 0.918, 0.906);
-const RULE = rgb(0.78, 0.8, 0.788);
+const INK = rgb(0.051, 0.051, 0.071);
+const AUBE = rgb(1, 0.839, 0.039);
+const MUTED = rgb(0.42, 0.42, 0.463);
+const SOFT = rgb(0.58, 0.58, 0.62);
+const PALE = rgb(0.965, 0.965, 0.973);
+const HAIRLINE = rgb(0.886, 0.886, 0.902);
+const RULE = rgb(0.784, 0.784, 0.812);
 
 const PAGE: [number, number] = [595, 842];
 const MARGIN = 56;
@@ -71,7 +71,7 @@ export async function generateStatementPdf(data: StatementPdfData): Promise<Uint
   const label = (value: string, x: number, y: number) => text(value.toUpperCase(), x, y, { size: 7, bold: true, color: SOFT });
   const labelRight = (value: string, xRight: number, y: number) => textRight(value.toUpperCase(), xRight, y, { size: 7, bold: true, color: SOFT });
   const hairline = (y: number, color = HAIRLINE) => page.drawLine({ start: { x: MARGIN, y }, end: { x: RIGHT, y }, thickness: 0.6, color });
-  const accent = () => page.drawRectangle({ x: 0, y: PAGE[1] - 4, width: PAGE[0], height: 4, color: MINT });
+  const accent = () => page.drawRectangle({ x: 0, y: PAGE[1] - 4, width: PAGE[0], height: 4, color: AUBE });
 
   // ── En-tête ──
   accent();

@@ -63,14 +63,14 @@ export function DriverAppLayout({ children }: DriverAppLayoutProps) {
         <div className="flex min-w-0 items-center gap-2.5">
           <ThemeToggle className="-mr-1" />
           <div className="min-w-0 text-right">
-            <p className="truncate text-sm font-medium leading-none text-[#0e1310] dark:text-foreground">
+            <p className="truncate text-sm font-medium leading-none text-foreground">
               {user ? `${user.firstName} ${user.lastName}`.trim() : "Livreur"}
             </p>
-            <p className="mt-1 truncate text-xs text-[#68726b] dark:text-muted-foreground">Espace livreur</p>
+            <p className="mt-1 truncate text-xs text-muted-foreground">Espace livreur</p>
           </div>
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.avatarUrl ?? undefined} />
-            <AvatarFallback className="bg-[#0e1310] text-xs font-semibold text-white dark:bg-foreground dark:text-background">
+            <AvatarFallback className="bg-foreground text-xs font-semibold text-white dark:text-background">
               {user ? getInitials(user.firstName, user.lastName) : "L"}
             </AvatarFallback>
           </Avatar>

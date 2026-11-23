@@ -146,7 +146,7 @@ test("D5 suivi livreurs", async ({ browser }) => {
   try {
     // État avant démarrage (tournée assignée, non démarrée).
     await admin.page.goto("/dashboard/tracking");
-    await admin.page.getByRole("heading", { name: "Suivi livreurs" }).waitFor();
+    await admin.page.getByRole("heading", { name: "Carte des tournées" }).waitFor();
     await admin.page.waitForTimeout(1500);
     note("D5-before", summarize(await trackingJson(admin.page)));
     await shot(admin.page, "D5-avant-demarrage");
@@ -162,7 +162,7 @@ test("D5 suivi livreurs", async ({ browser }) => {
 
     // 1) position reçue, trajet vers les prochains arrêts.
     await admin.page.reload();
-    await admin.page.getByRole("heading", { name: "Suivi livreurs" }).waitFor();
+    await admin.page.getByRole("heading", { name: "Carte des tournées" }).waitFor();
     await admin.page.locator('[data-testid^="tracking-driver-"]').first().waitFor({ timeout: 30_000 });
     const first = summarize(await trackingJson(admin.page));
     note("D5-started", first);
@@ -894,7 +894,7 @@ test("D4 mini admin", async ({ browser }) => {
         navAll = await navLinks(mini.page);
       }
       const noNavSeconds = Math.round((Date.now() - t0) / 1000);
-      await mini.page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Suivi livreurs" }).click().catch(() => undefined);
+      await mini.page.getByRole("navigation", { name: "Navigation principale" }).getByRole("link", { name: "Carte" }).click().catch(() => undefined);
       await mini.page.waitForTimeout(2500);
       const navAfterClick = await navLinks(mini.page);
       await mini.page.goto("/dashboard/catalog");
