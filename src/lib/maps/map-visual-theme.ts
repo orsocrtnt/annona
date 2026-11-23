@@ -41,7 +41,7 @@ export const MAP_VISUAL_THEME_DARK = {
   inkSoft: "#c3cbc6",
   muted: "#7f8983",
   mutedLight: "#3c4440",
-  surface: "#1c1f1e",
+  surface: "#1a1a22",
   land: "#181c1a",
   brand: "#3dd68c",
   route: "#3dd68c",

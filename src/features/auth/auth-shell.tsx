@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { sora } from "@/app/(client-portal)/portal-font";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { PublicSupportLink } from "@/features/support/public-support-link";
@@ -11,22 +10,18 @@ const legalLink =
 
 /**
  * Coque des pages de connexion (direction C) : logo, contact et thème en haut, contenu centré, aide en bas.
- * Light Menthe / Dark « Encre + Pastel » par les jetons ; aucune image lourde.
+ * Thèmes clair et sombre par les jetons (DA-1) ; logo en SVG, aucune image lourde.
  */
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div
-      className={`${sora.variable} flex min-h-dvh flex-col bg-background text-foreground`}
-      style={{ fontFamily: "var(--font-sora), ui-sans-serif, system-ui, sans-serif" }}
-    >
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
       <header className="mx-auto flex w-full max-w-[1180px] items-center justify-between gap-3 px-4 py-3">
         <Link
           href="/"
           className="inline-flex min-h-11 items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label={`Retour à l'accueil ${APP_NAME}`}
         >
-          <BrandLogo className="dark:hidden" priority />
-          <BrandLogo onDark className="hidden dark:inline-flex" />
+          <BrandLogo />
         </Link>
         <div className="flex items-center gap-1">
           <ThemeToggle />

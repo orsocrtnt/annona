@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import {
   AppleNavbar,
   appleNavbarIconButtonClass,
@@ -21,7 +22,6 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { StaffNotificationsBell } from "@/features/notifications/staff-notifications-bell";
 import { ThemeRadioGroup } from "@/components/theme/theme-preference-choice";
 import type { BreadcrumbItem } from "@/types";
-import Image from "next/image";
 import Link from "next/link";
 
 interface HeaderProps {
@@ -91,8 +91,7 @@ export function Header({ breadcrumbs, className, premium = false, actions }: Hea
             href="/"
             className="inline-flex min-h-11 items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
           >
-            <Image src="/brand/logo-horizontal-fond-clair.png" alt="Annona" width={94} height={28} priority className="dark:hidden" style={{ width: 94, height: 28 }} />
-            <Image src="/brand/logo-horizontal-fond-sombre.png" alt="Annona" width={94} height={28} priority className="hidden dark:block" style={{ width: 94, height: 28 }} />
+            <BrandLogo />
           </Link>
           <p className="hidden text-sm font-medium text-[#667069] lg:block dark:text-muted-foreground">
             Centre de pilotage

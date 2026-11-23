@@ -1,7 +1,8 @@
 "use client";
 
 import { Fragment, useId } from "react";
-import Image from "next/image";
+import { BrandLogo } from "@/components/brand/brand-logo";
+import { BrandMark } from "@/components/brand/brand-mark";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,7 @@ import { CompanyBrand } from "@/components/brand/company-brand";
 import { isNavItemActive } from "@/lib/navigation/is-nav-item-active";
 import { useNavQueryPrefetch } from "@/hooks/use-nav-query-prefetch";
 import { groupNavItems } from "@/lib/navigation/group-nav-items";
-import { ChevronLeft, Package2 } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import type { NavItem } from "@/types";
 import { NavBadge } from "./nav-badge";
 import { NavSectionTitle } from "./nav-section-title";
@@ -159,34 +160,12 @@ export function Sidebar({ items, footer, premium = false }: SidebarProps) {
               href="/"
               className="flex min-h-11 min-w-0 items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <Image
-                src="/brand/logo-horizontal-fond-clair.png"
-                alt={APP_NAME}
-                width={118}
-                height={35}
-                priority
-                className="dark:hidden"
-                style={{ width: 118, height: 35 }}
-              />
-              <Image
-                src="/brand/logo-horizontal-fond-sombre.png"
-                alt={APP_NAME}
-                width={118}
-                height={35}
-                priority
-                className="hidden dark:block"
-                style={{ width: 118, height: 35 }}
-              />
+              <BrandLogo size="md" />
             </Link>
           )
         ) : (
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white dark:text-primary-foreground">
-              <Package2 className="h-4 w-4" />
-            </div>
-            {!sidebarCollapsed && (
-              <span className="text-lg font-semibold tracking-tight">{APP_NAME}</span>
-            )}
+            {sidebarCollapsed ? <BrandMark size={28} title={APP_NAME} /> : <BrandLogo />}
           </Link>
         )}
         <button

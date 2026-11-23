@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { BrandMark } from "@/components/brand/brand-mark";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -112,8 +112,9 @@ export function SignupForm(props: SignupFormProps) {
     <AuthShell>
       <div className="w-full max-w-[420px] animate-slide-up motion-reduce:animate-none">
         <div className="mb-4 flex justify-center" aria-hidden>
-          <Image src="/brand/icone-app-fond-clair.png" alt="" width={56} height={56} priority className="h-14 w-14 rounded-[18px] shadow-sm ring-1 ring-border dark:hidden" />
-          <Image src="/brand/icone-app-fond-sombre.png" alt="" width={56} height={56} className="hidden h-14 w-14 rounded-[18px] ring-1 ring-border dark:block" />
+          <span className="grid h-14 w-14 place-items-center rounded-[18px] bg-encre text-white shadow-sm ring-1 ring-border">
+            <BrandMark size={38} />
+          </span>
         </div>
         <h1 className="text-balance text-center text-[clamp(28px,5vw,40px)] font-bold leading-[1.06] tracking-[-0.04em]">
           {isCompanyStep ? "Encore une étape" : "Créer le compte de votre boulangerie"}

@@ -1,5 +1,5 @@
 import type { ComponentProps, ReactNode } from "react";
-import Image from "next/image";
+import { BrandMark } from "@/components/brand/brand-mark";
 import Link from "next/link";
 import { Package2 } from "lucide-react";
 
@@ -86,8 +86,10 @@ export function AppleNavbarBrand({
         )}
       >
         {/* Le nom est porté par le texte du lien (lecteurs d'écran, recherche par texte), le logo est décoratif. */}
-        <Image src="/brand/logo-horizontal-fond-clair.png" alt="" aria-hidden width={104} height={31} priority className="dark:hidden" />
-        <Image src="/brand/logo-horizontal-fond-sombre.png" alt="" aria-hidden width={104} height={31} className="hidden dark:block" />
+        <span aria-hidden className="inline-flex items-center gap-1 text-foreground">
+          <BrandMark size={26} />
+          <span className="text-[22px] font-bold leading-none tracking-[-0.06em]">annona</span>
+        </span>
         <span className="sr-only">{label}</span>
       </Link>
     );
@@ -183,7 +185,7 @@ export function AppleNavbarLink({
             aria-hidden
             className={cn(
               "pointer-events-none absolute -bottom-1 left-1/2 h-3 w-4/5 -translate-x-1/2 scale-x-50 rounded-full opacity-0 blur-md transition-[transform,opacity] duration-300 ease-out group-hover:scale-x-100 group-hover:opacity-100 group-focus-visible:scale-x-100 group-focus-visible:opacity-100 motion-reduce:transition-none",
-              light ? "bg-[#00d46a]/20 dark:bg-brand/20" : "bg-[#ff5638]/25",
+              light ? "bg-aube/30 dark:bg-brand/20" : "bg-aube/25",
               active && "scale-x-100 opacity-60"
             )}
           />
