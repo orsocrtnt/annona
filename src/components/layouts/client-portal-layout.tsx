@@ -97,7 +97,7 @@ function PortalMobileNavLink({
       <DropdownMenuItem
         disabled
         title={item.disabledReason}
-        className="min-h-11 rounded-xl px-3 text-[#a3aca6] data-[disabled]:opacity-100 dark:text-text-tertiary"
+        className="min-h-11 rounded-xl px-3 text-muted-foreground/60 data-[disabled]:opacity-100 dark:text-text-tertiary"
       >
         <Icon className="h-4 w-4" aria-hidden />
         {item.title}
@@ -108,12 +108,12 @@ function PortalMobileNavLink({
   return (
     <DropdownMenuItem
       asChild
-      className="min-h-11 cursor-pointer rounded-xl px-3 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring text-[#3d4540] focus:bg-[#f1f6f2] focus:text-[#0e1310] aria-[current=page]:font-semibold aria-[current=page]:text-[#0e1310] dark:text-text-secondary dark:focus:bg-muted dark:focus:text-foreground dark:aria-[current=page]:text-foreground"
+      className="min-h-11 cursor-pointer rounded-xl px-3 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring text-foreground focus:bg-muted focus:text-foreground aria-[current=page]:font-semibold aria-[current=page]:text-foreground dark:text-text-secondary dark:aria-[current=page]:text-foreground"
     >
       <Link href={item.href} aria-current={isActive ? "page" : undefined} {...prefetchHandlers}>
         <Icon className="h-4 w-4" aria-hidden />
         <span>{item.title}</span>
-        {isActive ? <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#00a855] dark:bg-brand" aria-hidden /> : null}
+        {isActive ? <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand" aria-hidden /> : null}
       </Link>
     </DropdownMenuItem>
   );
@@ -150,7 +150,7 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
       </AppleNavbarLinks>
 
       <div className="ml-auto flex items-center gap-1">
-        <PortalNotificationsBell className="text-[#5f6a63] hover:bg-black/[0.05] hover:text-[#0e1310] dark:text-muted-foreground dark:hover:bg-white/[0.08] dark:hover:text-foreground" />
+        <PortalNotificationsBell className="text-muted-foreground hover:bg-black/[0.05] hover:text-foreground dark:hover:bg-white/[0.08]" />
 
         <ThemeToggle className="max-sm:hidden" />
 
@@ -160,7 +160,7 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
         >
           <Avatar className="h-7 w-7">
             <AvatarImage src={user?.avatarUrl ?? undefined} />
-            <AvatarFallback className="bg-[#0e1310] text-xs font-semibold text-white dark:bg-foreground dark:text-background">
+            <AvatarFallback className="bg-foreground text-xs font-semibold text-white dark:text-background">
               {user ? getInitials(user.firstName, user.lastName) : "C"}
             </AvatarFallback>
           </Avatar>
@@ -190,14 +190,14 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
           <DropdownMenuContent
             align="end"
             sideOffset={8}
-            className="w-72 rounded-2xl border-black/[0.07] bg-white p-2 text-[#0e1310] shadow-[0_18px_50px_rgba(14,19,16,0.12)] dark:border-border dark:bg-popover dark:text-popover-foreground dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
+            className="w-72 rounded-2xl border-black/[0.07] bg-white p-2 text-foreground shadow-[0_18px_50px_rgba(13,13,18,0.12)] dark:border-border dark:bg-popover dark:text-popover-foreground dark:shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
           >
             {/* Sous 640 px, l'avatar quitte la barre : le compte connecté est repris en tête du menu. */}
             <div className="sm:hidden" data-testid="portal-mobile-account">
               <div className="flex items-center gap-3 px-3 py-2">
                 <Avatar className="h-9 w-9">
                   <AvatarImage src={user?.avatarUrl ?? undefined} alt="" />
-                  <AvatarFallback className="bg-[#0e1310] text-xs font-semibold text-white dark:bg-foreground dark:text-background">
+                  <AvatarFallback className="bg-foreground text-xs font-semibold text-white dark:text-background">
                     {user ? getInitials(user.firstName, user.lastName) : "C"}
                   </AvatarFallback>
                 </Avatar>
@@ -206,13 +206,13 @@ function PortalNavbar({ overlay = false }: { overlay?: boolean }) {
                     {user ? `${user.firstName} ${user.lastName}` : "Compte client"}
                   </p>
                   {user?.email ? (
-                    <p className="truncate text-xs text-[#68726b] dark:text-muted-foreground">{user.email}</p>
+                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                   ) : null}
                 </div>
               </div>
               <DropdownMenuSeparator className="bg-black/[0.07] dark:bg-border" />
             </div>
-            <DropdownMenuLabel className="text-xs uppercase tracking-[0.16em] text-[#68726b] dark:text-muted-foreground">
+            <DropdownMenuLabel className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
               Espace client
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-black/[0.07] dark:bg-border" />

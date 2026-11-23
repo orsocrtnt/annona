@@ -34,7 +34,7 @@ export function PositionPickerMapInner({ position, onChange }: { position: Picke
     () =>
       L.divIcon({
         className: "",
-        html: '<div style="width:22px;height:22px;border-radius:9999px;background:#0e1310;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>',
+        html: '<div style="width:22px;height:22px;border-radius:9999px;background:#0d0d12;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4)"></div>',
         iconSize: [22, 22],
         iconAnchor: [11, 11],
       }),

@@ -17,7 +17,7 @@ function KpiCard({ label, value, icon: Icon, children }: KpiCardProps) {
     <HomeCard as="article" className="flex min-w-0 flex-col gap-2">
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-sm font-semibold text-muted-foreground">{label}</h3>
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#e3f7ec] text-brand dark:bg-brand-subtle" aria-hidden>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-subtle text-brand" aria-hidden>
           <Icon className="h-[18px] w-[18px]" />
         </span>
       </div>

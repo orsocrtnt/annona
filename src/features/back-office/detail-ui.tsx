@@ -36,7 +36,7 @@ export function PersonHeader({
       </Button>
       <div className="flex min-w-0 items-center gap-4">
         <span
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#eef4f0] text-sm font-semibold text-foreground dark:bg-muted"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-foreground"
           aria-hidden="true"
         >
           {initialsOf(name)}
@@ -100,7 +100,7 @@ export function RecordRow({
       href={href}
       className={cn(
         className,
-        "transition-colors hover:bg-[#f5f8f6] dark:hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
+        "transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2"
       )}
     >
       {body}

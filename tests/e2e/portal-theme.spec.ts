@@ -22,12 +22,12 @@ test("le portail suit le thème du système par défaut, clair puis sombre", asy
   await page.emulateMedia({ colorScheme: "light" });
   await openPortal(page);
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  expect(await bodyBackground(page)).toBe("rgb(245, 248, 246)");
+  expect(await bodyBackground(page)).toBe("rgb(255, 255, 255)");
 
   // Le thème du système est suivi en direct tant que la préférence reste « Système ».
   await page.emulateMedia({ colorScheme: "dark" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  expect(await bodyBackground(page)).toBe("rgb(20, 23, 22)");
+  expect(await bodyBackground(page)).toBe("rgb(13, 13, 18)");
 });
 
 test("le choix sombre est mémorisé, appliqué avant l'hydratation et survit au rechargement", async ({ page }) => {
@@ -36,7 +36,7 @@ test("le choix sombre est mémorisé, appliqué avant l'hydratation et survit au
 
   await page.getByTestId("theme-toggle").click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  expect(await bodyBackground(page)).toBe("rgb(20, 23, 22)");
+  expect(await bodyBackground(page)).toBe("rgb(13, 13, 18)");
 
   // Avant la première peinture du rechargement : le premier requestAnimationFrame voit déjà le Dark.
   await page.addInitScript(() => {
@@ -52,13 +52,13 @@ test("le choix sombre est mémorisé, appliqué avant l'hydratation et survit au
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   const first = await page.evaluate(() => (window as unknown as { __firstFrame: { theme: string; bg: string | null } }).__firstFrame);
   expect(first.theme).toBe("dark");
-  if (first.bg) expect(first.bg).toBe("rgb(20, 23, 22)");
+  if (first.bg) expect(first.bg).toBe("rgb(13, 13, 18)");
   expect(await page.evaluate(() => localStorage.getItem("annona-theme"))).toBe("dark");
   await page.screenshot({ path: test.info().outputPath("portail-sombre.png"), fullPage: true });
 
   await page.getByTestId("theme-toggle").click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  expect(await bodyBackground(page)).toBe("rgb(245, 248, 246)");
+  expect(await bodyBackground(page)).toBe("rgb(255, 255, 255)");
 });
 
 test("le basculement de thème se manœuvre au clavier et garde un focus visible", async ({ page }) => {

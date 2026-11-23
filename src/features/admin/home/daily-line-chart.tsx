@@ -29,7 +29,7 @@ function pointValue<K extends string>(point: DailyPoint<K>, key: K): number {
 /** Couleurs validées par le script du skill dataviz (lot 1), plus l'orange de l'entonnoir (lot 2). */
 export const CHART_COLORS = {
   blue: { stroke: "stroke-[#2a78d6] dark:stroke-[#3987e5]", fill: "fill-[#2a78d6] dark:fill-[#3987e5]", swatch: "bg-[#2a78d6] dark:bg-[#3987e5]" },
-  green: { stroke: "stroke-[#08783f] dark:stroke-[#2fae6f]", fill: "fill-[#08783f] dark:fill-[#2fae6f]", swatch: "bg-[#08783f] dark:bg-[#2fae6f]" },
+  ink: { stroke: "stroke-[#0d0d12] dark:stroke-[#ffd60a]", fill: "fill-[#0d0d12] dark:fill-[#ffd60a]", swatch: "bg-[#0d0d12] dark:bg-[#ffd60a]" },
   orange: { stroke: "stroke-[#b85c00] dark:stroke-[#e8913a]", fill: "fill-[#b85c00] dark:fill-[#e8913a]", swatch: "bg-[#b85c00] dark:bg-[#e8913a]" },
 } as const;
 
