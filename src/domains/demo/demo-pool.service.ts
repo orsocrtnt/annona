@@ -4,6 +4,9 @@
  * Un visiteur reçoit un environnement libre (prêt, expiré ou abandonné), reconstruit à l'heure du moment, et un
  * jeton de prêt aléatoire (cookie). Seule l'empreinte SHA-256 du jeton est gardée : le prêt d'un environnement
  * repris par un autre visiteur cesse aussitôt d'ouvrir ses comptes. Au plus DEMO_MAX_SLOTS environnements.
+ *
+ * Une démo est rendue (puis reconstruite avant le prêt suivant) quand le visiteur se déconnecte, à la fin de la
+ * journée (`demoLeaseExpiry`) ou quand le super admin déconnecte tout le monde (`releaseAllDemoLeases`).
  */
 import { createHash, randomBytes } from "node:crypto";
 import type { DemoPoolEnvironment } from "@prisma/client";
@@ -11,10 +14,10 @@ import { prisma } from "@/services/prisma/client";
 import { demoPoolPrefix } from "@/domains/demo/demo-scenario";
 import { provisionDemoEnvironment } from "@/domains/demo/demo-provision.service";
 import {
-  DEMO_FRESH_MS,
-  DEMO_LEASE_MS,
   DEMO_MAX_SLOTS,
   DEMO_PREPARING_STALE_MS,
+  demoFreshAfter,
+  demoLeaseExpiry,
   isDemoLeaseToken,
 } from "@/lib/demo/demo-constants";
 
@@ -64,18 +67,19 @@ export async function findDemoLease(token: string | null | undefined, now = new 
 
 /** Réserve un environnement libre (état PREPARING, prêt déjà posé) ; en crée un s'il en manque. */
 async function claimEnvironment(leaseKeyHash: string | null, now: Date): Promise<{ id: string; slot: number }> {
-  const expires = leaseKeyHash ? new Date(now.getTime() + DEMO_LEASE_MS) : null;
+  const expires = leaseKeyHash ? demoLeaseExpiry(now) : null;
   const staleBefore = new Date(now.getTime() - DEMO_PREPARING_STALE_MS);
-  const freshAfter = new Date(now.getTime() - DEMO_FRESH_MS);
+  const freshAfter = demoFreshAfter(now);
   const claimed = await prisma.$queryRaw<Array<{ id: string; slot: number }>>`
     UPDATE "demo_pool_environments"
     SET "state" = 'PREPARING', "lease_key_hash" = ${leaseKeyHash}, "leased_at" = ${leaseKeyHash ? now : null},
         "lease_expires_at" = ${expires}, "last_error" = NULL, "updated_at" = ${now}
     WHERE "id" = (
       SELECT "id" FROM "demo_pool_environments"
-      WHERE ("state" = 'READY' AND ("prepared_at" IS NULL OR "prepared_at" <= ${freshAfter}))
+      WHERE "slot" <= ${DEMO_MAX_SLOTS} AND (
+            ("state" = 'READY' AND ("prepared_at" IS NULL OR "prepared_at" <= ${freshAfter}))
          OR ("state" = 'LEASED' AND "lease_expires_at" < ${now})
-         OR ("state" = 'PREPARING' AND "updated_at" < ${staleBefore})
+         OR ("state" = 'PREPARING' AND "updated_at" < ${staleBefore}))
       ORDER BY "slot"
       LIMIT 1
       FOR UPDATE SKIP LOCKED
@@ -109,15 +113,15 @@ async function claimEnvironment(leaseKeyHash: string | null, now: Date): Promise
 
 /** Environnement de réserve préparé il y a moins de DEMO_FRESH_MS : prêté tel quel, sans attendre. */
 async function leaseFreshEnvironment(leaseKeyHash: string, now: Date) {
-  const expires = new Date(now.getTime() + DEMO_LEASE_MS);
-  const freshAfter = new Date(now.getTime() - DEMO_FRESH_MS);
+  const expires = demoLeaseExpiry(now);
+  const freshAfter = demoFreshAfter(now);
   const leased = await prisma.$queryRaw<Array<{ slot: number; company_id: string; lease_expires_at: Date }>>`
     UPDATE "demo_pool_environments"
     SET "state" = 'LEASED', "lease_key_hash" = ${leaseKeyHash}, "leased_at" = ${now},
         "lease_expires_at" = ${expires}, "updated_at" = ${now}
     WHERE "id" = (
       SELECT "id" FROM "demo_pool_environments"
-      WHERE "state" = 'READY' AND "prepared_at" > ${freshAfter}
+      WHERE "slot" <= ${DEMO_MAX_SLOTS} AND "state" = 'READY' AND "prepared_at" > ${freshAfter}
       ORDER BY "prepared_at" DESC
       LIMIT 1
       FOR UPDATE SKIP LOCKED
@@ -131,8 +135,9 @@ async function leaseFreshEnvironment(leaseKeyHash: string, now: Date) {
  * Rien à faire si une réserve fraîche existe déjà ; sinon reprend un environnement libre ou en ouvre un nouveau.
  */
 export async function prepareSpareDemoEnvironment(now = new Date()) {
-  const freshAfter = new Date(now.getTime() - DEMO_FRESH_MS);
-  const fresh = await prisma.demoPoolEnvironment.count({ where: { state: "READY", preparedAt: { gt: freshAfter } } });
+  const fresh = await prisma.demoPoolEnvironment.count({
+    where: { slot: { lte: DEMO_MAX_SLOTS }, state: "READY", preparedAt: { gt: demoFreshAfter(now) } },
+  });
   if (fresh > 0) return null;
   let env: { id: string; slot: number };
   try {
@@ -186,14 +191,61 @@ export async function leaseDemoEnvironment(now = new Date()) {
   }
 }
 
+/** Environnement rendu : `preparedAt` effacé, car un environnement déjà utilisé n'est jamais une réserve fraîche. */
+const RELEASED = { state: "READY", preparedAt: null, leaseKeyHash: null, leasedAt: null, leaseExpiresAt: null } as const;
+
 /**
- * « Quitter la démo » : l'environnement redevient libre ; il sera reconstruit avant d'être prêté de nouveau
- * (`preparedAt` effacé : un environnement déjà utilisé n'est jamais une réserve fraîche).
+ * « Quitter la démo » ou déconnexion : l'environnement redevient libre ; il sera reconstruit avant d'être prêté
+ * de nouveau.
  */
 export async function releaseDemoLease(token: string | null | undefined) {
   if (!isDemoLeaseToken(token)) return;
-  await prisma.demoPoolEnvironment.updateMany({
-    where: { leaseKeyHash: hashDemoLeaseToken(token) },
-    data: { state: "READY", preparedAt: null, leaseKeyHash: null, leasedAt: null, leaseExpiresAt: null },
+  await prisma.demoPoolEnvironment.updateMany({ where: { leaseKeyHash: hashDemoLeaseToken(token) }, data: RELEASED });
+}
+
+/**
+ * « Tout déconnecter » (super admin) : tous les prêts sont rendus d'un coup ; les comptes de démo ouverts cessent
+ * aussitôt de s'ouvrir (garde du prêt). Une préparation en cours n'est pas touchée : elle se termine, ou est
+ * reprise après DEMO_PREPARING_STALE_MS. Renvoie le nombre de visiteurs déconnectés.
+ */
+export async function releaseAllDemoLeases(now = new Date()) {
+  const [disconnected] = await prisma.$transaction([
+    prisma.demoPoolEnvironment.count({ where: { state: "LEASED", leaseExpiresAt: { gt: now } } }),
+    prisma.demoPoolEnvironment.updateMany({ where: { state: "LEASED" }, data: RELEASED }),
+  ]);
+  return { disconnected };
+}
+
+export type DemoEnvironmentStatus = "IN_USE" | "PREPARING" | "FREE";
+
+/** État d'un environnement pour le suivi : utilisé (prêt en cours), en préparation, ou libre. */
+export function demoEnvironmentStatus(
+  env: Pick<DemoPoolEnvironment, "state" | "leaseExpiresAt" | "updatedAt"> | null,
+  now = new Date(),
+): DemoEnvironmentStatus {
+  if (!env) return "FREE";
+  if (env.state === "LEASED" && env.leaseExpiresAt !== null && env.leaseExpiresAt.getTime() > now.getTime()) return "IN_USE";
+  if (env.state === "PREPARING" && env.updatedAt.getTime() >= now.getTime() - DEMO_PREPARING_STALE_MS) return "PREPARING";
+  return "FREE";
+}
+
+export type DemoEnvironmentRow = {
+  slot: number;
+  status: DemoEnvironmentStatus;
+  leasedAt: Date | null;
+  leaseExpiresAt: Date | null;
+};
+
+/** Suivi des démos (super admin) : les DEMO_MAX_SLOTS environnements, ouverts ou non, sans donnée de visiteur. */
+export async function listDemoEnvironments(now = new Date()): Promise<DemoEnvironmentRow[]> {
+  const rows = await prisma.demoPoolEnvironment.findMany({
+    where: { slot: { lte: DEMO_MAX_SLOTS } },
+    select: { slot: true, state: true, leasedAt: true, leaseExpiresAt: true, updatedAt: true },
+  });
+  return Array.from({ length: DEMO_MAX_SLOTS }, (_, index) => {
+    const env = rows.find((row) => row.slot === index + 1) ?? null;
+    const status = demoEnvironmentStatus(env, now);
+    const inUse = status === "IN_USE";
+    return { slot: index + 1, status, leasedAt: inUse ? env!.leasedAt : null, leaseExpiresAt: inUse ? env!.leaseExpiresAt : null };
   });
 }

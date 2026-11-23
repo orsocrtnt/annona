@@ -191,11 +191,13 @@ test("connexion : e-mail non confirmé refusé sans appel administrateur", async
 });
 
 test("déconnexion : nettoyer l'état local après succès, signaler un échec fournisseur", async () => {
-  for (const failed of [false, true]) {
+  for (const [failed, companyId] of [[false, "company-1"], [true, "company-1"], [false, "demopool_02_company"], [true, "demopool_02_company"]] as const) {
     const events: string[] = [];
     const { useAuth } = load<{ useAuth: () => { logout: () => Promise<void> } }>("src/hooks/use-auth.ts", {
       react: { useCallback: (fn: unknown) => fn },
-      "@/stores/auth.store": { useAuthStore: () => ({ logout: () => events.push("store") }) },
+      "@/stores/auth.store": { useAuthStore: () => ({ user: { companyId }, logout: () => events.push("store") }) },
+      // DEMO-1 : la démo est rendue après la fin de session, jamais si la déconnexion a échoué.
+      "@/lib/demo/demo-logout": { releaseDemoOnLogout: async (id: string) => { assert.equal(id, companyId); events.push("demo"); } },
       "@/services/supabase/client": { createClient: () => ({ auth: { signOut: async () => { events.push("signout"); return { error: failed ? new Error("offline") : null }; } } }) },
       "next/navigation": { useRouter: () => ({ push: (url: string) => { assert.equal(url, "/login"); events.push("redirect"); } }) },
       "@tanstack/react-query": { useQueryClient: () => ({ clear: () => events.push("cache") }) },
@@ -205,7 +207,7 @@ test("déconnexion : nettoyer l'état local après succès, signaler un échec f
       sonner: { toast: { error: () => events.push("error") } },
     });
     await useAuth().logout();
-    assert.deepEqual(events, failed ? ["device", "signout", "error"] : ["device", "signout", "store", "legacy", "cache", "redirect"]);
+    assert.deepEqual(events, failed ? ["device", "signout", "error"] : ["device", "signout", "demo", "store", "legacy", "cache", "redirect"]);
   }
 });
 

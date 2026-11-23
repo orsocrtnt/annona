@@ -7,6 +7,7 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { releaseDeviceOnLogout } from "@/lib/native/device-logout";
+import { releaseDemoOnLogout } from "@/lib/demo/demo-logout";
 import { clearPendingCredentials } from "@/lib/storage/pending-credentials";
 
 export function useAuth() {
@@ -23,11 +24,13 @@ export function useAuth() {
       toast.error("Déconnexion impossible. Vérifiez votre connexion et réessayez.");
       return;
     }
+    // DEMO-1 : se déconnecter d'une démo la rend aussitôt (sans effet pour un vrai compte).
+    await releaseDemoOnLogout(user?.companyId);
     clearAuth();
     clearPendingCredentials();
     queryClient.clear();
     router.push("/login");
-  }, [supabase, clearAuth, queryClient, router]);
+  }, [supabase, user?.companyId, clearAuth, queryClient, router]);
 
   return {
     user,

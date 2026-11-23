@@ -1,21 +1,40 @@
 /**
  * DEMO-1 — constantes de la démo publique, sans dépendance serveur (lisibles par la page /demo et le middleware).
  *
- * Une démo par visiteur : un environnement `demopool_NN_…` lui est prêté pour DEMO_LEASE_MS. Le prêt est porté
+ * Une démo par visiteur : un des DEMO_MAX_SLOTS environnements `demopool_NN_…` lui est prêté jusqu'à sa déconnexion,
+ * DEMO_LEASE_MS au plus et jamais au-delà de la fin de journée (minuit à Paris). Le prêt est porté
  * par le cookie DEMO_LEASE_COOKIE (jeton aléatoire, seule son empreinte est en base) : sans ce cookie, un compte
  * de démo ne s'ouvre pas, donc un visiteur ne peut pas entrer dans l'environnement d'un autre.
  */
 import type { DemoPersona } from "@/domains/demo/demo-scenario";
+import { addCalendarDays, parisWallTimeToUtc, zonedTodayDate } from "@/lib/time/paris";
 
 export const DEMO_LEASE_COOKIE = "annona-demo-lease";
-/** Durée d'un prêt : 4 heures. */
+/** Durée maximale d'un prêt : 4 heures (un visiteur parti sans se déconnecter ne garde pas sa démo). */
 export const DEMO_LEASE_MS = 4 * 60 * 60 * 1000;
-/** Nombre maximal d'environnements de démo (visiteurs simultanés). */
-export const DEMO_MAX_SLOTS = 20;
+/** Nombre d'environnements de démo, donc de visiteurs simultanés (demande d'Orso du 23 novembre 2026 : 6). */
+export const DEMO_MAX_SLOTS = 6;
 /** Une réserve préparée depuis moins longtemps est prêtée telle quelle (la journée reste à l'heure, à 30 min près). */
 export const DEMO_FRESH_MS = 30 * 60 * 1000;
 /** Un environnement resté « en préparation » plus longtemps est considéré comme abandonné (échec, coupure). */
 export const DEMO_PREPARING_STALE_MS = 10 * 60 * 1000;
+
+const MIDNIGHT = { hour: 0, minute: 0 };
+
+/**
+ * Fin d'un prêt commencé à `now` : DEMO_LEASE_MS plus tard, mais jamais après la fin de journée (minuit à Paris).
+ * Chaque soir, toutes les démos sont donc rendues, et reconstruites avant d'être prêtées de nouveau.
+ */
+export function demoLeaseExpiry(now: Date): Date {
+  const endOfDay = parisWallTimeToUtc(addCalendarDays(zonedTodayDate(now), 1), MIDNIGHT);
+  return new Date(Math.min(now.getTime() + DEMO_LEASE_MS, endOfDay.getTime()));
+}
+
+/** Une réserve n'est prêtée telle quelle que préparée après cet instant : moins de DEMO_FRESH_MS, et le jour même. */
+export function demoFreshAfter(now: Date): Date {
+  const dayStart = parisWallTimeToUtc(zonedTodayDate(now), MIDNIGHT);
+  return new Date(Math.max(now.getTime() - DEMO_FRESH_MS, dayStart.getTime()));
+}
 
 const DEMO_COMPANY_ID_PATTERN = /^demopool_\d{2}_company$/;
 const DEMO_LEASE_TOKEN_PATTERN = /^[a-f0-9]{64}$/;
