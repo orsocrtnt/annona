@@ -151,7 +151,7 @@ test("LOT1-D5 vérification 4 : tournée terminée → position plus suivie (ni 
 });
 
 test("LOT1-D5 : onglet « Suivi livreurs » réservé à la fonctionnalité accordée (administrateur, mini admin)", () => {
-  assert.ok(companyNavItems.some((item) => item.title === "Suivi livreurs" && item.href === "/dashboard/tracking"));
+  assert.ok(companyNavItems.some((item) => item.title === "Carte" && item.href === "/dashboard/tracking"));
   const subject = (modules: string[] | null) => {
     const settings = modules ? withMiniAdminModules({}, modules) : {};
     const granted = miniAdminModules({ settings, role: { systemRole: "ADMIN" } });

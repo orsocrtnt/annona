@@ -11,7 +11,8 @@ import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { StatCard } from "@/components/ui/stat-card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useLiveDashboard } from "@/features/rounds/hooks";
-import { ROUND_COLORS, RoundsMap } from "@/features/rounds/rounds-map";
+import { DeliveryMap, roundColor } from "@/features/delivery-map/delivery-map";
+import { useDeliveryMapData } from "@/features/delivery-map/use-delivery-map-data";
 import { longDeliveryDateLabel, timeLabel } from "@/lib/format/delivery-date";
 import { fr } from "@/lib/i18n/fr";
 
@@ -28,6 +29,9 @@ export function LiveDashboardContent() {
   // Lot 1, demande 4 : un mini admin sans « Commandes » ou « Tournées » ne voit pas de lien vers ces pages.
   const canOrders = useCanOpenPage("/dashboard/orders");
   const canRounds = useCanOpenPage("/dashboard/rounds");
+  const canMap = useCanOpenPage("/dashboard/tracking");
+  // CARTE-1 : la carte du tableau de bord est une copie de la page « Carte » (mêmes données, mêmes couleurs).
+  const map = useDeliveryMapData();
   if (live.isLoading && !live.data) return <PageSkeleton />;
   const data = live.data;
 
@@ -106,7 +110,7 @@ export function LiveDashboardContent() {
                             <TableRow key={round.id} data-testid="live-round" data-round-name={round.name}>
                               <TableCell>
                                 <span className="flex items-center gap-2 font-medium">
-                                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: ROUND_COLORS[index % ROUND_COLORS.length] }} aria-hidden />
+                                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: roundColor(index) }} aria-hidden />
                                   {round.name}
                                 </span>
                                 <span className="text-xs text-muted-foreground">{round.slotLabel}</span>
@@ -212,23 +216,16 @@ export function LiveDashboardContent() {
             </div>
 
             <aside className="space-y-2 xl:sticky xl:top-20 xl:self-start" aria-label={t.map}>
-              <h2 className="text-lg font-semibold">{t.map}</h2>
-              <p className="text-xs text-muted-foreground">{t.mapHint}</p>
-              <div className="overflow-hidden rounded-xl border">
-                <RoundsMap
-                  depot={data.depot}
-                  selectedRoundId={null}
-                  height={480}
-                  rounds={data.rounds.map((round, index) => ({
-                    id: round.id,
-                    name: round.name,
-                    color: ROUND_COLORS[index % ROUND_COLORS.length]!,
-                    driverName: round.driverName,
-                    driverPosition: round.driverPosition,
-                    stops: round.stops,
-                  }))}
-                />
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-lg font-semibold">{t.map}</h2>
+                {canMap ? (
+                  <Link href="/dashboard/tracking" className="text-sm font-medium text-brand underline-offset-4 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center">
+                    {fr.deliveryMap.openFull}
+                  </Link>
+                ) : null}
               </div>
+              <p className="text-xs text-muted-foreground">{t.mapHint}</p>
+              <DeliveryMap depot={map.depot} rounds={map.rounds} height={440} />
             </aside>
           </div>
         </>
