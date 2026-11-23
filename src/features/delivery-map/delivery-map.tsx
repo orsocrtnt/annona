@@ -37,8 +37,8 @@ export interface DeliveryMapInnerProps {
   onDriverClick?: (roundId: string) => void;
 }
 
-/** Couleurs des tournées (contraste suffisant sur le plan clair et le liseré blanc). */
-export const ROUND_COLORS = ["#2563eb", "#c2410c", "#7c3aed", "#0f766e", "#be185d", "#4d7c0f", "#a16207", "#0369a1"] as const;
+/** Couleurs des tournées : contraste suffisant sur le plan clair et le liseré blanc, sans vert (DA-1) ni jaune (réservé au livreur). */
+export const ROUND_COLORS = ["#2563eb", "#c2410c", "#7c3aed", "#be185d", "#0369a1", "#a16207", "#4338ca", "#57534e"] as const;
 
 export function roundColor(index: number): string {
   return ROUND_COLORS[index % ROUND_COLORS.length]!;

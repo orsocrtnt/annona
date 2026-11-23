@@ -180,6 +180,8 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - **Recette navigateur le 23 novembre** (Playwright, Chromium 1440×900, gérant de la démo sur `annona-dev`, branche d'aperçu locale démo + DA-1 + CARTE-1) : tableau de bord → « Ouvrir la carte » → page « Carte » : « Toutes (4) », un clic sur une tournée n'affiche qu'elle et ouvre sa fiche (prochains arrêts avec heure prévue, livrés avec l'heure), un second clic en ajoute une (2 affichées), « Toutes » réaffiche tout ; aucune erreur dans la page. Corrigé pendant la recette : tracé limité à ce qui reste à livrer (les arrêts livrés reliés faisaient de grands zigzags) et cadrage sur ce qui reste à faire. Non regardés : thème sombre, téléphone, compte mini admin.
   - **Reste** : avis d'Orso ; couleurs des tournées à revoir avec la nouvelle identité (DA-1).
 
+  - **23 novembre 2026** : couleurs des tournées sans vert (sarcelle et vert olive remplacés par bleu ciel, ocre, indigo et gris pierre ; jaune laissé au livreur), à la demande d'Orso (« encore des détails verts »). Vérifié : `npx tsc --noEmit` et `npm run lint` ; recette navigateur faite sur la branche d'aperçu.
+
 - [ ] **DA-1 — Nouvelle identité visuelle d'Annona (boulangerie B2B).**
 
   **Qui : Orso — relire la plaquette et la valider ou dire ce qui cloche ; ensuite Claude l'applique au code.**
