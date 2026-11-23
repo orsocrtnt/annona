@@ -5,6 +5,9 @@
  * éloignés du laboratoire d'abord, puis raccourcit chaque tournée par 2-opt + Or-opt (`round-improve.ts`). Ces tests le mesurent sur des adresses de Paris (rues de la démo, tirage fixe) avec les
  * temps à vol d'oiseau (30 km/h, détour de 40 %), départ du laboratoire de la démo (rue de la Roquette).
  *
+ * Les tournées d'un même créneau sont ensuite réparties en tailles voisines (`round-balance.ts`) quand elles tiennent
+ * le créneau et ne rallongent pas la route.
+ *
  * - Tests ordinaires : garde-fous qui passent aujourd'hui (écart à l'optimum exact borné, temps de calcul,
  *   toutes les commandes placées dans le créneau).
  * - Tests `todo` : défauts encore ouverts, qui échouent tant qu'ils ne sont pas traités (ils n'empêchent pas
@@ -12,6 +15,7 @@
  */
 import assert from "node:assert/strict";
 import test from "node:test";
+import { BALANCE_TOLERANCE, balanceRounds } from "../src/lib/dispatch/round-balance";
 import { improveOpenPath } from "../src/lib/dispatch/round-improve";
 import { orderRoundStops, planSlotRounds, ROUND_MAX_STOPS } from "../src/domains/order/round-generation";
 import { buildDemoScenario, DEMO_SCENARIO } from "../src/domains/demo/demo-scenario";
@@ -150,15 +154,39 @@ test(
   }
 );
 
-test(
-  "à décider avec Théo : 140 commandes du matin se répartissent en tournées de taille voisine",
-  { todo: "mesuré le 23 novembre 2026 après DISPATCH-OPTIM : 99 et 41 arrêts (le moins de tournées possible, sans équilibrage)" },
-  () => {
-    const rounds = planSlotRounds({ orders: stopsOf(parisPoints(140, 140)), depot: DEPOT, windowStart: WINDOW_START, windowEnd: WINDOW_END, travelSeconds: travel });
-    const sizes = rounds.map((round) => round.orderIds.length);
-    assert.ok(Math.max(...sizes) - Math.min(...sizes) <= 20, `tailles ${sizes.join(" / ")}`);
+test("DISPATCH-OPTIM : 140 commandes du matin font deux tournées de taille voisine, plus courtes et finies plus tôt (avant : 99 et 41 arrêts, 181 min, fin 12h26)", () => {
+  const points = parisPoints(140, 140);
+  const rounds = planSlotRounds({ orders: stopsOf(points), depot: DEPOT, windowStart: WINDOW_START, windowEnd: WINDOW_END, travelSeconds: travel });
+  const sizes = rounds.map((round) => round.orderIds.length);
+  assert.equal(rounds.length, 2, "pas de livreur de plus");
+  assert.ok(Math.max(...sizes) - Math.min(...sizes) <= 20, `tailles ${sizes.join(" / ")}`);
+  const route = rounds.reduce((sum, round) => sum + drivingSeconds(orderedPoints(points, round.orderIds)), 0);
+  assert.ok(route <= 170 * 60, `route ${Math.round(route / 60)} min`);
+  const lastArrival = Math.max(...rounds.flatMap((round) => round.arrivals.map((arrival) => arrival ?? 0)));
+  assert.ok(lastArrival <= WINDOW_START + 5.5 * 3_600_000, "les deux tournées finissent avant 11h (heure de Paris)");
+});
+
+test("DISPATCH-OPTIM : la répartition équilibrée place chaque commerce une fois, en tournées de taille voisine, de façon déterministe", () => {
+  for (const [count, seed] of [[2, 11], [3, 12], [4, 13]] as const) {
+    const points = parisPoints(90, seed);
+    const groups = balanceRounds(DEPOT, points, count, travel);
+    assert.equal(groups.length, count);
+    assert.deepEqual(groups.flat().sort((a, b) => a - b), points.map((_, index) => index));
+    const sizes = groups.map((group) => group.length);
+    const average = points.length / count;
+    for (const size of sizes) assert.ok(size >= Math.floor(average * (1 - BALANCE_TOLERANCE)) && size <= Math.ceil(average * (1 + BALANCE_TOLERANCE)), `tailles ${sizes.join(" / ")}`);
+    assert.deepEqual(balanceRounds(DEPOT, points, count, travel), groups);
   }
-);
+  assert.deepEqual(balanceRounds(DEPOT, parisPoints(2, 1), 3, travel), [[0], [1]]);
+});
+
+test("DISPATCH-OPTIM : créneau court (2 h), équilibré ou non, tout ce qui est rendu tient le créneau", () => {
+  // Créneau court : 2 h. Tout ce qui est rendu tient le créneau, quel que soit le choix fait.
+  const end = WINDOW_START + 2 * 3_600_000;
+  const rounds = planSlotRounds({ orders: stopsOf(parisPoints(90, 21)), depot: DEPOT, windowStart: WINDOW_START, windowEnd: end, travelSeconds: travel });
+  assert.equal(rounds.flatMap((round) => round.orderIds).length, 90);
+  for (const round of rounds) for (const arrival of round.arrivals) assert.ok(arrival !== null && arrival <= end);
+});
 
 test(
   "à améliorer : une journée réelle (plus de 60 commerces) obtient les temps de trajet routiers",

@@ -5,12 +5,15 @@
  * réparties en tournées par le calcul existant (`planRounds`, insertion au moindre coût en partant des
  * commerces les plus éloignés, puis 2-opt + Or-opt sur chaque tournée : DISPATCH-OPTIM), au départ du laboratoire. Aucune tournée n'a de livreur : l'attribution et l'édition relèvent de TOUR-1.
  *
- * Nombre de tournées : le moins possible. On commence par ⌈commandes / ROUND_MAX_STOPS⌉ tournées et on en ajoute
+ * Nombre de tournées : le moins possible ; à ce nombre, des tournées de taille voisine, une par secteur autour du
+ * laboratoire, si elles tiennent le créneau et ne rallongent pas la route (DISPATCH-OPTIM).
+ * Détail du nombre : on commence par ⌈commandes / ROUND_MAX_STOPS⌉ tournées et on en ajoute
  * une tant que des arrêts ne tiennent pas dans le créneau (10 essais au plus). Si le créneau reste
  * intenable, les tournées sont calculées sans contrainte d'horaire (tout le monde est livré, l'admin
  * verra les retards en TOUR-1). Un commerce sans coordonnées GPS passe en fin de dernière tournée.
  */
-import { planRounds, type RoundDelivery, type RoundDriver, type RoundOptions } from "@/lib/dispatch/round-planner";
+import { balanceRounds } from "@/lib/dispatch/round-balance";
+import { evaluateRound, planRounds, type RoundDelivery, type RoundDriver, type RoundEvaluation, type RoundOptions } from "@/lib/dispatch/round-planner";
 import type { GeoPoint } from "@/lib/dispatch/travel-time";
 
 /**
@@ -62,6 +65,44 @@ function drivers(count: number, depot: GeoPoint | null, readyAt: number, ids: Re
   }));
 }
 
+function routeSeconds(start: GeoPoint, stops: ReadonlyArray<{ deliveryId: string }>, pointOf: ReadonlyMap<string, GeoPoint>, travel: SlotRoundInput["travelSeconds"]) {
+  let total = 0;
+  let position = start;
+  for (const stop of stops) {
+    const point = pointOf.get(stop.deliveryId)!;
+    total += travel(position, point);
+    position = point;
+  }
+  return total;
+}
+
+/**
+ * DISPATCH-OPTIM : même nombre de tournées, tailles voisines (`balanceRounds`). Gardé seulement si chaque tournée
+ * tient le créneau, la limite d'arrêts et la durée, et si la route totale n'est pas plus longue ; sinon le calcul
+ * par insertion reste.
+ */
+function balancedOrCurrent(
+  current: Array<{ driverId: string; evaluation: RoundEvaluation }>,
+  depot: GeoPoint,
+  located: ReadonlyArray<SlotRoundOrder & { point: GeoPoint }>,
+  windowed: RoundDelivery[],
+  departure: number,
+  ids: ReadonlySet<string>,
+  options: RoundOptions
+) {
+  const pointOf = new Map(located.map((order) => [order.id, order.point]));
+  const byId = new Map(windowed.map((delivery) => [delivery.id, delivery]));
+  const groups = balanceRounds(depot, located.map((order) => order.point), current.length, options.travelSeconds);
+  const fleet = drivers(groups.length, depot, departure, ids);
+  const balanced = groups.map((group, index) => ({
+    driverId: fleet[index]!.id,
+    evaluation: evaluateRound(fleet[index]!, group.map((position) => ({ deliveryId: located[position]!.id, kind: "DROPOFF" as const })), byId, options),
+  }));
+  if (balanced.some((round) => round.evaluation.violations.length > 0)) return current;
+  const seconds = (rounds: typeof current) => rounds.reduce((sum, round) => sum + routeSeconds(depot, round.evaluation.stops, pointOf, options.travelSeconds), 0);
+  return seconds(balanced) <= seconds(current) ? balanced : current;
+}
+
 /** Tournées d'un créneau, dans l'ordre de leur première heure d'arrivée. */
 export function planSlotRounds(input: SlotRoundInput): PlannedRound[] {
   const located = input.orders.filter((order): order is SlotRoundOrder & { point: GeoPoint } => order.point !== null);
@@ -100,6 +141,10 @@ export function planSlotRounds(input: SlotRoundInput): PlannedRound[] {
         plan = attempt;
         break;
       }
+    }
+    // DISPATCH-OPTIM : à nombre de tournées égal, des tournées de taille voisine si elles tiennent le créneau.
+    if (plan && plan.rounds.length >= 2 && input.depot) {
+      plan = { ...plan, rounds: balancedOrCurrent(plan.rounds, input.depot, located, deliveries(true), departure, ids, options) };
     }
     // Créneau intenable : calcul sans horaire, avec le nombre minimal de tournées.
     plan ??= planRounds(deliveries(false), drivers(minimum, input.depot, departure, ids), options);
