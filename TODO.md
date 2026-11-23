@@ -4,16 +4,16 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**25 tâches terminées sur 43 — 58 %**
+**25 tâches terminées sur 44 — 57 %**
 
-`████████████░░░░░░░░` · 18 tâches restantes
+`███████████░░░░░░░░░` · 19 tâches restantes
 
 **Qui a fait quoi**
 
 | | Orso | Théo |
 |---|---|---|
 | Fait | **22** : RECETTE-V1, LOT1-D9, NOTIF-1, COLLAB-1, LOT1-D1, LOT1-D8, LOT1-D7, LOT1-D6, LOT1-D3, LOT1-D2, LOT1-D4, LOT1-D5, LOT1-RECETTE, ADM-1, FACT-1, TOUR-1, BOU-1, LOCK-1, CMD-1, CAT-1, SCHEMA-1, NET-1 | **7** : RECETTE-V1, LOT1-D9, HEB-1, NOTIF-1, COLLAB-1, COLLAB-2, WIN-1 |
-| À faire | **14** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2 | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
+| À faire | **15** : DA-1, ACCES-1, MOBILE-1, LOT2-D1, LOT2-D2, LOT2-D3, LOT2-D4, LOT2-D5, LOT2-D6, LOT2-D7, LOT2-D8, LOT2-D9, LOT2-D10, RETOURS-2, DISPATCH-OPTIM | **3** : SEP-1, AUTH-GOOGLE, RETOURS-1 |
 
 **À faire par Claude**
 
@@ -35,6 +35,7 @@
 - LOT2-D9 — Commandes de gâteaux des particuliers en boutique (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
 - LOT2-D10 — Pâtisseries pour les restaurants (valider la recette du 19 novembre (`docs/rapports/2026-11-19-recette-lot2.md`, toutes les vérifications réussies) ; ensuite la tâche se clôt)
 - RETOURS-2 — Retouches des notes du tour de Théo (`outputs/notes-tour.md`, 21 novembre) (4 enregistrements DNS chez Dovendi pour `mail.annona.fr` (e-mail de l'accès Vente) ; ensuite Claude vérifie le domaine et Théo crée un accès Vente pour voir l'e-mail arriver)
+- DISPATCH-OPTIM — Le calcul des tournées est-il optimal ? (RG-09, ADM-06) (dire si on améliore le calcul maintenant ; Théo — dire s'il faut des tournées de taille voisine ou le moins de tournées possible)
 
 **À faire par Théo**
 
@@ -50,6 +51,8 @@ _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
 
 **Point du 23 novembre 2026** : LOT1-D9 close (Théo a vérifié sur téléphone, les lenteurs ont disparu) ; détail dans `docs/TODO-ARCHIVE.md`. RECETTE-V1 close aussi (menu « Comment y aller ? » validé par Théo sur un vrai Android) ; iPhone et notifications natives restent dans MOBILE-1.
+
+**Calcul des tournées mesuré (23 novembre 2026, DISPATCH-OPTIM)** : il n'est pas optimal. Trajets 4 à 5 % plus longs que nécessaire en moyenne (jusqu'à 9 % sur une tournée de 65 arrêts), résultat qui varie de 10 à 14 % selon les identifiants des commandes, tournées déséquilibrées (92 et 48 arrêts pour 140 commandes), et temps routiers jamais utilisés au-delà de 60 commerces. Tests dans `tests/dispatch-optimisation.test.ts`. À décider : Orso (améliorer maintenant ?) et Théo (équilibrer les tournées ?).
 
 **Point du 22 novembre 2026 (nuit, Claude de Théo en autonomie)**
 
@@ -540,3 +543,20 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
   - **E-mail de l'accès Vente (SMTP)** : domaine `mail.annona.fr` créé le 21 novembre dans le compte Resend de Théo (région eu-west-1, suivi des clics et des ouvertures coupé ; un sous-domaine pour ne pas toucher au DKIM d'`annona.fr` déjà chez Resend côté Orso). Reste : (1) Orso ajoute 4 enregistrements DNS sur `annona.fr` (`resend._domainkey.mail` TXT, `send.mail` MX et TXT, `rsend.mail` CNAME ; valeurs exactes dans la liste « 1. Orso » en tête de fichier), (2) vérifier le domaine, (3) créer une clé Resend « envoi seulement » limitée à ce domaine, (4) Supabase `annona-dev` › Authentication › Emails › SMTP : hôte `smtp.resend.com`, port 465, utilisateur `resend`, mot de passe = la clé, expéditeur `no-reply@mail.annona.fr`, (5) `AUTH_EMAIL_LINKS_ENABLED=true` sur Vercel. Les étapes 4 et 5 ne sont pas faisables par l'agent (jeton Supabase dans le coffre Windows, équipe Vercel hors de portée de l'outil).
   - Vérifications : `tests/retours1-tour-theo.test.ts` 7/7 (classement des commandes, regroupement du stock, « pour qui », allergènes non déclarés, libellé « Vente », classement par rayon) ; `tests/lot2-d6-d8-stock.test.ts` adapté (pâtisserie avant boulangerie) ; `npx tsc --noEmit` sans erreur ; `npm run check` sortie 0 (920 tests : 913 réussis, 0 échec, 7 ignorés).
   - Non vérifié : clic réel dans le navigateur (aucun serveur lancé) sur les six écrans, en clair et en sombre, sur tablette et téléphone.
+
+- [ ] **DISPATCH-OPTIM — Le calcul des tournées est-il optimal ? (RG-09, ADM-06)**
+
+  **Qui : Orso — dire si on améliore le calcul maintenant ; Théo — dire s'il faut des tournées de taille voisine ou le moins de tournées possible.**
+
+  - **Demande d'Orso (23 novembre 2026)** : une série de tests sur l'organisation des tournées, pour savoir si le calcul est le plus optimisé possible.
+  - **Fait le 23 novembre (Claude d'Orso, branche `orso/dispatch-optim-tests`)** : `tests/dispatch-optimisation.test.ts`, 6 tests sur des adresses de Paris (rues de la démo, tirage fixe), départ du laboratoire de la démo, temps à vol d'oiseau. Deux garde-fous qui passent ; quatre défauts en test `todo` (ils échouent tant que le calcul n'est pas amélioré, sans faire échouer `npm test`). Aucun code de production modifié.
+  - **Réponse : non, ce n'est pas le plus optimisé possible.** Le calcul (`src/lib/dispatch/round-planner.ts`, appelé par `src/domains/order/round-generation.ts`) insère les arrêts un par un à la place qui coûte le moins, sans amélioration ensuite. Mesures (banc d'essai hors dépôt, puis tests) :
+    - Petites tournées (8 arrêts, 150 cas, comparées à la meilleure tournée calculée exactement) : 4,6 % de route en trop en moyenne, 27 % dans le pire cas ; meilleure tournée trouvée une fois sur trois.
+    - Tournées réelles (65 arrêts, 20 cas) : une amélioration classique après coup (2-opt + Or-opt : décroiser les trajets, déplacer un petit groupe d'arrêts) raccourcit la route de 4,6 % en moyenne, jusqu'à 9 % (de 135 à 127 min sur une tournée de 70 arrêts).
+    - Même liste d'adresses, identifiants des commandes tirés au hasard : de 121 à 138 min de route (14 % d'écart). Tous les arrêts d'un créneau ont la même heure limite, donc ils sont insérés dans l'ordre de leurs identifiants, qui n'a rien à voir avec la géographie.
+    - Répartition : 140 commandes du matin donnent 92 et 48 arrêts ; la grande tournée finit à 12h28 pour un créneau qui ferme à 12h30, l'autre à 9h45. 220 commandes : 94, 94 et 32. Le calcul remplit d'abord une tournée (choix voulu : le moins de tournées possible), il n'équilibre pas.
+    - Temps routiers : la matrice OSRM n'est demandée qu'en dessous de 60 points (`ROUTE_MATRIX_MAX_POINTS`), et elle est demandée pour toutes les commandes du jour, tous créneaux confondus. Avec 60 à 70 arrêts par tournée, une vraie journée est donc toujours calculée à vol d'oiseau (30 km/h, détour de 40 %), qu'un service OSRM soit configuré ou non.
+    - Temps de calcul : 48 ms pour 70 commandes, 0,3 s pour 140, 1,6 s pour 220 : pas un problème.
+  - **Pistes, par ordre de rapport gain / effort** (non faites, en attente de la décision d'Orso) : (1) passe 2-opt + Or-opt sur chaque tournée après le calcul, aussi pour « Recalculer l'ordre » : environ 5 % de route en moins, quelques dizaines de lignes, module pur testable ; (2) insérer d'abord les arrêts les plus éloignés du laboratoire (ou plusieurs essais) au lieu de l'ordre des identifiants : supprime l'écart de 14 % ; (3) demander la matrice par créneau et par morceaux de 60 points au plus (ou relever la limite si le service OSRM le permet) ; (4) si Théo le veut : équilibrer les tournées d'un créneau (échange d'arrêts entre tournées voisines).
+  - **Vérifications** : `node --import tsx --test tests/dispatch-optimisation.test.ts` : 6 tests, 2 réussis, 0 échec, 4 `todo` (2-opt : 3,7 % de gain moyen ; identifiants : 9,8 % d'écart ; tailles 92 / 48 ; matrice jamais demandée). `npm run check` : sortie 0 (931 tests : 926 réussis, 0 échec, 1 sauté, 4 `todo`).
+  - **Non vérifié** : écart avec de vrais temps routiers (aucun appel au service OSRM fait) ; adresses des vrais clients (aucun encore).
