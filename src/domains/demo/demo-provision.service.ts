@@ -3,7 +3,7 @@
  *
  * L'environnement précédent est effacé en entier (son entreprise et tout ce qui en dépend, ses comptes), puis la
  * journée est réécrite dans une seule transaction : un visiteur ne voit jamais un environnement à moitié écrit.
- * Les comptes de connexion Supabase sont créés une fois (adresse `@example.com`, mot de passe aléatoire jamais
+ * Les comptes de connexion Supabase sont créés une fois (adresse `@demo.annona.example`, mot de passe aléatoire jamais
  * affiché) et réutilisés à chaque reconstruction : on n'y entre que par la page /demo, avec le cookie de prêt.
  */
 import { randomBytes } from "node:crypto";

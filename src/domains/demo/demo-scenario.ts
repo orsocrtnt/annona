@@ -24,6 +24,9 @@ import {
 } from "@/domains/demo/demo-scenario-data";
 import { addCalendarDays, parisParts, parisWallTimeToUtc, type CalendarDate } from "@/lib/time/paris";
 
+/** Domaine de toutes les adresses de la démo : réservé (RFC 2606), jamais livrable, refusé par la garde d'envoi. */
+export const DEMO_EMAIL_DOMAIN = "demo.annona.example";
+
 export const DEMO_PERSONAS = ["admin", "baker", "driver", "client"] as const;
 export type DemoPersona = (typeof DEMO_PERSONAS)[number];
 
@@ -274,7 +277,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
     const firstName = DEMO_FIRST_NAMES[index % DEMO_FIRST_NAMES.length]!;
     const lastName = DEMO_LAST_NAMES[(index * 7) % DEMO_LAST_NAMES.length]!;
     const merchantId = id("merchant", pad(index + 1, 3));
-    const email = `${slugify(name)}.${pad(slot)}@example.com`;
+    const email = `${slugify(name)}.${pad(slot)}@${DEMO_EMAIL_DOMAIN}`;
     const lat = Math.round((latitude + (random() - 0.5) * 0.0024) * 1e6) / 1e6;
     const lng = Math.round((longitude + (random() - 0.5) * 0.0034) * 1e6) / 1e6;
 
@@ -333,7 +336,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
   const clientPlan = plans[0]!;
   const clientMerchant = merchants[0]!;
   const [clientFirst, clientLast] = String(clientMerchant.contactName).split(" ") as [string, string];
-  const email = (who: string) => `demo-${pad(slot)}-${who}@example.com`;
+  const email = (who: string) => `demo-${pad(slot)}-${who}@${DEMO_EMAIL_DOMAIN}`;
   const users: DemoScenarioUser[] = [
     { id: id("user", "admin"), persona: "admin", email: email("admin"), firstName: "Camille", lastName: "Durand", phone: "0601020304", role: "ADMIN", merchantId: null },
     { id: id("user", "baker"), persona: "baker", email: email("boulanger"), firstName: "Bastien", lastName: "Fournier", phone: "0601020305", role: "BAKER", merchantId: null },
@@ -488,7 +491,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
     id: companyId,
     slug: `demo-pool-${pad(slot)}`,
     name: "Boulangerie de démonstration",
-    email: `contact-demo-${pad(slot)}@example.com`,
+    email: `contact-demo-${pad(slot)}@${DEMO_EMAIL_DOMAIN}`,
     phone: "0140000000",
     address: DEMO_SCENARIO.depot.address,
     city: "Paris",

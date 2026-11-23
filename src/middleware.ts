@@ -10,7 +10,7 @@ import {
 } from "@/lib/permissions/page-access";
 import { resolveServerAuthForAuthId } from "@/lib/api/server-auth";
 import { miniAdminModules } from "@/lib/permissions/mini-admin";
-import { DEMO_LEASE_COOKIE } from "@/lib/demo/demo-constants";
+import { DEMO_LEASE_COOKIE, demoBlockedApiReason, isDemoCompanyId } from "@/lib/demo/demo-constants";
 
 const NO_STORE = "no-store";
 
@@ -111,7 +111,19 @@ export async function middleware(request: NextRequest) {
   const isApiRoute = pathname.startsWith("/api");
 
   // API : header auth-id déjà posé (cache JWT / getClaims, pas de getUser par appel).
-  if (isApiRoute) return supabaseResponse;
+  if (isApiRoute) {
+    // DEMO-1 : mot de passe, comptes et suppressions refusés aux comptes de démo. Relecture en base seulement
+    // pour un porteur du cookie de prêt qui tente une de ces mutations (jamais pour les autres requêtes).
+    const demoLeaseToken = request.cookies.get(DEMO_LEASE_COOKIE)?.value;
+    const demoReason = user && demoLeaseToken ? demoBlockedApiReason(request.method, pathname) : null;
+    if (demoReason) {
+      const auth = await resolveServerAuthForAuthId(user!.id, demoLeaseToken).catch(() => null);
+      if (!auth || isDemoCompanyId(auth.user.companyId)) {
+        return withSessionCookies(NextResponse.json({ error: demoReason }, { status: 403 }), supabaseResponse);
+      }
+    }
+    return supabaseResponse;
+  }
 
   if (isProtectedPagePath(pathname)) {
     if (!user) return withSessionCookies(loginRedirect(request, pathname), supabaseResponse);

@@ -36,3 +36,23 @@ export const DEMO_PERSONA_LABELS: Record<DemoPersona, { title: string; descripti
 
 /** Ordre d'affichage sur la page /demo. */
 export const DEMO_PERSONA_ORDER: readonly DemoPersona[] = ["client", "admin", "baker", "driver"];
+
+/**
+ * Adresse de la démo : toutes sont en `@demo.annona.example` (DEMO_EMAIL_DOMAIN, domaine réservé, jamais livrable).
+ * La garde d'envoi la refuse au plus bas niveau, quel que soit l'appelant.
+ */
+export function isDemoEmailAddress(address: string): boolean {
+  return address.trim().toLowerCase().endsWith("@demo.annona.example");
+}
+
+/** Mutations d'API refusées dans la démo : mot de passe, comptes et suppressions (décision d'Orso du 16 novembre). */
+const DEMO_BLOCKED_PREFIXES = ["/api/users", "/api/profile", "/api/auth/password-link", "/api/auth/password-recovery", "/api/auth/signup"];
+
+export function demoBlockedApiReason(method: string, pathname: string): string | null {
+  const verb = method.toUpperCase();
+  if (pathname === "/api/demo" || pathname.startsWith("/api/demo/")) return null;
+  if (verb === "DELETE") return "Les suppressions sont désactivées dans la démo.";
+  if (verb === "GET" || verb === "HEAD" || verb === "OPTIONS") return null;
+  const blocked = DEMO_BLOCKED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  return blocked ? "Les comptes et les mots de passe ne se modifient pas dans la démo." : null;
+}

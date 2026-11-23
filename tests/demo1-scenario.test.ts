@@ -55,7 +55,7 @@ test("DEMO-1 : identifiants propres à l'environnement, déterministes, contrain
   assert.ok(ids(first).every((value) => !otherIds.has(value)));
   assert.notEqual(first.company.slug, other.company.slug);
   assert.equal(new Set(first.users.map((user) => user.email)).size, first.users.length);
-  assert.ok(first.users.every((user) => user.email.endsWith("@example.com")));
+  assert.ok(first.users.every((user) => user.email.endsWith("@demo.annona.example")));
 
   const unique = <T>(values: T[]) => new Set(values).size === values.length;
   assert.ok(unique(first.orders.map((order) => `${order.merchantId}|${time(order.deliveryDate)}|${order.slotId}`)));

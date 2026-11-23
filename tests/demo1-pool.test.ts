@@ -73,3 +73,47 @@ test("DEMO-1 : connexion sans identifiants par lien généré côté serveur, sa
   // La page de connexion mène à la démo.
   assert.match(read("src/features/auth/auth-form.tsx"), /href="\/demo"[\s\S]*Voir la démo/);
 });
+
+test("DEMO-1 garde-fous : aucun e-mail vers une adresse de la démo, aucune notification depuis la démo", async () => {
+  const { isDemoEmailAddress } = await import("@/lib/demo/demo-constants");
+  const { DEMO_EMAIL_DOMAIN } = await import("@/domains/demo/demo-scenario");
+  const scenario = buildDemoScenario({ slot: 2, now });
+  for (const address of [...scenario.users.map((user) => user.email), ...scenario.merchants.map((m) => String(m.contactEmail)), String(scenario.company.email)]) {
+    assert.ok(isDemoEmailAddress(address), address);
+  }
+  assert.equal(DEMO_EMAIL_DOMAIN, "demo.annona.example");
+  assert.ok(isDemoEmailAddress("Contact-Demo-01@DEMO.ANNONA.EXAMPLE"));
+  for (const address of ["orso@annona.fr", "client@example.com", "a@annona.example", "c@gmail.com"]) {
+    assert.equal(isDemoEmailAddress(address), false, address);
+  }
+  const { sendTransactionalEmail } = await import("@/lib/email/transactional-email");
+  let fetched = 0;
+  const env = { EMAIL_DELIVERY_MODE: "live", RESEND_API_KEY: "re_test", MAIL_FROM: "no-reply@mail.annona.fr" };
+  const fetcher = (async () => {
+    fetched++;
+    return new Response("{}");
+  }) as unknown as typeof fetch;
+  const result = await sendTransactionalEmail(
+    { to: "demo-01-client@demo.annona.example", subject: "s", text: "t", idempotencyKey: "demo-test", replayWindowStart: null },
+    { env, fetcher } as unknown as Parameters<typeof sendTransactionalEmail>[1],
+  );
+  assert.equal(result.status, "disabled");
+  assert.equal(fetched, 0, "aucun appel au fournisseur d'e-mails");
+  const push = read("src/domains/driver/driver-push.service.ts");
+  assert.match(push, /if \(isDemoCompanyId\(user\.companyId\)\) return;/);
+  assert.match(push, /if \(isDemoCompanyId\(input\.companyId\)\) throw skippedJobError\("DRIVER_PUSH_DEMO"\)/);
+});
+
+test("DEMO-1 garde-fous : mot de passe, comptes et suppressions refusés aux comptes de démo", async () => {
+  const { demoBlockedApiReason } = await import("@/lib/demo/demo-constants");
+  assert.match(demoBlockedApiReason("DELETE", "/api/orders/x")!, /suppressions/);
+  for (const [method, path] of [["POST", "/api/users"], ["PATCH", "/api/users/u1"], ["POST", "/api/profile/password"], ["PATCH", "/api/profile"], ["POST", "/api/auth/password-recovery"]]) {
+    assert.ok(demoBlockedApiReason(method!, path!), `${method} ${path}`);
+  }
+  for (const [method, path] of [["GET", "/api/users"], ["POST", "/api/orders"], ["PATCH", "/api/stops/s1"], ["POST", "/api/demo/leave"], ["DELETE", "/api/demo/leave"]]) {
+    assert.equal(demoBlockedApiReason(method!, path!), null, `${method} ${path}`);
+  }
+  const middleware = read("src/middleware.ts");
+  assert.match(middleware, /demoBlockedApiReason\(request\.method, pathname\)/);
+  assert.match(middleware, /if \(!auth \|\| isDemoCompanyId\(auth\.user\.companyId\)\)/);
+});
