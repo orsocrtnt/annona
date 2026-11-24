@@ -24,7 +24,7 @@ const PASTRY_DEFAULT_VAT = 550;
 export type LabFamily = "BREAD" | "PASTRY";
 
 const notFound = () => new DomainRuleError(404, "Produit introuvable.", "PRODUCT_NOT_FOUND");
-const wrongCategory = () => new DomainRuleError(400, "Choisissez une catégorie de pâtisserie.", "CATEGORY_NOT_PASTRY");
+const wrongCategory = () => new DomainRuleError(400, "Choisissez une catégorie de l'atelier.", "CATEGORY_NOT_PASTRY");
 
 async function assertFamilyCategory(db: CatalogDb, companyId: string, categoryId: string, family: LabFamily) {
   const category = await db.category.findFirst({ where: { id: categoryId, companyId }, select: { family: true } });

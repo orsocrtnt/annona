@@ -4,7 +4,8 @@ Cet index distingue la documentation courante des preuves datées. En cas de con
 
 ## Produit
 
-- [`../PRODUCT.md`](../PRODUCT.md) — résumé du produit (commande et livraison B2B pour boulangerie) ;
+- [`../PRODUCT.md`](../PRODUCT.md) — résumé du produit (commande et livraison B2B, tous métiers) ;
+- [`VOCABULAIRE.md`](VOCABULAIRE.md) — mots affichés dans l'app (vocabulaire neutre, UNIV-1) ;
 - [`cahier-des-charges/`](cahier-des-charges/TRI-BASE.md) — cahier des charges (PDF, exigences CLI, BOU, LIV, ADM, PLA, NOT, RG, ENF) et tri de la base existante (`TRI-BASE.md`).
 
 ## Références courantes

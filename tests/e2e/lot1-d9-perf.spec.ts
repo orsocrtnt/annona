@@ -70,7 +70,7 @@ const SPACES: Array<{ space: string; account: string; login: string; home: strin
       { screen: "Paramètres", path: "/settings" },
     ],
   },
-  { space: "Boulanger", account: "boulanger", login: "/login", home: "/bakery", screens: [{ screen: "Production", path: "/bakery" }] },
+  { space: "Production", account: "boulanger", login: "/login", home: "/bakery", screens: [{ screen: "Production", path: "/bakery" }] },
   {
     space: "Client",
     account: "client-1",

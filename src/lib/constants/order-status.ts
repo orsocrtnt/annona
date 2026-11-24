@@ -14,7 +14,7 @@ export const ORDER_ORIGIN_LABELS: Record<OrderOrigin, string> = {
   MANUAL: "Manuelle",
   RECURRING: "Récurrente",
   // Lot 2, demande 5 : envoi du laboratoire vers une boutique.
-  SHIPMENT: "Envoi boutique",
+  SHIPMENT: "Envoi au point de vente",
 };
 
 export const ROUND_STATUS_LABELS: Record<RoundStatus, string> = {

@@ -72,6 +72,6 @@ export async function requireMerchantActor(): Promise<Guarded<MerchantActor>> {
   if ("error" in auth) return auth;
   const { user, permissions } = auth.context;
   if (!user.companyId) return { error: json("Entreprise non associée", 403) };
-  if (!user.merchantId) return { error: json("Compte client non rattaché à un commerce. Contactez la boulangerie.", 403) };
+  if (!user.merchantId) return { error: json("Compte client non rattaché à un client. Contactez votre fournisseur.", 403) };
   return { actor: { user, permissions, companyId: user.companyId, merchantId: user.merchantId } };
 }

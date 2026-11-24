@@ -41,7 +41,7 @@ export function SellerReception() {
       void qc.invalidateQueries({ queryKey: ["shop"] });
       toast.success("Réception enregistrée", {
         description: result.gaps.length
-          ? `Écart signalé au laboratoire : ${result.gaps.map((gap) => `${gap.name} ${gap.received}/${gap.sent}`).join(", ")}.`
+          ? `Écart signalé à la production : ${result.gaps.map((gap) => `${gap.name} ${gap.received}/${gap.sent}`).join(", ")}.`
           : "Les produits en bon état sont en stock.",
       });
     },

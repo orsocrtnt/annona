@@ -70,7 +70,7 @@ test("LOT2-D9 vérifications 1 et 2 : fraisier 10 personnes à 40 € ; acompte 
 test("LOT2-D4 vérification 4 : pendant la prise de commande, le prix s'affiche mais ne se change pas", async () => {
   const { db } = fixture();
   const choices = await listCakeChoices("A", "centre", db);
-  assert.deepEqual(choices.map((choice) => [choice.name, choice.sizes.map((size) => [size.servings, size.priceCents])]), [["Fraisier", [[10, 4000]]]], "seule la taille avec un prix boutique");
+  assert.deepEqual(choices.map((choice) => [choice.name, choice.sizes.map((size) => [size.servings, size.priceCents])]), [["Fraisier", [[10, 4000]]]], "seule la taille avec un prix en point de vente");
   // La saisie n'a pas de champ prix : un prix envoyé est refusé par la route, et le service lit le prix boutique.
   const route = readFileSync("src/app/api/shop/cakes/route.ts", "utf8");
   assert.doesNotMatch(route, /priceCents/);
@@ -94,7 +94,7 @@ test("LOT2-D9 : au moins 48 h avant le retrait, délai réglable par l'administr
   assert.match(readFileSync("src/app/api/shops/cake-settings/route.ts", "utf8"), /requireCompanyAdmin\("shops:manage"\)/);
 });
 
-test("LOT2-D9 vérifications 3 et 4 : le fraisier et son inscription chez le pâtissier le jour prévu, dans l'envoi du matin vers la boutique", async () => {
+test("LOT2-D9 vérifications 3 et 4 : le fraisier et son inscription chez le pâtissier le jour prévu, dans l'envoi du matin vers le point de vente", async () => {
   const { tables, db } = fixture();
   let roundsFor: string | null = null;
   const row = await createCakeOrder(SELLER, ORDER, { db, now: NOW, addToRounds: async (_companyId, date) => { roundsFor = date; } });
@@ -120,7 +120,7 @@ test("LOT2-D9 vérification 5 : au retrait, la vendeuse marque la commande « so
   const settled = await settleCakeOrder(SELLER, row.id, { db, now: new Date("2026-11-22T09:30:00.000Z") });
   assert.deepEqual([settled.status, settled.dueCents, settled.paidCents], ["SETTLED", 0, 4000]);
   await assert.rejects(settleCakeOrder(SELLER, row.id, { db }), { status: 409 });
-  await assert.rejects(settleCakeOrder({ ...SELLER, shopId: "gare" }, row.id, { db }), { status: 404 }, "une autre boutique ne la voit pas");
+  await assert.rejects(settleCakeOrder({ ...SELLER, shopId: "gare" }, row.id, { db }), { status: 404 }, "une autre point de vente ne la voit pas");
   assert.deepEqual(tables.auditLog!.filter((log) => log.entityType === "CakeOrder").map((log) => log.action), ["CREATE", "SETTLE"]);
 });
 

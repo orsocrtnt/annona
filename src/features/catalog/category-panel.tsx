@@ -153,11 +153,11 @@ export function CategoryPanel({ categories, selectedId, onSelect, allCategories,
                       variant="outline"
                       className="h-8 shrink-0 px-2 text-xs"
                       data-testid={`category-family-${category.name}`}
-                      aria-label={`Famille de ${category.name} : ${category.family === "PASTRY" ? "pâtisserie" : "pain"}. Changer`}
+                      aria-label={`Famille de ${category.name} : ${category.family === "PASTRY" ? "atelier" : "production"}. Changer`}
                       disabled={update.isPending}
                       onClick={() => update.mutate({ id: category.id, input: { family: category.family === "PASTRY" ? "BREAD" : "PASTRY" } }, { onError })}
                     >
-                      {category.family === "PASTRY" ? "Pâtisserie" : "Pain"}
+                      {category.family === "PASTRY" ? "Atelier" : "Production"}
                     </Button>
                     <Button
                       type="button" size="icon-sm" variant="ghost" aria-label={`${t.renameCategory} ${category.name}`}

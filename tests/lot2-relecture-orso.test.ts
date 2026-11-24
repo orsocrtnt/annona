@@ -121,7 +121,7 @@ test("Relecture 2 : l'admin corrige une commande avec un castel 6 parts et un ca
   assert.equal(added.unitPriceFrozenCents, 2400);
 });
 
-test("Relecture 3 et 4 : une taille déjà commandée ne se retire pas ; un gros gâteau n'a pas de prix de base", async () => {
+test("Relecture 3 et 4 : une taille déjà commandée ne se retire pas ; un produit à tailles n'a pas de prix de base", async () => {
   const { tables } = restaurantFixture();
   tables.category![0]!.name = "Gâteaux à partager";
   const db = createMemoryDb(tables, {

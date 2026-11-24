@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**25 tâches terminées sur 47 — 53 %**
+**25 tâches terminées sur 48 — 52 %**
 
-`███████████░░░░░░░░░` · 22 tâches restantes
+`██████████░░░░░░░░░░` · 23 tâches restantes
 
 **Qui a fait quoi**
 
@@ -17,7 +17,8 @@
 
 **À faire par Claude**
 
-- VIDEO-1 — Vidéo de présentation d'Annona pour les boulangeries, sur le modèle de la vidéo TutelLiv (finir le rendu avec la voix « Nicolas - Narrator » (en pause à la demande d'Orso) ; puis Orso : écouter et valider le texte)
+- UNIV-1 — Annona universelle : vocabulaire neutre pour tous les métiers (glacier, boucherie, boissons…) (finir le passage du site au vocabulaire neutre, vérifier (`npm run check`, clic navigateur) ; puis Orso : relire les libellés)
+- VIDEO-1 — Vidéo de présentation d'Annona pour les boulangeries, sur le modèle de la vidéo TutelLiv (v4 universelle : voix sans sauts, caméra fluide sur le livreur, habillage multi-métiers, recapture des écrans après UNIV-1 ; puis Orso : regarder la v4)
 
 **À faire par Orso**
 
@@ -53,7 +54,7 @@ _Une tâche faite à deux compte pour chacun. Chaque tâche ouverte est classée
 
 _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le met à jour à chaque fin de tâche (simples tirets ici : seules les cases des tâches comptent dans la jauge). Deux développeurs : Orso (propriétaire) et Théo ; règles du travail à deux dans `AGENTS.md`. Les tâches sont communes : « Qui » dit seulement qui doit agir ensuite._
 
-**Vidéo de présentation (23 novembre 2026, VIDEO-1)** : montage v2 refait sur le modèle de la v6 TutelLiv, vu par Orso (« ok top ») ; il demande la voix « Nicolas - Narrator » (ElevenLabs) : prise générée, montage et son recalés dessus, **rendu des images en pause à 480 sur 3 023** (à reprendre, commandes dans la tâche). Le fichier `annona-presentation-v2.mp4` porte encore l'ancienne voix de synthèse.
+**Vidéo et site universels (24 novembre 2026, VIDEO-1 et UNIV-1)** : Orso veut une vidéo et une app pour tous les métiers (glacier, viande, boissons), une voix sans saut et une caméra fluide sur le livreur. Vocabulaire neutre décidé (`docs/VOCABULAIRE.md`) ; nouvelle prise de voix générée ; site et vidéo en cours de reprise par deux agents. La v3 (`annona-presentation-v3.mp4`) reste la dernière vidéo complète.
 
 **Déploiement automatique (23 novembre 2026 au soir, DEPLOY-1)** : liaison Git Vercel impossible (dépôt d'Orso invisible depuis le compte de Théo, offre Hobby) ; à la place, workflow GitHub Actions `deploy-vercel.yml` en PR, à relire et fusionner par Orso. Secrets en place. Premier déploiement réel à vérifier après fusion (Théo). **Orso** : `VERCEL_AUTOMATION_BYPASS_SECRET`, exigé par les trois `cron-*.yml` (préproduction de l'ancien produit), manque dans le dépôt.
 
@@ -177,9 +178,19 @@ _Lire ce bloc en premier. Tout le reste du fichier est le détail. Un agent le m
 
 _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
 
+- [ ] **UNIV-1 — Annona universelle : vocabulaire neutre pour tous les métiers (glacier, boucherie, boissons…).**
+
+  **Qui : Claude — finir le passage du site au vocabulaire neutre, vérifier (`npm run check`, clic navigateur) ; puis Orso : relire les libellés.**
+
+  **En cours : Orso.**
+
+  - **Décisions d'Orso (24 novembre 2026)** : des prospects vendent de la glace, de la viande ou des boissons ; les fonctionnalités sont les mêmes, donc l'app et la vidéo doivent parler à tous. Vocabulaire neutre partout, sans réglage par métier ; jeu de noms A : Gérant · Production · Atelier · Point de vente · Client · Livreur (« labo » → « production », « gâteaux sur commande » → « commandes sur mesure »). Référence : `docs/VOCABULAIRE.md`. La démo garde son catalogue exemple (baguettes, croissants) ; c'est la vidéo qui montre plusieurs métiers.
+  - **Fait (24 novembre)** : `docs/VOCABULAIRE.md` écrit ; `PRODUCT.md`, `README.md`, `docs/README.md` et l'en-tête d'`AGENTS.md` passés en universel. Textes affichés de `src/` et assertions de `tests/` en cours de remplacement par un agent (branche `orso/universel`), sans toucher aux identifiants internes (`BAKER`, `PASTRY_CHEF`, `SELLER`, routes `/bakery` `/pastry` `/shop`) ni à `prisma/`.
+  - **Non vérifié / reste** : `npm run check` après le remplacement ; clic navigateur des écrans changés (inscription, /demo, espaces production, atelier, point de vente) ; les URL `/bakery` et `/pastry` restent visibles dans la barre d'adresse (les renommer = nouvelles routes, à décider) ; `docs/cahier-des-charges/` garde le vocabulaire boulangerie (document source, non réécrit).
+
 - [ ] **VIDEO-1 — Vidéo de présentation d'Annona pour les boulangeries, sur le modèle de la vidéo TutelLiv.**
 
-  **Qui : Claude — finir le rendu avec la voix « Nicolas - Narrator » (en pause à la demande d'Orso) ; puis Orso : écouter et valider le texte.**
+  **Qui : Claude — v4 universelle : voix sans sauts, caméra fluide sur le livreur, habillage multi-métiers, recapture des écrans après UNIV-1 ; puis Orso : regarder la v4.**
 
   **En cours : Orso.**
 
@@ -193,6 +204,7 @@ _Tâches closes et journal : `docs/TODO-ARCHIVE.md`._
   - **Voix « Nicolas - Narrator » (23 novembre au soir, demandée par Orso après avoir vu la v2 : « ok top ») — en pause à la demande d'Orso, rendu à reprendre.** Fait : deux prises générées sur ElevenLabs par le connecteur claude.ai (voix `aQROLel5sQbj1vuIVi6B`, modèle eleven_v4, 3 112 crédits au total, 85 s chacune), rangées dans `montage2/prises/` ; la prise 2 est retenue (pauses entre phrases plus nettes), découpée en phrases par `take.py` et relue par transcription (texte conforme, « annona.fr » bien dit) ; montage recalé sur cette voix (`node build.mjs` : 1 min 41, 3 023 images ; silences ajoutés portés à 0,7 s après « un seul outil » et 1,6 s après « automatiquement ») ; bruitages et mixage refaits (`mix.wav`, -14,1 LUFS) ; deux planches de 20 images regardées, rien de cassé. L'ancienne voix de synthèse est gardée dans `voix-kokoro/`. **Reste** : le rendu des images a été arrêté à 480 sur 3 023 ; reprendre dans `montage2/` avec `node render.mjs range 32 755`, `range 915 1511`, `range 1664 2267`, `range 2401 3022` (quatre processus, environ 20 à 30 min), puis `sh encode.sh` et `CRF=25 OUT=../annona-presentation-v2-leger.mp4 sh encode.sh`, et contrôler le fichier final. **Attention : `annona-presentation-v2.mp4` porte encore l'ancienne voix de synthèse** tant que ce rendu n'est pas fini. Non vérifié : la voix n'a pas été écoutée.
   - **Non vérifié / reste** : avis d'Orso sur le montage v2 et le texte ; puis vraie voix (ElevenLabs, une fois le connecteur autorisé), version courte verticale. Défauts connus de la v2 : dans la scène des quatre espaces, la fenêtre « Vous » passe en partie derrière le téléphone ; les noms « Nord / Sud » des tournées sur la carte suivent la position des arrêts fictifs, pas les vraies tournées de la démo ; un court passage de carte seule entre la facture et la fin. Ancien logo dans `public/brand/logo-horizontal-*.png` (à signaler pour DA-1).
 
+  - **v4 universelle (24 novembre, demandée par Orso après la v3)** : trois retours. (1) La vidéo doit parler à tous les métiers (glacier, viande, boissons), pas qu'aux boulangeries (voir UNIV-1). (2) « À un moment la voix saute » : cause trouvée par un balayage de `voix.wav` (coupes franches) : la prise lue d'une traite était recoupée par `take.py` au milieu entre deux mots puis rognée au seuil, et les silences ajoutés (`pause` de `build.mjs`) coupaient en plein son (23,99 s → 24,69 s après « un seul outil », 82,6 s et 84,1 s dans « Un client absent »), attaque de « Annona calcule la tournée » coupée (5,9 s). (3) La plongée dans Paris vers le livreur doit être vraiment fluide, caméra qui suit comme dans la v6 TutelLiv (aujourd'hui le cap tourne d'un coup à chaque virage et le livreur s'arrête net). Fait : nouveau texte universel (« vos clients, votre production », « Rien ne manque au chargement », « points de vente », « Pain, glaces, viande ou boissons : moins de téléphone, et juste ce qu'il faut ») ; nouvelle prise « Nicolas - Narrator » (eleven_v4, silences marqués par la voix elle-même avec `[pause]`, 92,6 s, 1 616 crédits) dans `montage2/prises/nicolas-univ-1.mp3`. En cours (agent) : découpe aux points de silence avec fondus, caméra lissée, pictogrammes multi-métiers, liste des captures à refaire. La v3 reste intacte.
 - [ ] **CARTE-1 — Une seule carte des tournées pour le gérant (page « Carte » et tableau de bord).**
 
   **Qui : Orso — regarder la carte (page « Carte » et tableau de bord) et dire ce qui cloche.**

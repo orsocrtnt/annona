@@ -11,8 +11,8 @@ export const COMPANY_STATUS_LABELS: Record<string, string> = {
 
 export const ROLE_LABELS_PLURAL: Record<SystemRole, string> = {
   ADMIN: "Administrateurs",
-  BAKER: "Boulangers",
-  PASTRY_CHEF: "Pâtissiers",
+  BAKER: "Production",
+  PASTRY_CHEF: "Atelier",
   DRIVER: "Livreurs",
   MERCHANT: "Clients",
   SELLER: "Vente",
@@ -21,8 +21,8 @@ export const ROLE_LABELS_PLURAL: Record<SystemRole, string> = {
 
 export const ROLE_LABELS_SINGULAR: Record<SystemRole, string> = {
   ADMIN: "Administrateur",
-  BAKER: "Boulanger",
-  PASTRY_CHEF: "Pâtissier",
+  BAKER: "Production",
+  PASTRY_CHEF: "Atelier",
   DRIVER: "Livreur",
   MERCHANT: "Client",
   SELLER: "Vente",

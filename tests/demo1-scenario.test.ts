@@ -184,7 +184,7 @@ test("DEMO-1 : à toute heure, les quatre tournées du jour sont en cours, chacu
   }
 });
 
-test("DEMO-1, lot 2 : pâtisserie, boutiques, envois, stock et gâteaux des particuliers à essayer (LOT2-D1 à D9)", () => {
+test("DEMO-1, lot 2 : pâtisserie, points de vente, envois, stock et gâteaux des particuliers à essayer (LOT2-D1 à D9)", () => {
   for (const hour of [9, 21]) {
     const scenario = buildDemoScenario({ slot: 8, now: at(hour) });
     const products = new Map(scenario.products.map((product) => [product.id, product]));

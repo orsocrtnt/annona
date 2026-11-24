@@ -5,7 +5,7 @@ import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: `Démo — ${APP_NAME}`,
-  description: "Essayez Annona sans compte : une boulangerie fictive, sa journée de livraisons, quatre espaces.",
+  description: "Essayez Annona sans compte : une entreprise fictive, sa journée de livraisons, quatre espaces.",
 };
 
 /** DEMO-1 : démo ouverte à tous, sans identifiants, une boulangerie fictive par visiteur. */

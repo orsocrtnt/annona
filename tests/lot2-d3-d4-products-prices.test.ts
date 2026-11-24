@@ -70,7 +70,7 @@ const FRAISIER = createPastryProductSchema.parse({
 });
 const ADMIN = { companyId: "A", userId: "admin" };
 
-test("LOT2-D3 vérification 1 : le pâtissier crée « Fraisier » en gros gâteau (6, 8, 10 personnes), avec recette et 2 jours de vente, sans aucun prix", async () => {
+test("LOT2-D3 vérification 1 : le pâtissier crée « Fraisier » en produit à tailles (6, 8, 10 personnes), avec recette et 2 jours de vente, sans aucun prix", async () => {
   const { catalogDb } = fixture();
   const fraisier = await createPastryProduct("A", FRAISIER, catalogDb);
   assert.deepEqual([fraisier.pastryFormat, fraisier.shelfLifeDays, fraisier.recipe], ["LARGE", 2, "Génoise, crème mousseline, fraises."]);
@@ -79,7 +79,7 @@ test("LOT2-D3 vérification 1 : le pâtissier crée « Fraisier » en gros gâte
   assert.equal(fraisier.missingRestaurantPrice, true);
   // Le pâtissier ne saisit jamais de prix : la fiche n'en accepte pas.
   assert.equal(createPastryProductSchema.safeParse({ ...FRAISIER, basePriceCents: 4000 }).success, false);
-  assert.equal(createPastryProductSchema.safeParse({ ...FRAISIER, servings: [] }).success, false, "un gros gâteau a au moins une taille");
+  assert.equal(createPastryProductSchema.safeParse({ ...FRAISIER, servings: [] }).success, false, "un produit à tailles a au moins une taille");
   assert.equal(createPastryProductSchema.safeParse({ ...FRAISIER, pastryFormat: "SMALL" }).success, false, "une petite pièce n'a pas de taille");
   // Le pâtissier ne voit que la pâtisserie : pas de création dans le pain, pas de modification d'un pain.
   await assert.rejects(createPastryProduct("A", { ...FRAISIER, name: "Pain pâtissier", categoryId: "catPain" }, catalogDb), { status: 400 });
@@ -174,7 +174,7 @@ test("LOT2-D4 vérifications 3 et 6 : 40 € pour le fraisier 10 personnes à «
   const tenCentre = board.entries.find((entry) => entry.productId === fraisier.id && entry.servings === 10)!;
   assert.deepEqual([tenCentre.status, tenCentre.priceCents], ["SOLD", 4000]);
   const tenGare = (await getShopPriceBoard("A", "gare", pricesDb)).entries.find((entry) => entry.productId === fraisier.id && entry.servings === 10)!;
-  assert.deepEqual([tenGare.status, tenGare.priceCents], ["NEW", null], "le prix ne vaut que dans sa boutique");
+  assert.deepEqual([tenGare.status, tenGare.priceCents], ["NEW", null], "le prix ne vaut que dans sa point de vente");
   // Vérification 6 : l'administrateur, sans code, passe le prix à 42 € ; la tablette relit 42 €.
   await setShopPrices(pricesDb, ADMIN, "centre", [{ productId: fraisier.id, sizeId: size10.id, sold: true, priceCents: 4200 }]);
   assert.equal((await getShopPriceBoard("A", "centre", pricesDb)).entries.find((entry) => entry.sizeId === size10.id)!.priceCents, 4200);
@@ -188,7 +188,7 @@ test("LOT2-D4 vérifications 3 et 6 : 40 € pour le fraisier 10 personnes à «
   assert.equal((await getShopPriceBoard("A", "gare", pricesDb)).entries.find((entry) => entry.productId === "baguette")!.status, "NOT_SOLD");
 });
 
-test("LOT2-D4 : code créé avec la boutique, réinitialisé par l'admin, changé par la responsable avec l'ancien", async () => {
+test("LOT2-D4 : code créé avec le point de vente, réinitialisé par l'admin, changé par la responsable avec l'ancien", async () => {
   const { tables, pricesDb } = fixture();
   assert.equal(createShopSchema.safeParse({ name: "X", address: "1 rue", zoneId: "z" }).success, false, "code obligatoire à la création");
   assert.equal(createShopSchema.safeParse({ name: "X", address: "1 rue", zoneId: "z", managerCode: "12a4" }).success, false);

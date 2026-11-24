@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Cake, CheckCircle2 } from "lucide-react";
+import { ClipboardList, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -103,7 +103,7 @@ export function SellerCakes() {
   const ready = Boolean(size && customerName.trim() && customerPhone.trim() && pickupDate && (payment === "FULL" || deposit));
   return (
     <div className="space-y-6">
-      <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight"><Cake className="h-7 w-7 text-brand" aria-hidden /> Commandes de gâteaux</h1>
+      <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight"><ClipboardList className="h-7 w-7 text-brand" aria-hidden /> Commandes sur mesure</h1>
       {data.error ? <p role="alert" className="text-base text-error">{data.error.message}</p> : null}
       <Card>
         <CardHeader>
@@ -112,7 +112,7 @@ export function SellerCakes() {
         </CardHeader>
         <CardContent>
           {data.data && data.data.choices.length === 0 ? (
-            <p className="text-base text-muted-foreground">Aucun gâteau n&apos;a encore de prix boutique : la responsable les saisit dans Paramètres › « Produits et prix ».</p>
+            <p className="text-base text-muted-foreground">Aucun produit n&apos;a encore de prix en point de vente : la responsable les saisit dans Paramètres › « Produits et prix ».</p>
           ) : (
             <form
               className="grid gap-4 sm:grid-cols-2"
@@ -121,9 +121,9 @@ export function SellerCakes() {
                 create.mutate();
               }}
             >
-              <FormField label="Gâteau" required>
+              <FormField label="Produit" required>
                 <Select value={productId || undefined} onValueChange={(value) => { setProductId(value); setSizeId(""); }}>
-                  <SelectTrigger className="h-12 text-base" aria-label="Gâteau"><SelectValue placeholder="Choisir" /></SelectTrigger>
+                  <SelectTrigger className="h-12 text-base" aria-label="Produit"><SelectValue placeholder="Choisir" /></SelectTrigger>
                   <SelectContent>
                     {(data.data?.choices ?? []).map((row) => <SelectItem key={row.productId} value={row.productId}>{row.name}</SelectItem>)}
                   </SelectContent>
@@ -137,7 +137,7 @@ export function SellerCakes() {
                   </SelectContent>
                 </Select>
               </FormField>
-              <FormField label="Prix (prix boutique)">
+              <FormField label="Prix (prix en point de vente)">
                 <p className="flex h-12 items-center rounded-lg border bg-muted px-3 text-lg font-semibold tabular-nums" data-testid="cake-price" aria-readonly>
                   {size ? formatCents(size.priceCents) : "—"}
                 </p>
@@ -145,7 +145,7 @@ export function SellerCakes() {
               <FormField label="Nombre de parts" required>
                 <Input inputMode="numeric" className="h-12 text-base" value={servings} onChange={(event) => setServings(event.target.value.replace(/\D/g, ""))} />
               </FormField>
-              <FormField label="Inscription sur le gâteau" hint="Par exemple : « Joyeux anniversaire Maman ».">
+              <FormField label="Inscription sur le produit" hint="Par exemple : « Joyeux anniversaire Maman ».">
                 <Input className="h-12 text-base" maxLength={120} value={inscription} onChange={(event) => setInscription(event.target.value)} />
               </FormField>
               <FormField label="Allergies / instructions" hint="Facultatif. Par exemple : « sans fruits à coque », « bougie 30 ans ».">

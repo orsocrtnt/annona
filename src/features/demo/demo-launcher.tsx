@@ -50,7 +50,7 @@ export function DemoLauncher() {
     <div className="w-full max-w-[560px] animate-slide-up motion-reduce:animate-none">
       <h1 className="text-center text-4xl font-bold">Essayer Annona</h1>
       <p className="mx-auto mt-3 max-w-[440px] text-center text-base text-text-secondary">
-        Une boulangerie fictive, sa journée de livraisons remise à l&apos;heure. Rien n&apos;est envoyé : ni e-mail, ni
+        Une entreprise fictive, sa journée de livraisons remise à l&apos;heure. Rien n&apos;est envoyé : ni e-mail, ni
         notification. Votre démo reste à vous jusqu&apos;à votre déconnexion, 4 heures au plus.
       </p>
 
@@ -83,7 +83,7 @@ export function DemoLauncher() {
       </ul>
 
       <p className="mt-5 min-h-6 text-center text-sm text-text-secondary" role="status" aria-live="polite">
-        {phase === "preparing" && "Préparation de votre boulangerie de démo… (quelques secondes)"}
+        {phase === "preparing" && "Préparation de votre entreprise de démo… (quelques secondes)"}
         {phase === "opening" && "Ouverture de l'espace…"}
       </p>
       {error && (

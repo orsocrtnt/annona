@@ -78,7 +78,7 @@ test("LOT2-D10 vérification 1 : un restaurant commande 20 éclairs et un castel
   assert.deepEqual(parseCakeArticleId(read.productId), { productId: "castel", sizeId: "c10" });
 });
 
-test("LOT2-D10 : un gros gâteau se commande seulement par une taille qui a un prix restaurant ; deux inscriptions = deux lignes", async () => {
+test("LOT2-D10 : un produit à tailles se commande seulement par une taille qui a un prix restaurant ; deux inscriptions = deux lignes", async () => {
   const { tables, db } = fixture();
   await assert.rejects(saveMerchantOrder(RESTAURANT, { ...ORDER, lines: [{ productId: "castel", quantity: 1 }] }, BEFORE, db), { status: 400, code: "PRODUCT_UNAVAILABLE" });
   await assert.rejects(saveMerchantOrder(RESTAURANT, { ...ORDER, lines: [{ productId: "castel", sizeId: "c8", quantity: 1 }] }, BEFORE, db), { status: 400 }, "taille sans prix restaurant");
@@ -126,7 +126,7 @@ test("LOT2-D10 vérification 3 : le castel figure sur la facture du restaurant, 
   assert.match(readFileSync("src/domains/order/merchant-order.service.ts", "utf8"), /unitPriceFrozenCents: sizes\.get\(line\.sizeId\)!\.restaurantPriceCents/);
 });
 
-test("LOT2-D10 : catalogue des restaurants (un article par taille avec prix) ; pas de gros gâteau en commande récurrente", () => {
+test("LOT2-D10 : catalogue des restaurants (un article par taille avec prix) ; pas de produit à tailles en commande récurrente", () => {
   const catalog = readFileSync("src/domains/order/merchant-catalog.service.ts", "utf8");
   assert.match(catalog, /pastryFormat: "LARGE"/);
   assert.match(catalog, /restaurantPriceCents: \{ not: null \}/);

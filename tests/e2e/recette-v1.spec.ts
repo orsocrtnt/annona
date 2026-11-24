@@ -75,7 +75,7 @@ const MERCHANTS = {
 type MerchantKey = keyof typeof MERCHANTS;
 const USERS = {
   admin: { email: "e2e-v1-admin@example.com", role: "admin", firstName: "Alice", lastName: "Admin V1", merchant: null },
-  baker: { email: "e2e-v1-boulanger@example.com", role: "baker", firstName: "Basile", lastName: "Boulanger V1", merchant: null },
+  baker: { email: "e2e-v1-boulanger@example.com", role: "baker", firstName: "Basile", lastName: "Production V1", merchant: null },
   driver: { email: "e2e-v1-livreur@example.com", role: "driver", firstName: "Victor", lastName: "Livreur V1", merchant: null },
   a: { email: "e2e-v1-client-a@example.com", role: "merchant", firstName: "Anna", lastName: "Alpha", merchant: "a" },
   b: { email: "e2e-v1-client-b@example.com", role: "merchant", firstName: "Bruno", lastName: "Beta", merchant: "b" },

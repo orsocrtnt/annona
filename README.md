@@ -1,6 +1,6 @@
 # Annona
 
-Annona devient une application de commande et de livraison B2B pour boulangerie : les commerçants commandent au laboratoire avant l'heure limite, la boulangerie produit, prépare, puis livre par tournées. Résumé : [`PRODUCT.md`](PRODUCT.md). Référence des exigences : [`docs/cahier-des-charges/`](docs/cahier-des-charges/TRI-BASE.md).
+Annona devient une application de commande et de livraison B2B pour tout fournisseur qui livre des professionnels (boulangerie, glacier, boucherie, boissons…) : les clients commandent avant l'heure limite, le fournisseur produit ou prépare, puis livre par tournées. Résumé : [`PRODUCT.md`](PRODUCT.md). Référence des exigences : [`docs/cahier-des-charges/`](docs/cahier-des-charges/TRI-BASE.md).
 
 La base de code vient d'un SaaS de coursiers ; les éléments sans rapport avec le nouveau produit ont été retirés (NET-1). Le modèle de données sera refait (SCHEMA-1). L'état et l'ordre du travail sont suivis dans [`TODO.md`](TODO.md). Les instructions destinées aux contributeurs et agents se trouvent dans [`AGENTS.md`](AGENTS.md).
 

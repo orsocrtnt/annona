@@ -53,7 +53,7 @@ export function parsePastryFields(state: PastryFieldsState, withPrices: boolean)
       }
       sizes.push({ servings, restaurantPriceCents });
     }
-    if (sizes.length === 0) return "Un gros gâteau a au moins une taille (par exemple 6, 8 ou 10 personnes).";
+    if (sizes.length === 0) return "Un produit à tailles a au moins une taille (par exemple 6, 8 ou 10 personnes).";
     if (new Set(sizes.map((size) => size.servings)).size !== sizes.length) return "Deux tailles ont le même nombre de parts.";
   }
   return {
@@ -97,14 +97,14 @@ export function PastryFields({
                 variant={value.pastryFormat === format ? "brand" : "outline"}
                 onClick={() => set({ pastryFormat: format })}
               >
-                {format === "SMALL" ? "Petite pièce" : "Gros gâteau"}
+                {format === "SMALL" ? "Petite pièce" : "Grand format"}
               </Button>
             ))}
           </div>
         </FormField>
       ) : null}
       {showFormat && value.pastryFormat === "LARGE" ? (
-        <FormField label="Tailles proposées" hint={withPrices ? "Nombre de parts, et prix restaurant HT de chaque taille (vide : à saisir plus tard)." : "Nombre de parts de chaque taille. Les prix sont fixés par l'administrateur et les boutiques."} required>
+        <FormField label="Tailles proposées" hint={withPrices ? "Nombre de parts, et prix restaurant HT de chaque taille (vide : à saisir plus tard)." : "Nombre de parts de chaque taille. Les prix sont fixés par l'administrateur et les points de vente."} required>
           <div className="space-y-2">
             {value.sizes.map((size, index) => (
               <div key={index} className="flex flex-wrap items-center gap-2" data-testid={`size-${index}`}>
@@ -141,7 +141,7 @@ export function PastryFields({
         </FormField>
       ) : null}
       {showFormat ? (
-        <FormField label="Recette" hint="Visible seulement par les pâtissiers et l'administration, jamais par la vente, les livreurs ni clients.">
+        <FormField label="Recette" hint="Visible seulement par l'atelier et l'administration, jamais par la vente, les livreurs ni clients.">
           <textarea
             className="min-h-28 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             value={value.recipe}
@@ -151,7 +151,7 @@ export function PastryFields({
           />
         </FormField>
       ) : null}
-      <FormField label="Durée de vente en boutique" hint="Nombre de jours de vente, jour de réception compris (2 = reçu lundi, vendu lundi et mardi)." required>
+      <FormField label="Durée de vente en point de vente" hint="Nombre de jours de vente, jour de réception compris (2 = reçu lundi, vendu lundi et mardi)." required>
         <div className="flex items-center gap-2">
           <Input
             inputMode="numeric"

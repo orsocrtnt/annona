@@ -11,7 +11,7 @@ export async function PUT(request: Request) {
     const guard = await requireCompanyRole(["SELLER"], "dashboard:shop");
     if ("error" in guard) return guard.error;
     const shopId = guard.actor.user.merchantId;
-    if (!shopId) return NextResponse.json({ error: "Ce compte n'est rattaché à aucune boutique.", success: false }, { status: 403 });
+    if (!shopId) return NextResponse.json({ error: "Ce compte n'est rattaché à aucun point de vente.", success: false }, { status: 403 });
     const { currentCode, newCode } = changeManagerCodeSchema.parse(await readJsonBody(request));
     await changeManagerCode(prisma as unknown as ShopPricesDb, { companyId: guard.actor.companyId, userId: guard.actor.user.id, shopId }, currentCode, newCode);
     return NextResponse.json({ success: true });

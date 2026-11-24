@@ -137,7 +137,7 @@ export async function getShipmentDay(companyId: string, family: ProductFamily, d
       id: shop.id,
       name: shop.name,
       zoneName: shop.zoneId ? zoneName.get(shop.zoneId) ?? null : null,
-      blockedReason: !shop.zoneId ? "Boutique sans tournée : l'administrateur doit la rattacher à une tournée." : !slotId ? "La tournée de cette boutique n'a pas de livraison du matin active." : null,
+      blockedReason: !shop.zoneId ? "Point de vente sans tournée : l'administrateur doit le rattacher à une tournée." : !slotId ? "La tournée de ce point de vente n'a pas de livraison du matin active." : null,
       lines: own.filter((line) => familyIds.has(line.productId)).map((line) => ({ productId: line.productId, quantity: line.quantityOrdered })),
       otherFamilyItemCount: own.filter((line) => !familyIds.has(line.productId)).reduce((sum, line) => sum + line.quantityOrdered, 0),
       orderId: order?.id ?? null,
@@ -172,16 +172,16 @@ export async function saveShipment(actor: ShipmentActor, input: SaveShipmentInpu
   if (!company) throw new DomainRuleError(404, "Entreprise introuvable.", "COMPANY_NOT_FOUND");
   if (input.date < companyToday(now, company.timezone)) throw new DomainRuleError(400, "On n'envoie rien dans le passé.", "DATE_IN_PAST");
   const shop = await db.merchant.findFirst({ where: { id: input.shopId, companyId: actor.companyId, kind: "SHOP", active: true }, select: { id: true, zoneId: true } });
-  if (!shop) throw new DomainRuleError(404, "Boutique introuvable.", "SHOP_NOT_FOUND");
-  if (!shop.zoneId) throw new DomainRuleError(409, "Boutique sans tournée : l'administrateur doit la rattacher à une tournée.", "SHOP_WITHOUT_ZONE");
+  if (!shop) throw new DomainRuleError(404, "Point de vente introuvable.", "SHOP_NOT_FOUND");
+  if (!shop.zoneId) throw new DomainRuleError(409, "Point de vente sans tournée : l'administrateur doit le rattacher à une tournée.", "SHOP_WITHOUT_ZONE");
   const slotId = (await morningSlots(db, actor.companyId, [shop.zoneId])).get(shop.zoneId);
-  if (!slotId) throw new DomainRuleError(409, "La tournée de cette boutique n'a pas de livraison du matin active.", "NO_MORNING_SLOT");
+  if (!slotId) throw new DomainRuleError(409, "La tournée de ce point de vente n'a pas de livraison du matin active.", "NO_MORNING_SLOT");
 
   const allowed = new Set((await familyProducts(db, actor.companyId, actor.family)).map((product) => product.id));
   const wanted = new Map<string, number>();
   for (const line of input.lines) {
     if (!allowed.has(line.productId)) {
-      throw new DomainRuleError(400, actor.family === "PASTRY" ? "Seules les pâtisseries (hors gros gâteaux) partent dans cet envoi." : "Seul le pain part dans cet envoi.", "PRODUCT_NOT_IN_FAMILY", { productId: line.productId });
+      throw new DomainRuleError(400, actor.family === "PASTRY" ? "Seuls les produits de l'atelier (hors produits à tailles) partent dans cet envoi." : "Seuls les produits de production partent dans cet envoi.", "PRODUCT_NOT_IN_FAMILY", { productId: line.productId });
     }
     if (line.quantity > 0) wanted.set(line.productId, (wanted.get(line.productId) ?? 0) + line.quantity);
   }
@@ -189,7 +189,7 @@ export async function saveShipment(actor: ShipmentActor, input: SaveShipmentInpu
   const deliveryDate = deliveryDateToDb(input.date);
   const orderId = await db.$transaction(async (tx) => {
     let order = await tx.order.findFirst({ where: { companyId: actor.companyId, merchantId: shop.id, deliveryDate, slotId }, select: { id: true, status: true, origin: true } });
-    if (order && order.origin !== "SHIPMENT") throw new DomainRuleError(409, "Une autre commande occupe déjà ce créneau pour cette boutique.", "SLOT_TAKEN");
+    if (order && order.origin !== "SHIPMENT") throw new DomainRuleError(409, "Une autre commande occupe déjà ce créneau pour ce point de vente.", "SLOT_TAKEN");
     if (order && !(await isEditable(tx as unknown as ShipmentDb, actor.companyId, order))) {
       throw new DomainRuleError(409, "La tournée est partie : cet envoi ne se modifie plus.", "SHIPMENT_DEPARTED");
     }

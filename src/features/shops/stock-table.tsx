@@ -20,7 +20,7 @@ const dash = (value: number | null) => (value === null ? "—" : value);
  * boutique ou toutes ; jours passés consultables. `endpoint` : `/api/stock` (administration, laboratoire) ou
  * `/api/shop/stock` (la vendeuse, sa boutique seulement).
  */
-export function StockTable({ endpoint, title = "Stock boutiques", showShopFilter = true }: { endpoint: string; title?: string; showShopFilter?: boolean }) {
+export function StockTable({ endpoint, title = "Stock des points de vente", showShopFilter = true }: { endpoint: string; title?: string; showShopFilter?: boolean }) {
   const [date, setDate] = useState<string | null>(null);
   const [shopId, setShopId] = useState<string>("ALL");
   const query = new URLSearchParams();
@@ -41,11 +41,11 @@ export function StockTable({ endpoint, title = "Stock boutiques", showShopFilter
       <div className="flex flex-wrap items-end gap-3">
         {showShopFilter ? (
           <Select value={shopId} onValueChange={setShopId}>
-            <SelectTrigger className="h-10 w-56" aria-label="Boutique">
+            <SelectTrigger className="h-10 w-56" aria-label="Point de vente">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Toutes les boutiques</SelectItem>
+              <SelectItem value="ALL">Tous les points de vente</SelectItem>
               {shops.map(([id, name]) => <SelectItem key={id} value={id}>{name}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -58,7 +58,7 @@ export function StockTable({ endpoint, title = "Stock boutiques", showShopFilter
       </div>
       {stock.isLoading && !data ? <PageSkeleton /> : null}
       {stock.error ? <p role="alert" className="text-sm text-error">{stock.error.message}</p> : null}
-      {data && data.rows.length === 0 ? <p className="rounded-xl border border-dashed p-6 text-center text-muted-foreground">Aucun stock en boutique.</p> : null}
+      {data && data.rows.length === 0 ? <p className="rounded-xl border border-dashed p-6 text-center text-muted-foreground">Aucun stock en point de vente.</p> : null}
       {data && data.rows.length > 0 ? (
         <Input
           type="search"

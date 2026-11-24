@@ -17,7 +17,7 @@ import { isInitialQueryLoading } from "@/lib/query/is-initial-loading";
 const ROLES = [
   { value: "SUPER_ADMIN", label: "Super admin" },
   { value: "ADMIN", label: "Administrateur" },
-  { value: "BAKER", label: "Boulanger" },
+  { value: "BAKER", label: "Production" },
   { value: "DRIVER", label: "Livreur" },
   { value: "MERCHANT", label: "Client" },
 ] as const;

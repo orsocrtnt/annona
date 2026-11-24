@@ -132,7 +132,7 @@ test("LOT2-D7 vérifications 1 à 4 : lundi 7 vendus ; mardi 13 en stock, 2 vend
   await assert.rejects(closeDay(SELLER, { date: MERCREDI, entries: [] }, { db, now: at(MARDI, 20) }), { status: 400, code: "DATE_IN_FUTURE" });
 });
 
-test("LOT2-D8 vérifications 1 et 2 : le pâtissier voit le stock d'éclairs de chaque boutique et, pour la veille, reçus, abîmés, vendus et jetés", async () => {
+test("LOT2-D8 vérifications 1 et 2 : le pâtissier voit le stock d'éclairs de chaque point de vente et, pour la veille, reçus, abîmés, vendus et jetés", async () => {
   const { tables, db } = fixture();
   shipment("o1", MARDI, [["eclair", 12], ["baguette", 20]], tables);
   await receiveShipment(SELLER, { date: MARDI, lines: [{ productId: "eclair", received: 11, damaged: 1 }, { productId: "baguette", received: 20, damaged: 0 }] }, { db, now: at(MARDI, 7) });

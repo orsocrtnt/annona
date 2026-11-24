@@ -62,8 +62,8 @@ export function BreadShelfLife() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Durée de vente du pain</h1>
-        <p className="mt-1 text-muted-foreground">Nombre de jours de vente en boutique, jour de réception compris (1 = vendu le jour même).</p>
+        <h1 className="text-2xl font-semibold tracking-tight">Durée de vente des produits de production</h1>
+        <p className="mt-1 text-muted-foreground">Nombre de jours de vente en point de vente, jour de réception compris (1 = vendu le jour même).</p>
       </div>
       {products.error ? <p role="alert" className="text-sm text-error">{products.error.message}</p> : null}
       <ul className="divide-y rounded-xl border bg-card">

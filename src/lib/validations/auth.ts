@@ -57,7 +57,7 @@ const signupText = (label: string, max: number) =>
 
 export const companySignupSchema = z
   .object({
-    companyName: signupText("Nom de la boulangerie", 120),
+    companyName: signupText("Nom de l'entreprise", 120),
     firstName: signupText("Prénom", 80),
     lastName: signupText("Nom", 80),
   })

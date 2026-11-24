@@ -33,7 +33,7 @@ export function SellerSettings() {
     mutationFn: (prices: Parameters<typeof shopsApi.saveMyPrices>[1]) => shopsApi.saveMyPrices(unlockedCode ?? "", prices),
     onSuccess: (next) => {
       setBoard(next);
-      toast.success("Prix enregistrés pour votre boutique");
+      toast.success("Prix enregistrés pour votre point de vente");
     },
     onError: (failure: Error) => toast.error(failure.message),
   });
@@ -53,7 +53,7 @@ export function SellerSettings() {
             <Lock className="h-5 w-5" aria-hidden /> Produits et prix
           </CardTitle>
           <p className="text-base text-muted-foreground">
-            Réservé à la responsable du magasin : choisir les produits vendus et leurs prix boutique.
+            Réservé à la responsable du point de vente : choisir les produits vendus et leurs prix en point de vente.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">

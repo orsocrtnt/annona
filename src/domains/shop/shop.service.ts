@@ -46,9 +46,9 @@ export interface ShopRow {
   sellers: ShopSeller[];
 }
 
-const notFound = () => new DomainRuleError(404, "Boutique introuvable.", "SHOP_NOT_FOUND");
+const notFound = () => new DomainRuleError(404, "Point de vente introuvable.", "SHOP_NOT_FOUND");
 const noShop = () =>
-  new DomainRuleError(403, "Ce compte n'est rattaché à aucune boutique. Contactez l'administrateur.", "SELLER_WITHOUT_SHOP");
+  new DomainRuleError(403, "Ce compte n'est rattaché à aucun point de vente. Contactez l'administrateur.", "SELLER_WITHOUT_SHOP");
 
 const FIELDS = ["name", "address", "postalCode", "city", "latitude", "longitude", "accessInstructions", "contactPhone", "zoneId", "active"] as const;
 
