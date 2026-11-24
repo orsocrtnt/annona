@@ -22,6 +22,8 @@ export const DEMO_PERSONA_HOME: Record<DemoPersona, string> = {
   admin: "/dashboard",
   baker: "/bakery",
   driver: "/driver",
+  pastry: "/pastry",
+  seller: "/shop",
 };
 
 export async function openDemoPersonaSession(leaseToken: string | undefined, persona: DemoPersona) {

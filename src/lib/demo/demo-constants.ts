@@ -10,6 +10,8 @@ import type { DemoPersona } from "@/domains/demo/demo-scenario";
 import { addCalendarDays, parisWallTimeToUtc, zonedTodayDate } from "@/lib/time/paris";
 
 export const DEMO_LEASE_COOKIE = "annona-demo-lease";
+/** Code responsable des boutiques de démo (LOT2-D4, prix boutique) : public, affiché sur la page /demo. */
+export const DEMO_SHOP_MANAGER_CODE = "1234";
 /** Durée maximale d'un prêt : 4 heures (un visiteur parti sans se déconnecter ne garde pas sa démo). */
 export const DEMO_LEASE_MS = 4 * 60 * 60 * 1000;
 /** Nombre d'environnements de démo, donc de visiteurs simultanés (demande d'Orso du 23 novembre 2026 : 6). */
@@ -53,10 +55,15 @@ export const DEMO_PERSONA_LABELS: Record<DemoPersona, { title: string; descripti
   admin: { title: "Gérant de la boulangerie", description: "Clients, catalogue, commandes du jour, tournées et factures." },
   baker: { title: "Boulanger", description: "Ce qu'il faut produire pour la prochaine tournée, par produit." },
   driver: { title: "Livreur", description: "La tournée du moment, arrêt par arrêt, avec l'itinéraire." },
+  pastry: { title: "Pâtissier", description: "Les pâtisseries à produire, les envois aux boutiques et leur stock." },
+  seller: {
+    title: "Vente en boutique",
+    description: `La tablette du magasin : réception, clôture du soir, gâteaux sur commande. Code responsable : ${DEMO_SHOP_MANAGER_CODE}.`,
+  },
 };
 
 /** Ordre d'affichage sur la page /demo. */
-export const DEMO_PERSONA_ORDER: readonly DemoPersona[] = ["client", "admin", "baker", "driver"];
+export const DEMO_PERSONA_ORDER: readonly DemoPersona[] = ["client", "admin", "baker", "pastry", "seller", "driver"];
 
 /**
  * Adresse de la démo : toutes sont en `@demo.annona.example` (DEMO_EMAIL_DOMAIN, domaine réservé, jamais livrable).

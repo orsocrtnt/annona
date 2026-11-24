@@ -6,7 +6,7 @@ import { readDemoLeaseCookie } from "@/lib/demo/demo-lease-cookie";
 
 const bodySchema = z.object({ persona: z.enum(DEMO_PERSONAS) });
 
-/** DEMO-1 : ouvre l'espace choisi (commerçant, gérant, boulanger, livreur) de la démo prêtée au visiteur. */
+/** DEMO-1 : ouvre l'espace choisi (commerçant, gérant, boulanger, pâtissier, vente en boutique, livreur) de la démo prêtée au visiteur. */
 export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Espace inconnu." }, { status: 400 });

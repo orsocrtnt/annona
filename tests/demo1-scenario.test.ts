@@ -18,8 +18,10 @@ function stopsByRound(scenario: ReturnType<typeof buildDemoScenario>) {
 
 test("DEMO-1 : volumes de Théo — 60 à 70 arrêts par tournée du matin, 15 à 20 produits, 200 arrêts par jour au plus", () => {
   const scenario = buildDemoScenario({ slot: 3, now: at(9) });
-  assert.equal(scenario.products.length, 100);
-  assert.equal(scenario.merchants.length, 172);
+  // 100 produits du catalogue, plus 4 gros gâteaux vendus par taille (LOT2-D3) ; 172 clients, plus 2 boutiques (LOT2-D1).
+  assert.equal(scenario.products.length, 104);
+  assert.equal(scenario.merchants.filter((merchant) => merchant.kind !== "SHOP").length, 172);
+  assert.equal(scenario.merchants.filter((merchant) => merchant.kind === "SHOP").length, 2);
   const byRound = stopsByRound(scenario);
   const weekdayMorning = scenario.rounds.filter((round) => String(round.slotId).endsWith("_matin") && new Date(String(round.date)).getUTCDay() !== 0);
   assert.ok(weekdayMorning.length >= 10);
@@ -30,13 +32,15 @@ test("DEMO-1 : volumes de Théo — 60 à 70 arrêts par tournée du matin, 15 �
   const perDay = new Map<number, number>();
   for (const order of scenario.orders) perDay.set(time(order.deliveryDate), (perDay.get(time(order.deliveryDate)) ?? 0) + 1);
   for (const count of perDay.values()) assert.ok(count <= 200, `${count} commandes un même jour`);
+  // Volumes des livraisons aux clients ; les envois aux boutiques ont leur propre assortiment.
+  const clientOrders = new Set(scenario.orders.filter((order) => order.origin !== "SHIPMENT").map((order) => order.id));
   const linesPerOrder = new Map<string, number>();
-  for (const line of scenario.orderLines) linesPerOrder.set(line.orderId, (linesPerOrder.get(line.orderId) ?? 0) + 1);
+  for (const line of scenario.orderLines) if (clientOrders.has(line.orderId)) linesPerOrder.set(line.orderId, (linesPerOrder.get(line.orderId) ?? 0) + 1);
   for (const [orderId, count] of linesPerOrder) {
     const [min, max] = DEMO_SCENARIO.linesPerOrder;
     assert.ok(count >= min && count <= max, `${orderId} : ${count} lignes`);
   }
-  assert.equal(linesPerOrder.size, scenario.orders.length);
+  assert.equal(linesPerOrder.size, clientOrders.size);
 });
 
 test("DEMO-1 : identifiants propres à l'environnement, déterministes, contraintes d'unicité du schéma respectées", () => {
@@ -48,7 +52,24 @@ test("DEMO-1 : identifiants propres à l'environnement, déterministes, contrain
   const other = buildDemoScenario({ slot: 4, now: at(9) });
   const ids = (scenario: typeof first) => [
     scenario.companyId,
-    ...[scenario.categories, scenario.products, scenario.zones, scenario.slots, scenario.merchants, scenario.merchantPrices, scenario.users, scenario.recurringOrders, scenario.orders, scenario.rounds, scenario.stops].flatMap((rows) => rows.map((row) => String(row.id))),
+    ...[
+      scenario.categories,
+      scenario.products,
+      scenario.productSizes,
+      scenario.zones,
+      scenario.slots,
+      scenario.merchants,
+      scenario.merchantPrices,
+      scenario.shopPrices,
+      scenario.users,
+      scenario.recurringOrders,
+      scenario.cakeOrders,
+      scenario.orders,
+      scenario.rounds,
+      scenario.stops,
+      scenario.shopStockLots,
+      scenario.shopDayCloses,
+    ].flatMap((rows) => rows.map((row) => String(row.id))),
   ];
   for (const value of ids(first)) assert.ok(value.startsWith(demoPoolPrefix(3)), value);
   const otherIds = new Set(ids(other));
@@ -61,7 +82,10 @@ test("DEMO-1 : identifiants propres à l'environnement, déterministes, contrain
   assert.ok(unique(first.orders.map((order) => `${order.merchantId}|${time(order.deliveryDate)}|${order.slotId}`)));
   assert.ok(unique(first.orders.map((order) => order.reference)));
   assert.ok(unique(first.stops.map((stop) => stop.orderId)));
-  assert.ok(unique(first.orderLines.map((line) => `${line.orderId}|${line.productId}`)));
+  assert.ok(unique(first.orderLines.map((line) => `${line.orderId}|${line.productId}|${line.variantKey ?? ""}`)));
+  assert.ok(unique(first.shopPrices.map((price) => `${price.shopId}|${price.productId}|${price.sizeKey ?? ""}`)));
+  assert.ok(unique(first.shopDayCloses.map((close) => `${close.shopId}|${close.productId}|${time(close.date)}`)));
+  assert.ok(unique(first.productSizes.map((size) => `${size.productId}|${size.servings}`)));
   assert.ok(unique(first.merchantPrices.map((price) => `${price.merchantId}|${price.productId}`)));
   const productIds = new Set(first.products.map((product) => product.id));
   assert.ok(first.orderLines.every((line) => productIds.has(line.productId)));
@@ -87,7 +111,7 @@ test("DEMO-1 : à 9h, tournées du matin en cours — arrêts déjà passés liv
   }
   // Historique terminé, lendemain commandé mais pas verrouillé avant 17h.
   assert.ok(scenario.rounds.filter((round) => time(round.date) < todayDb).every((round) => round.status === "COMPLETED"));
-  const tomorrow = scenario.orders.filter((order) => time(order.deliveryDate) === tomorrowDb);
+  const tomorrow = scenario.orders.filter((order) => time(order.deliveryDate) === tomorrowDb && order.origin !== "SHIPMENT");
   assert.ok(tomorrow.length > 0 && tomorrow.every((order) => order.status === "VALIDATED" && order.lockedAt === null));
   assert.ok(scenario.rounds.every((round) => time(round.date) !== tomorrowDb));
 });
@@ -119,9 +143,14 @@ test("DEMO-1 : le client de démo n'a pas commandé pour demain, mais a sa comma
 test("DEMO-1 : un compte par espace à essayer, le client rattaché à son commerce", () => {
   const scenario = buildDemoScenario({ slot: 7, now: at(9) });
   const personas = scenario.users.flatMap((user) => (user.persona ? [user.persona] : []));
-  assert.deepEqual([...personas].sort(), ["admin", "baker", "client", "driver"]);
+  assert.deepEqual([...personas].sort(), ["admin", "baker", "client", "driver", "pastry", "seller"]);
   const roles = Object.fromEntries(scenario.users.filter((user) => user.persona).map((user) => [user.persona, user.role]));
-  assert.deepEqual(roles, { admin: "ADMIN", baker: "BAKER", driver: "DRIVER", client: "MERCHANT" });
+  assert.deepEqual(roles, { admin: "ADMIN", baker: "BAKER", driver: "DRIVER", client: "MERCHANT", pastry: "PASTRY_CHEF", seller: "SELLER" });
+  // LOT2-D1 : chaque compte vente est rattaché à sa boutique ; celui de la démo, à la première.
+  const shops = scenario.merchants.filter((merchant) => merchant.kind === "SHOP");
+  const sellers = scenario.users.filter((user) => user.role === "SELLER");
+  assert.deepEqual(sellers.map((user) => user.merchantId), shops.map((shop) => shop.id));
+  assert.equal(scenario.users.find((user) => user.persona === "seller")?.merchantId, shops[0]!.id);
   assert.equal(scenario.users.filter((user) => user.role === "DRIVER").length, 4);
   // La page /demo retrouve le compte de chaque espace sans recalculer la journée.
   for (const user of scenario.users) if (user.persona) assert.equal(user.id, demoPersonaUserId(7, user.persona));
@@ -152,5 +181,92 @@ test("DEMO-1 : à toute heure, les quatre tournées du jour sont en cours, chacu
       return delivered.length / stops.length;
     });
     assert.ok(new Set(progress.map((value) => Math.round(value * 10))).size >= 2, "des stades d'avancement différents");
+  }
+});
+
+test("DEMO-1, lot 2 : pâtisserie, boutiques, envois, stock et gâteaux des particuliers à essayer (LOT2-D1 à D9)", () => {
+  for (const hour of [9, 21]) {
+    const scenario = buildDemoScenario({ slot: 8, now: at(hour) });
+    const products = new Map(scenario.products.map((product) => [product.id, product]));
+    const families = new Map(scenario.categories.map((category) => [category.id, category.family]));
+    const familyOf = (productId: string) => families.get(products.get(productId)!.categoryId);
+
+    // LOT2-D2 et D3 : pain et pâtisserie séparés ; gros gâteaux vendus par taille, sans prix unique.
+    assert.ok(scenario.categories.some((category) => category.family === "PASTRY") && scenario.categories.some((category) => category.family === "BREAD"));
+    const large = scenario.products.filter((product) => product.pastryFormat === "LARGE");
+    assert.equal(large.length, 4);
+    for (const cake of large) {
+      assert.equal(cake.basePriceCents, null);
+      assert.equal(familyOf(cake.id!), "PASTRY");
+      assert.ok(scenario.productSizes.filter((size) => size.productId === cake.id).length >= 2);
+    }
+    assert.ok(scenario.products.filter((product) => product.recipe).every((product) => familyOf(product.id!) === "PASTRY"));
+    assert.ok(scenario.products.every((product) => (product.pastryFormat ? familyOf(product.id!) === "PASTRY" : familyOf(product.id!) === "BREAD")));
+
+    // LOT2-D4 : prix boutique pour chaque produit vendu au détail et chaque taille de gros gâteau.
+    const shops = scenario.merchants.filter((merchant) => merchant.kind === "SHOP");
+    for (const shop of shops) {
+      const prices = scenario.shopPrices.filter((price) => price.shopId === shop.id);
+      assert.equal(prices.length, scenario.products.length - large.length + scenario.productSizes.length);
+      assert.ok(prices.every((price) => price.sold && Number(price.priceCents) > 0));
+    }
+
+    // LOT2-D5 : un envoi par boutique et par jour, sur la tournée du matin de sa zone, pain et pâtisserie ensemble.
+    const shipments = scenario.orders.filter((order) => order.origin === "SHIPMENT");
+    assert.equal(shipments.length, shops.length * (DEMO_SCENARIO.historyDays + 2));
+    for (const shipment of shipments) {
+      const lines = scenario.orderLines.filter((line) => line.orderId === shipment.id);
+      assert.ok(lines.some((line) => familyOf(line.productId) === "BREAD") && lines.some((line) => familyOf(line.productId) === "PASTRY"));
+      assert.ok(lines.every((line) => line.unitPriceFrozenCents == null), "un envoi n'est jamais facturé");
+      assert.ok(String(shipment.slotId).endsWith("_matin"));
+      const stop = scenario.stops.find((row) => row.orderId === shipment.id);
+      if (time(shipment.deliveryDate) <= todayDb) assert.ok(stop, "l'envoi est un arrêt de la tournée");
+      if (time(shipment.deliveryDate) === tomorrowDb) assert.equal(shipment.status, "LOCKED");
+    }
+
+    // LOT2-D6 : réception notée les jours passés ; aujourd'hui, à noter sur la tablette.
+    for (const shipment of shipments) {
+      const lines = scenario.orderLines.filter((line) => line.orderId === shipment.id && !line.cakeOrderId);
+      if (time(shipment.deliveryDate) < todayDb) {
+        assert.ok(shipment.receivedAt instanceof Date);
+        assert.ok(lines.every((line) => line.quantityReceived != null && Number(line.quantityDamaged) <= Number(line.quantityReceived)));
+      } else {
+        assert.equal(shipment.receivedAt ?? null, null);
+        assert.ok(lines.every((line) => line.quantityReceived == null));
+      }
+    }
+
+    // LOT2-D7 : clôtures des jours passés cohérentes (ventes = stock du matin + reçu en bon état − reste du soir),
+    // et lots restants = ce que la dernière clôture a gardé.
+    assert.ok(scenario.shopDayCloses.length > 0);
+    assert.ok(scenario.shopDayCloses.every((close) => time(close.date) < todayDb));
+    for (const close of scenario.shopDayCloses) {
+      assert.equal(close.sold, close.morningStock + close.receivedGood - close.remaining);
+      assert.ok(close.discardedDamaged <= close.remaining && close.sold >= 0);
+    }
+    assert.ok(scenario.shopStockLots.every((lot) => lot.quantity >= 0 && lot.quantity <= lot.initialQuantity));
+    for (const shop of shops) {
+      const closes = scenario.shopDayCloses.filter((close) => close.shopId === shop.id);
+      const lastDay = Math.max(...closes.map((close) => time(close.date)));
+      for (const close of closes.filter((row) => time(row.date) === lastDay)) {
+        const kept = scenario.shopStockLots.filter((lot) => lot.shopId === shop.id && lot.productId === close.productId).reduce((sum, lot) => sum + lot.quantity, 0);
+        assert.equal(kept, close.remaining - close.discardedDamaged - close.discardedExpired, String(close.productId));
+      }
+    }
+
+    // LOT2-D9 : gâteaux payés (complet ou acompte de 50 % au moins), commandés 48 h avant, dans l'envoi du jour du retrait.
+    assert.ok(scenario.cakeOrders.some((cake) => cake.status === "ORDERED" && time(cake.pickupDate) === todayDb));
+    for (const cake of scenario.cakeOrders) {
+      assert.ok(cake.paidCents * 2 >= cake.priceCents && cake.paidCents <= cake.priceCents);
+      assert.ok(time(cake.pickupAt) - time(cake.createdAt) >= 48 * 3_600_000);
+      assert.equal(cake.status, time(cake.pickupDate) < todayDb ? "SETTLED" : "ORDERED");
+      const line = scenario.orderLines.find((row) => row.cakeOrderId === cake.id);
+      const shipment = shipments.find((order) => order.id === line?.orderId);
+      assert.ok(line && shipment, "le gâteau part dans un envoi");
+      assert.equal(shipment.merchantId, cake.shopId);
+      assert.equal(time(shipment.deliveryDate), time(cake.pickupDate));
+      assert.equal(line.sizeId, cake.sizeId);
+      assert.equal(line.variantKey, `cake:${cake.id}`);
+    }
   }
 });
