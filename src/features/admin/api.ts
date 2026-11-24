@@ -7,6 +7,7 @@ import type { OperationJobPage } from "@/domains/admin/operation-jobs.service";
 import type { PlatformSupportTicketPage } from "@/domains/admin/support-tickets.service";
 import type { PlatformOverview } from "@/domains/admin/platform.service";
 import type { AdminHome, AdminHomeBadges } from "@/domains/admin/admin-home.service";
+import type { DemoEnvironmentStatus } from "@/domains/demo/demo-pool.service";
 
 export async function fetchAdminOverview(): Promise<PlatformOverview> {
   const res = await fetch("/api/admin/overview", { cache: "no-store" });
@@ -187,4 +188,23 @@ async function readJson<T>(res: Response): Promise<T> {
 export async function fetchAdminSearch(q: string, signal?: AbortSignal): Promise<AdminSearchResult> {
   const res = await fetch(`/api/admin/search?q=${encodeURIComponent(q)}`, { cache: "no-store", signal });
   return readJson<AdminSearchResult>(res);
+}
+
+/** DEMO-1 : un environnement de démo vu par le super admin (dates en ISO). */
+export type AdminDemoEnvironment = {
+  slot: number;
+  status: DemoEnvironmentStatus;
+  leasedAt: string | null;
+  leaseExpiresAt: string | null;
+};
+
+export async function fetchAdminDemos(): Promise<AdminDemoEnvironment[]> {
+  const res = await fetch("/api/admin/demos", { cache: "no-store" });
+  return readJson<AdminDemoEnvironment[]>(res);
+}
+
+/** DEMO-1 « Tout déconnecter » : renvoie le nombre de visiteurs déconnectés. */
+export async function resetAdminDemos(): Promise<{ disconnected: number }> {
+  const res = await fetch("/api/admin/demos/reset", { method: "POST", cache: "no-store" });
+  return readJson<{ disconnected: number }>(res);
 }

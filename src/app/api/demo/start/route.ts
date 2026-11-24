@@ -4,6 +4,7 @@ import {
   findDemoLease,
   leaseDemoEnvironment,
   prepareSpareDemoEnvironment,
+  refreshOutdatedDemoLease,
 } from "@/domains/demo/demo-pool.service";
 import { readDemoLeaseCookie, writeDemoLeaseCookie } from "@/lib/demo/demo-lease-cookie";
 
@@ -15,9 +16,12 @@ export const maxDuration = 60;
  * reconstruit à l'heure du moment. Ouvert à tous, sans identifiants.
  */
 export async function POST() {
-  const current = await findDemoLease(await readDemoLeaseCookie());
-  if (current) return NextResponse.json({ ok: true, reused: true, expiresAt: current.leaseExpiresAt });
   try {
+    const current = await findDemoLease(await readDemoLeaseCookie());
+    if (current) {
+      await refreshOutdatedDemoLease(current);
+      return NextResponse.json({ ok: true, reused: true, expiresAt: current.leaseExpiresAt });
+    }
     const lease = await leaseDemoEnvironment();
     await writeDemoLeaseCookie(lease.token);
     // Réserve pour le visiteur suivant, après la réponse (il n'attendra pas la reconstruction).

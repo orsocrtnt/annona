@@ -11,6 +11,8 @@ import type { Prisma, SystemRole } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { createAdminClient } from "@/services/supabase/admin";
 import { buildDemoScenario, type DemoScenario } from "@/domains/demo/demo-scenario";
+import { hashManagerCode } from "@/domains/shop/shop-prices.service";
+import { DEMO_SHOP_MANAGER_CODE } from "@/lib/demo/demo-constants";
 
 /** Lignes par insertion : sous la limite de 65 535 paramètres de Postgres, même pour les tables larges. */
 const CHUNK = 1_500;
@@ -54,6 +56,9 @@ async function systemRoleIds(roles: SystemRole[]): Promise<Map<SystemRole, strin
 /** Écrit le scénario ; l'entreprise et les comptes de l'environnement sont d'abord effacés. */
 async function writeScenario(scenario: DemoScenario, authIds: Map<string, string>, roleIds: Map<SystemRole, string>) {
   const emails = scenario.users.map((user) => user.email);
+  // Code responsable des boutiques (LOT2-D4), affiché sur la page /demo : jamais rangé en clair.
+  const managerCodeHash = hashManagerCode(DEMO_SHOP_MANAGER_CODE);
+  const merchants = scenario.merchants.map((merchant) => (merchant.kind === "SHOP" ? { ...merchant, managerCodeHash } : merchant));
   await prisma.$transaction(
     async (tx) => {
       await tx.company.deleteMany({ where: { id: scenario.companyId } });
@@ -62,10 +67,12 @@ async function writeScenario(scenario: DemoScenario, authIds: Map<string, string
       await tx.company.createMany({ data: [scenario.company] });
       await tx.category.createMany({ data: scenario.categories });
       await insertChunks(scenario.products, (data) => tx.product.createMany({ data }));
+      await tx.productSize.createMany({ data: scenario.productSizes });
       await tx.deliveryZone.createMany({ data: scenario.zones });
       await tx.slot.createMany({ data: scenario.slots });
-      await insertChunks(scenario.merchants, (data) => tx.merchant.createMany({ data }));
+      await insertChunks(merchants, (data) => tx.merchant.createMany({ data }));
       await insertChunks(scenario.merchantPrices, (data) => tx.merchantPrice.createMany({ data }));
+      await insertChunks(scenario.shopPrices, (data) => tx.shopPrice.createMany({ data }));
       const users: Prisma.UserCreateManyInput[] = scenario.users.map((user) => ({
         id: user.id,
         authId: authIds.get(user.email)!,
@@ -82,10 +89,13 @@ async function writeScenario(scenario: DemoScenario, authIds: Map<string, string
       await tx.user.createMany({ data: users });
       await tx.recurringOrder.createMany({ data: scenario.recurringOrders });
       await insertChunks(scenario.recurringOrderLines, (data) => tx.recurringOrderLine.createMany({ data }));
+      await tx.cakeOrder.createMany({ data: scenario.cakeOrders });
       await insertChunks(scenario.orders, (data) => tx.order.createMany({ data }));
       await insertChunks(scenario.orderLines, (data) => tx.orderLine.createMany({ data }));
       await insertChunks(scenario.rounds, (data) => tx.round.createMany({ data }));
       await insertChunks(scenario.stops, (data) => tx.stop.createMany({ data }));
+      await insertChunks(scenario.shopStockLots, (data) => tx.shopStockLot.createMany({ data }));
+      await insertChunks(scenario.shopDayCloses, (data) => tx.shopDayClose.createMany({ data }));
     },
     { timeout: TRANSACTION_TIMEOUT_MS, maxWait: 10_000 },
   );

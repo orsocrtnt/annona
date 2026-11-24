@@ -206,3 +206,116 @@ export const DEMO_ACCESS_INSTRUCTIONS = [
   "Rue piétonne : se garer dans la rue voisine, 2 minutes à pied.",
   "Volet fermé avant 7h : déposer dans le sas.",
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Lot 2 dans la démo : pâtisserie, boutiques, stock, gâteaux des particuliers (demande d'Orso du 24 novembre 2026).
+// ---------------------------------------------------------------------------
+
+/** Catégories du catalogue faites par le pâtissier (LOT2-D2) ; les autres sont du pain (boulanger). */
+export const DEMO_PASTRY_CATEGORIES: ReadonlySet<string> = new Set(["patisseries", "gateaux"]);
+
+/** Durée de vente en boutique par catégorie, jour de réception compris (LOT2-D3). */
+export const DEMO_SHELF_LIFE_BY_CATEGORY: Readonly<Record<string, number>> = {
+  pains: 1,
+  "pains-speciaux": 2,
+  viennoiseries: 1,
+  patisseries: 2,
+  gateaux: 2,
+  sale: 1,
+  snacking: 1,
+};
+
+/** Exceptions par produit : biscuits et cakes se gardent plus longtemps. */
+export const DEMO_SHELF_LIFE_BY_PRODUCT: Readonly<Record<string, number>> = {
+  "Macarons (boîte de 6)": 3,
+  Financier: 3,
+  "Madeleines (sachet de 10)": 4,
+  "Cookie aux pépites": 3,
+  "Cake au citron": 4,
+  "Cake marbré": 4,
+  "Pain de seigle 500 g": 3,
+};
+
+/** Recettes de quelques pâtisseries, lues seulement par le pâtissier et l'administrateur (LOT2-D3). */
+export const DEMO_RECIPES: Readonly<Record<string, string>> = {
+  "Éclair au chocolat":
+    "Pâte à choux : 250 g d'eau, 250 g de lait, 220 g de beurre, 10 g de sel, 10 g de sucre, 300 g de farine, 500 g d'œufs. Dresser des bâtons de 14 cm, cuire 35 min à 165 °C. Crème pâtissière au chocolat noir 70 %, glaçage fondant chocolat.",
+  "Tartelette citron meringuée":
+    "Pâte sucrée foncée en cercles de 8 cm, cuite à blanc 18 min à 160 °C. Crème citron (jus, zestes, œufs, sucre, beurre monté à 40 °C). Meringue italienne pochée, colorée au chalumeau.",
+  Millefeuille:
+    "Feuilletage inversé 6 tours, abaissé à 2 mm, cuit entre deux plaques, caramélisé au sucre glace. Crème diplomate vanille. Montage en trois abaisses, glaçage fondant et marbrure chocolat.",
+  "Paris-Brest individuel":
+    "Couronnes de pâte à choux de 9 cm, amandes effilées, 35 min à 165 °C. Crème mousseline au praliné noisette 60 %, éclats de praliné au cœur.",
+  Fraisier:
+    "Génoise vanille en deux disques imbibés au sirop kirsch. Crème mousseline vanille, fraises gariguettes coupées en deux sur le pourtour. Pâte d'amande rose abaissée à 2 mm sur le dessus.",
+  "Saint-Honoré":
+    "Fond de pâte feuilletée, couronne et choux de pâte à choux, caramel à 165 °C. Crème chiboust vanille, chantilly mascarpone pochée à la douille Saint-Honoré.",
+  "Royal chocolat":
+    "Biscuit dacquoise amande, croustillant praliné feuillantine, mousse chocolat noir 64 %. Glaçage miroir cacao, à couler à 35 °C sur l'entremets congelé.",
+  Framboisier:
+    "Biscuit joconde imbibé, crème mousseline pistache, framboises fraîches en couronne. Nappage framboise et pâte d'amande verte.",
+};
+
+/**
+ * Gros gâteaux sur commande (LOT2-D3 et D9) : vendus par taille, en nombre de parts. Prix restaurant HT par taille ;
+ * le prix boutique (TTC) en est tiré par la démo.
+ */
+export const DEMO_LARGE_CAKES: ReadonlyArray<{ name: string; sizes: ReadonlyArray<readonly [servings: number, restaurantPriceCents: number]> }> = [
+  { name: "Fraisier", sizes: [[6, 2400], [8, 3100], [10, 3800]] },
+  { name: "Framboisier", sizes: [[6, 2400], [8, 3100], [10, 3800]] },
+  { name: "Royal chocolat", sizes: [[6, 2300], [8, 2900], [12, 4200]] },
+  { name: "Saint-Honoré", sizes: [[6, 2700], [8, 3500]] },
+];
+
+/** Catégorie des gros gâteaux, propre à la démo (le catalogue du seed n'en a pas). */
+export const DEMO_LARGE_CAKE_CATEGORY = { id: "gros-gateaux", name: "Gâteaux sur commande" } as const;
+
+/**
+ * Boutiques de l'entreprise (LOT2-D1) : un arrêt de la tournée du matin de leur zone. La première est celle de la
+ * vendeuse de démo.
+ */
+export const DEMO_SHOPS: ReadonlyArray<{
+  key: string;
+  name: string;
+  zone: "nord" | "sud";
+  street: DemoStreet;
+  number: number;
+  access: string;
+}> = [
+  { key: "abbesses", name: "Boutique des Abbesses", zone: "nord", street: ["rue des Abbesses", "75018", 48.8846, 2.3382], number: 42, access: "Livraison par la porte de service, côté cour. Sonner « Laboratoire »." },
+  { key: "roquette", name: "Boutique Roquette", zone: "sud", street: ["rue de la Roquette", "75011", 48.8555, 2.376], number: 15, access: "Rideau levé dès 6h15, déposer en réserve derrière la vitrine." },
+];
+
+/** Assortiment envoyé chaque matin à une boutique : pain et pâtisserie, quantités (minimum, maximum). */
+export const DEMO_SHOP_ASSORTMENT: ReadonlyArray<readonly [product: string, min: number, max: number]> = [
+  ["Baguette tradition", 60, 90],
+  ["Baguette classique", 20, 35],
+  ["Pain de campagne 400 g", 8, 14],
+  ["Pain au levain 500 g", 6, 10],
+  ["Pain aux céréales 500 g", 4, 8],
+  ["Pain de seigle 500 g", 3, 6],
+  ["Pain aux noix", 3, 6],
+  ["Croissant au beurre", 40, 60],
+  ["Pain au chocolat", 40, 60],
+  ["Pain aux raisins", 10, 18],
+  ["Éclair au chocolat", 10, 16],
+  ["Éclair au café", 6, 10],
+  ["Tartelette citron meringuée", 6, 10],
+  ["Tartelette aux fraises", 6, 10],
+  ["Millefeuille", 6, 10],
+  ["Paris-Brest individuel", 4, 8],
+  ["Financier", 12, 20],
+  ["Macarons (boîte de 6)", 4, 8],
+];
+
+/** Commandes de gâteaux des particuliers (LOT2-D9) : clients, inscriptions et consignes. */
+export const DEMO_CAKE_CUSTOMERS: ReadonlyArray<readonly [name: string, phone: string, inscription: string | null, note: string | null]> = [
+  ["Mme Lemaire", "0612457890", "Joyeux anniversaire Léa", null],
+  ["M. Benhamou", "0698231475", null, "Sans alcool dans le sirop"],
+  ["Mme Caron", "0745128863", "Félicitations Hugo & Jade", null],
+  ["M. Vasseur", "0633904517", "Bon départ Martine", "Allergie aux fruits à coque"],
+  ["Mme Tessier", "0677215840", "10 ans déjà !", null],
+  ["M. Pruvost", "0621780356", null, null],
+  ["Mme Akroun", "0659043218", "Joyeux anniversaire Papa", "Bougies à part"],
+  ["M. Delattre", "0614638297", "Bienvenue Gabriel", null],
+];

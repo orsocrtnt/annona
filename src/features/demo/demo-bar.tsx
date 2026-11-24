@@ -6,7 +6,14 @@ import { useAuthStore } from "@/stores/auth.store";
 import type { DemoPersona } from "@/domains/demo/demo-scenario";
 import { DEMO_PERSONA_LABELS, DEMO_PERSONA_ORDER, isDemoCompanyId } from "@/lib/demo/demo-constants";
 
-const SPACE_PREFIX: Record<DemoPersona, string> = { client: "/portal", admin: "/dashboard", baker: "/bakery", driver: "/driver" };
+const SPACE_PREFIX: Record<DemoPersona, string> = {
+  client: "/portal",
+  admin: "/dashboard",
+  baker: "/bakery",
+  driver: "/driver",
+  pastry: "/pastry",
+  seller: "/shop",
+};
 
 /**
  * DEMO-1 : pastille flottante des comptes de démo — « Démo · changer d'espace · quitter », en bas au centre pour ne

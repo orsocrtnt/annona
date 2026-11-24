@@ -175,7 +175,7 @@ test("ADMIN-ESPACE menu : deux groupes pour le super-administrateur, rien ne cha
   assert.deepEqual(sections, [
     [null, ["Tableau de bord /admin"]],
     [ADMIN_NAV_GROUPS.clients, ["Entreprises /companies", "Utilisateurs /admin/users"]],
-    [ADMIN_NAV_GROUPS.technique, ["Exploitation /admin/operations", "Support plateforme /admin/support"]],
+    [ADMIN_NAV_GROUPS.technique, ["Exploitation /admin/operations", "Support plateforme /admin/support", "Démos /admin/demos"]],
   ]);
   assert.deepEqual(Object.values(ADMIN_NAV_GROUPS), ["Clients", "Technique"]);
   for (const items of [companyNavItems, bakerNavItems, driverNavItems]) {

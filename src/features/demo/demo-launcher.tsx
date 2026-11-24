@@ -51,7 +51,7 @@ export function DemoLauncher() {
       <h1 className="text-center text-4xl font-bold">Essayer Annona</h1>
       <p className="mx-auto mt-3 max-w-[440px] text-center text-base text-text-secondary">
         Une boulangerie fictive, sa journée de livraisons remise à l&apos;heure. Rien n&apos;est envoyé : ni e-mail, ni
-        notification. Votre démo reste à vous pendant 4 heures.
+        notification. Votre démo reste à vous jusqu&apos;à votre déconnexion, 4 heures au plus.
       </p>
 
       <ul className="mt-8 grid gap-3" aria-label="Espaces à essayer">

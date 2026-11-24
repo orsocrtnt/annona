@@ -15,6 +15,8 @@ const routes = [
   ["src/app/api/admin/support-tickets/route.ts", "@/domains/admin/support-tickets.service", true],
   ["src/app/api/admin/operation-jobs/route.ts", "@/domains/admin/operation-jobs.service", true],
   ["src/app/api/admin/search/route.ts", "@/domains/admin/search.service", true],
+  // DEMO-1 : suivi des démos.
+  ["src/app/api/admin/demos/route.ts", "@/domains/demo/demo-pool.service", false],
 ] as const;
 
 function load(file: string, service: string, role: string, calls: string[]) {
@@ -87,7 +89,7 @@ test("ADMIN-1 API plateforme : SUPER_ADMIN conserve la lecture", async () => {
     assert.equal(calls.includes("service"), true);
   }
   const api = readFileSync("src/features/admin/api.ts", "utf8");
-  for (const path of ["/api/admin/overview", "/api/admin/home", "/api/admin/service-health", "/api/admin/companies", "/api/admin/users", "/api/admin/support-tickets", "/api/admin/operation-jobs", "/api/admin/search"]) {
+  for (const path of ["/api/admin/overview", "/api/admin/home", "/api/admin/service-health", "/api/admin/companies", "/api/admin/users", "/api/admin/support-tickets", "/api/admin/operation-jobs", "/api/admin/search", "/api/admin/demos"]) {
     const line = api.split("\n").find((entry) => entry.includes(path));
     assert.equal(line?.includes('cache: "no-store"'), true, path);
   }
