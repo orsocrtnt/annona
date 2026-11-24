@@ -11,7 +11,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { DemoPoolEnvironment } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
-import { demoPoolPrefix } from "@/domains/demo/demo-scenario";
+import { DEMO_PERSONAS, demoPersonaUserId, demoPoolPrefix } from "@/domains/demo/demo-scenario";
 import { provisionDemoEnvironment } from "@/domains/demo/demo-provision.service";
 import {
   DEMO_MAX_SLOTS,
@@ -111,6 +111,12 @@ async function claimEnvironment(leaseKeyHash: string | null, now: Date): Promise
   throw new DemoPoolFullError();
 }
 
+/** Vrai si l'environnement a le compte de chaque espace à essayer (`DEMO_PERSONAS`). */
+async function hasEveryPersona(slot: number): Promise<boolean> {
+  const ids = DEMO_PERSONAS.map((persona) => demoPersonaUserId(slot, persona));
+  return (await prisma.user.count({ where: { id: { in: ids } } })) === ids.length;
+}
+
 /** Environnement de réserve préparé il y a moins de DEMO_FRESH_MS : prêté tel quel, sans attendre. */
 async function leaseFreshEnvironment(leaseKeyHash: string, now: Date) {
   const expires = demoLeaseExpiry(now);
@@ -169,12 +175,16 @@ export async function leaseDemoEnvironment(now = new Date()) {
   const token = randomBytes(32).toString("hex");
   const leaseKeyHash = hashDemoLeaseToken(token);
   const fresh = await leaseFreshEnvironment(leaseKeyHash, now);
-  if (fresh) return { token, companyId: fresh.company_id, slot: fresh.slot, expiresAt: fresh.lease_expires_at, ms: 0 };
-  const env = await claimEnvironment(leaseKeyHash, now);
+  if (fresh && (await hasEveryPersona(fresh.slot))) {
+    return { token, companyId: fresh.company_id, slot: fresh.slot, expiresAt: fresh.lease_expires_at, ms: 0 };
+  }
+  // Réserve préparée par une version précédente de la démo (espaces ajoutés depuis, comme le pâtissier et la vente
+  // le 24 novembre 2026) : déjà prêtée au visiteur, elle est reconstruite sur place.
+  const env = fresh ? { slot: fresh.slot } : await claimEnvironment(leaseKeyHash, now);
   try {
     const { companyId, ms } = await provisionDemoEnvironment(env.slot, now);
     const leased = await prisma.demoPoolEnvironment.update({
-      where: { id: env.id },
+      where: { slot: env.slot },
       data: { state: "LEASED", preparedAt: new Date() },
       select: { slot: true, leaseExpiresAt: true },
     });
@@ -183,7 +193,7 @@ export async function leaseDemoEnvironment(now = new Date()) {
     // Libéré pour un autre essai ; l'erreur est gardée pour le suivi (jamais montrée au visiteur).
     await prisma.demoPoolEnvironment
       .update({
-        where: { id: env.id },
+        where: { slot: env.slot },
         data: { state: "READY", preparedAt: null, leaseKeyHash: null, leasedAt: null, leaseExpiresAt: null, lastError: String(error).slice(0, 500) },
       })
       .catch(() => undefined);
