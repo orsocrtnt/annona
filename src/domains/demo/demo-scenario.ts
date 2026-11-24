@@ -6,6 +6,12 @@
  * livraison ; jamais plus de 200 arrêts par jour. Une semaine d'historique livré, la journée en cours remise à
  * l'heure (arrêts déjà livrés, tournée en cours), le lendemain commandé.
  *
+ * Lot 2 (pâtissier et vente en boutique, 24 novembre 2026) : pâtisseries et gâteaux en famille « pâtisserie », quatre
+ * gros gâteaux vendus par taille, deux boutiques de l'entreprise sur les tournées du matin. Chaque matin, un envoi de
+ * pain et de pâtisserie par boutique ; les jours passés, réception notée, stock par lots et clôture du soir (mêmes
+ * règles que la tablette, `stock-rules.ts`) ; aujourd'hui, réception et clôture restent à faire sur la tablette.
+ * Commandes de gâteaux de particuliers : soldées les jours passés, à retirer aujourd'hui et demain.
+ *
  * Fonction pure et déterministe : mêmes (environnement, jour) → mêmes données. L'écriture en base et les comptes de
  * connexion sont faits ailleurs (lot de démo).
  */
@@ -15,21 +21,32 @@ import { improveOpenPath } from "@/lib/dispatch/round-improve";
 import { straightLineSeconds } from "@/lib/dispatch/travel-time";
 import {
   DEMO_ACCESS_INSTRUCTIONS,
+  DEMO_CAKE_CUSTOMERS,
   DEMO_FIRST_NAMES,
+  DEMO_LARGE_CAKE_CATEGORY,
+  DEMO_LARGE_CAKES,
   DEMO_LAST_NAMES,
   DEMO_MERCHANT_TYPES,
   DEMO_MERCHANT_WORDS,
+  DEMO_PASTRY_CATEGORIES,
   DEMO_QUANTITY_RANGES,
+  DEMO_RECIPES,
+  DEMO_SHELF_LIFE_BY_CATEGORY,
+  DEMO_SHELF_LIFE_BY_PRODUCT,
+  DEMO_SHOP_ASSORTMENT,
+  DEMO_SHOPS,
   DEMO_STREETS_NORTH,
   DEMO_STREETS_SOUTH,
   type DemoStreet,
 } from "@/domains/demo/demo-scenario-data";
+import { lastSaleDayOf, planClose, type StockLot } from "@/domains/shop/stock-rules";
 import { addCalendarDays, parisParts, parisWallTimeToUtc, type CalendarDate } from "@/lib/time/paris";
 
 /** Domaine de toutes les adresses de la démo : réservé (RFC 2606), jamais livrable, refusé par la garde d'envoi. */
 export const DEMO_EMAIL_DOMAIN = "demo.annona.example";
 
-export const DEMO_PERSONAS = ["admin", "baker", "driver", "client"] as const;
+/** Espaces à essayer ; pâtissier (`pastry`) et vente en boutique (`seller`) : lot 2, ajoutés le 24 novembre 2026. */
+export const DEMO_PERSONAS = ["admin", "baker", "driver", "client", "pastry", "seller"] as const;
 export type DemoPersona = (typeof DEMO_PERSONAS)[number];
 
 export const DEMO_SCENARIO = {
@@ -80,17 +97,27 @@ export type DemoScenario = {
   company: Prisma.CompanyCreateManyInput;
   categories: Prisma.CategoryCreateManyInput[];
   products: Prisma.ProductCreateManyInput[];
+  /** Tailles des gros gâteaux (LOT2-D3). */
+  productSizes: Prisma.ProductSizeCreateManyInput[];
   zones: Prisma.DeliveryZoneCreateManyInput[];
   slots: Prisma.SlotCreateManyInput[];
+  /** Clients (172), puis les boutiques de l'entreprise (`kind: SHOP`, LOT2-D1). */
   merchants: Prisma.MerchantCreateManyInput[];
   merchantPrices: Prisma.MerchantPriceCreateManyInput[];
+  /** Prix boutique TTC (LOT2-D4). */
+  shopPrices: Prisma.ShopPriceCreateManyInput[];
   users: DemoScenarioUser[];
   recurringOrders: Prisma.RecurringOrderCreateManyInput[];
   recurringOrderLines: Prisma.RecurringOrderLineCreateManyInput[];
+  /** Commandes de gâteaux des particuliers (LOT2-D9) ; à écrire avant les lignes d'envoi qui les portent. */
+  cakeOrders: Prisma.CakeOrderCreateManyInput[];
   orders: Prisma.OrderCreateManyInput[];
   orderLines: Prisma.OrderLineCreateManyInput[];
   rounds: Prisma.RoundCreateManyInput[];
   stops: Prisma.StopCreateManyInput[];
+  /** Stock des boutiques (LOT2-D6) et clôtures du soir des jours passés (LOT2-D7). */
+  shopStockLots: Prisma.ShopStockLotCreateManyInput[];
+  shopDayCloses: Prisma.ShopDayCloseCreateManyInput[];
 };
 
 const pad = (value: number, size = 2) => String(value).padStart(size, "0");
@@ -179,6 +206,8 @@ type MerchantPlan = {
   latitude: number;
   longitude: number;
   usual: ReadonlyArray<readonly [productIndex: number, quantity: number]>;
+  /** Boutique de l'entreprise (LOT2-D1) : reçoit chaque matin un envoi du laboratoire, ne commande pas. */
+  shop?: { index: number; key: string; sellerId: string };
 };
 
 type SlotPhase = {
@@ -233,7 +262,8 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
   const categoryProducts = new Map<string, number[]>();
   for (const [categoryIndex, category] of DEMO_CATALOG.entries()) {
     const categoryId = id("category", category.id);
-    categories.push({ ...base, id: categoryId, name: category.name, sortOrder: categoryIndex });
+    const pastry = DEMO_PASTRY_CATEGORIES.has(category.id);
+    categories.push({ ...base, id: categoryId, name: category.name, sortOrder: categoryIndex, family: pastry ? "PASTRY" : "BREAD" });
     for (const [productIndex, [name, unit, basePriceCents]] of category.products.entries()) {
       categoryProducts.set(category.id, [...(categoryProducts.get(category.id) ?? []), products.length]);
       productCategory.push(category.id);
@@ -247,10 +277,42 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
         vatRateBasisPoints: 550,
         sortOrder: productIndex,
         active: true,
+        pastryFormat: pastry ? "SMALL" : null,
+        recipe: DEMO_RECIPES[name] ?? null,
+        shelfLifeDays: DEMO_SHELF_LIFE_BY_PRODUCT[name] ?? DEMO_SHELF_LIFE_BY_CATEGORY[category.id] ?? 1,
       });
     }
   }
   const productId = (index: number) => products[index]!.id!;
+  const productIndexByName = new Map(products.map((product, index) => [product.name, index]));
+
+  // Gros gâteaux sur commande (LOT2-D3) : prix par taille, pas de prix unique ; jamais dans les commandes des clients.
+  const largeCategoryId = id("category", DEMO_LARGE_CAKE_CATEGORY.id);
+  categories.push({ ...base, id: largeCategoryId, name: DEMO_LARGE_CAKE_CATEGORY.name, sortOrder: DEMO_CATALOG.length, family: "PASTRY" });
+  const productSizes: Prisma.ProductSizeCreateManyInput[] = [];
+  const largeCakes = DEMO_LARGE_CAKES.map((cake, cakeIndex) => {
+    const cakeProductId = id("product", slugify(cake.name));
+    products.push({
+      ...base,
+      id: cakeProductId,
+      categoryId: largeCategoryId,
+      name: cake.name,
+      unit: "gâteau",
+      basePriceCents: null,
+      vatRateBasisPoints: 550,
+      sortOrder: cakeIndex,
+      active: true,
+      pastryFormat: "LARGE",
+      recipe: DEMO_RECIPES[cake.name] ?? null,
+      shelfLifeDays: 2,
+    });
+    const sizes = cake.sizes.map(([servings, restaurantPriceCents]) => {
+      const size = { ...base, id: id("size", slugify(cake.name), servings), productId: cakeProductId, servings, restaurantPriceCents };
+      productSizes.push(size);
+      return size;
+    });
+    return { productId: cakeProductId, sizes };
+  });
 
   // Tournées : deux zones, chacune avec le matin et l'après-midi.
   const zoneId = (zone: ZoneKey) => id("zone", zone);
@@ -371,7 +433,110 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
     { id: id("user", "client"), persona: "client", email: email("client"), firstName: clientFirst, lastName: clientLast, phone: String(clientMerchant.contactPhone), role: "MERCHANT", merchantId: clientPlan.id },
     { id: id("user", "driver3"), persona: null, email: email("livreur-3"), firstName: "Yanis", lastName: "Petit", phone: "0611000003", role: "DRIVER", merchantId: null },
     { id: id("user", "driver4"), persona: null, email: email("livreur-4"), firstName: "Inès", lastName: "Robert", phone: "0611000004", role: "DRIVER", merchantId: null },
+    { id: id("user", "pastry"), persona: "pastry", email: email("patissier"), firstName: "Margot", lastName: "Lemoine", phone: "0601020306", role: "PASTRY_CHEF", merchantId: null },
   ];
+
+  // Boutiques de l'entreprise (LOT2-D1) : un compte vente chacune, celui de la première est le compte de démo.
+  const shopPlans: MerchantPlan[] = [];
+  const sellers = [
+    { persona: "seller" as const, who: "vente", firstName: "Jade", lastName: "Morel", phone: "0622000001" },
+    { persona: null, who: "vente-2", firstName: "Sarah", lastName: "Chevalier", phone: "0622000002" },
+  ];
+  for (const [index, shop] of DEMO_SHOPS.entries()) {
+    const merchantId = id("shop", shop.key);
+    const seller = sellers[index]!;
+    const sellerId = id("user", seller.persona ?? `seller_${shop.key}`);
+    const [street, postalCode, latitude, longitude] = shop.street;
+    merchants.push({
+      ...base,
+      id: merchantId,
+      kind: "SHOP",
+      name: shop.name,
+      address: `${shop.number} ${street}`,
+      postalCode,
+      city: "Paris",
+      latitude,
+      longitude,
+      accessInstructions: shop.access,
+      contactName: `${seller.firstName} ${seller.lastName}`,
+      contactPhone: seller.phone,
+      contactEmail: `${shop.key}.${pad(slot)}@${DEMO_EMAIL_DOMAIN}`,
+      active: true,
+      zoneId: zoneId(shop.zone),
+    });
+    users.push({ id: sellerId, persona: seller.persona, email: email(seller.who), firstName: seller.firstName, lastName: seller.lastName, phone: seller.phone, role: "SELLER", merchantId });
+    shopPlans.push({ id: merchantId, index: -1 - index, zone: shop.zone, period: "matin", latitude, longitude, usual: [], shop: { index, key: shop.key, sellerId } });
+  }
+  const pastryUserId = id("user", "pastry");
+  const assortment = DEMO_SHOP_ASSORTMENT.map(([name, min, max]) => {
+    const productIndex = productIndexByName.get(name);
+    if (productIndex === undefined) throw new Error(`Produit de l'assortiment des boutiques absent du catalogue : ${name}`);
+    return [productIndex, min, max] as const;
+  });
+
+  // Prix boutique TTC (LOT2-D4) : chaque produit vendu dans chaque boutique, gros gâteaux par taille.
+  const shopPrices: Prisma.ShopPriceCreateManyInput[] = [];
+  const retailCents = (wholesaleCents: number) => Math.max(50, Math.round((wholesaleCents * 2.2) / 10) * 10);
+  const cakeRetailCents = (restaurantCents: number) => Math.round((restaurantCents * 1.8) / 100) * 100;
+  const sizeRetail = new Map<string, number>();
+  for (const shop of shopPlans) {
+    for (const product of products) {
+      if (product.pastryFormat === "LARGE") continue;
+      shopPrices.push({ ...base, id: id("shopprice", shop.shop!.key, slugify(product.name)), shopId: shop.id, productId: product.id!, sold: true, priceCents: retailCents(Number(product.basePriceCents)) });
+    }
+    for (const cake of largeCakes) {
+      for (const size of cake.sizes) {
+        const priceCents = cakeRetailCents(size.restaurantPriceCents);
+        sizeRetail.set(size.id, priceCents);
+        shopPrices.push({ ...base, id: id("shopprice", shop.shop!.key, size.id.slice(prefix.length)), shopId: shop.id, productId: cake.productId, sizeId: size.id, sizeKey: size.id, sold: true, priceCents });
+      }
+    }
+  }
+
+  // Commandes de gâteaux des particuliers (LOT2-D9) : soldées les jours passés, à retirer aujourd'hui et demain.
+  // Chacune part dans l'envoi du matin du jour du retrait (ligne réservée, `cakeOrderId`).
+  const cakeOrders: Prisma.CakeOrderCreateManyInput[] = [];
+  const cakesByShipment = new Map<string, Prisma.CakeOrderCreateManyInput[]>();
+  const cakeOffsets = [-6, -4, -2, 0, 0, 1, 1] as const;
+  const pickupMinutes = [10 * 60 + 30, 12 * 60, 16 * 60, 17 * 60 + 30] as const;
+  for (const shop of shopPlans) {
+    const shopIndex = shop.shop!.index;
+    for (const [k, pickupOffset] of cakeOffsets.entries()) {
+      const [customerName, customerPhone, inscription, note] = DEMO_CAKE_CUSTOMERS[(shopIndex * 3 + k) % DEMO_CAKE_CUSTOMERS.length]!;
+      const cake = largeCakes[(k + shopIndex) % largeCakes.length]!;
+      const size = cake.sizes[k % cake.sizes.length]!;
+      const priceCents = sizeRetail.get(size.id)!;
+      const payment = k % 2 === 0 ? ("FULL" as const) : ("DEPOSIT" as const);
+      const pickupDay = addCalendarDays(today, pickupOffset);
+      const pickupAt = dayClock(pickupDay)(pickupMinutes[k % pickupMinutes.length]!);
+      const cakeOrder: Prisma.CakeOrderCreateManyInput = {
+        ...base,
+        id: id("cake", shop.shop!.key, k + 1),
+        shopId: shop.id,
+        productId: cake.productId,
+        sizeId: size.id,
+        inscription,
+        note,
+        servings: size.servings,
+        priceCents,
+        payment,
+        // Acompte : la moitié au moins, arrondie à l'euro supérieur (LOT2-D9).
+        paidCents: payment === "FULL" ? priceCents : Math.ceil(priceCents / 200) * 100,
+        customerName,
+        customerPhone,
+        pickupAt,
+        pickupDate: dbDate(pickupDay),
+        status: pickupOffset < 0 ? "SETTLED" : "ORDERED",
+        settledAt: pickupOffset < 0 ? pickupAt : null,
+        createdById: shop.shop!.sellerId,
+        // Au moins 48 h avant le retrait (LOT2-D9).
+        createdAt: dayClock(addCalendarDays(pickupDay, -3 - (k % 3)))(11 * 60 + k * 17),
+      };
+      cakeOrders.push(cakeOrder);
+      const shipmentKey = `${shop.id}|${dayKey(pickupDay)}`;
+      cakesByShipment.set(shipmentKey, [...(cakesByShipment.get(shipmentKey) ?? []), cakeOrder]);
+    }
+  }
   // Un livreur par tournée : les quatre tournées du jour roulent en même temps. Le livreur de démo fait le soir Nord.
   const driverFor = (zone: ZoneKey, period: PeriodKey) =>
     zone === "nord" ? (period === "soir" ? users[2]!.id : users[5]!.id) : period === "soir" ? users[3]!.id : users[6]!.id;
@@ -395,6 +560,9 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
   const stops: Prisma.StopCreateManyInput[] = [];
   const adminId = users[0]!.id;
   const clientUserId = users[4]!.id;
+  // Stock des boutiques, lot par lot (LOT2-D6 à D8), rejoué jour après jour avec les règles de la tablette.
+  const shopLots = shopPlans.map(() => new Map<number, Array<StockLot & { initialQuantity: number }>>());
+  const shopDayCloses: Prisma.ShopDayCloseCreateManyInput[] = [];
 
   for (let offset = -DEMO_SCENARIO.historyDays; offset <= 1; offset += 1) {
     const day = addCalendarDays(today, offset);
@@ -404,6 +572,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
     const sunday = isoWeekday(day) === 7;
     // Le lendemain avant l'heure limite : seuls certains clients ont déjà commandé (le client de démo non).
     const tomorrowOpen = offset === 1 && clockNow < DEMO_SCENARIO.cutoff;
+    const shopReceipts: Array<{ shopIndex: number; productIndex: number; good: number; damaged: number }> = [];
 
     for (const zone of ["nord", "sud"] as const) {
       for (const period of ["matin", "soir"] as const) {
@@ -424,6 +593,8 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
           if (tomorrowOpen && plan !== recurringPlan && !orderedEarly) return false;
           return true;
         });
+        // Les boutiques reçoivent leur envoi tous les matins, sur la tournée de leur zone (LOT2-D5).
+        if (period === "matin") ordering.push(...shopPlans.filter((plan) => plan.zone === zone));
         if (!ordering.length) continue;
 
         const phase = slotPhase(offset, zone, period, clockNow);
@@ -436,8 +607,78 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
         let lastDelivered: number | null = null;
 
         sequence.forEach((plan, position) => {
-          const orderId = id("order", dayKey(day), pad(plan.index + 1, 3), period);
           const eta = window.start + 10 + Math.round((span * position) / Math.max(1, sequence.length - 1));
+          if (plan.shop) {
+            // Envoi du laboratoire vers la boutique (LOT2-D5) : tirages à part, la journée des clients ne change pas.
+            const shop = plan.shop;
+            const shopRandom = prng(Number(dayKey(day)) * 97 + slot * 13 + shop.index + 1);
+            const shipmentId = id("order", dayKey(day), "shop", shop.key);
+            const delivered = phase.deliveredUntil !== null && eta <= phase.deliveredUntil;
+            const deliveredMinute = delivered ? Math.min(eta + Math.floor(shopRandom() * 7) - 2, phase.deliveredUntil!) : null;
+            if (deliveredMinute !== null) lastDelivered = deliveredMinute;
+            // Les jours passés, la vendeuse a noté la réception ; aujourd'hui, elle reste à faire sur la tablette (LOT2-D6).
+            const received = offset < 0;
+            const decidedAt = offset === 1 ? at(-24 * 60 + Math.min(10 * 60, clockNow - 1)) : previous(10 * 60);
+            for (const [productIndex, min, max] of assortment) {
+              const sent = between(shopRandom, [min, max]);
+              const missing = received && shopRandom() < 0.04 ? 1 : 0;
+              const damaged = received && shopRandom() < 0.05 ? 1 : 0;
+              orderLines.push({
+                ...base,
+                orderId: shipmentId,
+                productId: productId(productIndex),
+                quantityOrdered: sent,
+                quantityDelivered: delivered ? sent : null,
+                quantityReceived: received ? sent - missing : null,
+                quantityDamaged: received ? damaged : null,
+              });
+              if (received) shopReceipts.push({ shopIndex: shop.index, productIndex, good: sent - missing - damaged, damaged });
+            }
+            for (const cake of cakesByShipment.get(`${plan.id}|${dayKey(day)}`) ?? []) {
+              orderLines.push({
+                ...base,
+                orderId: shipmentId,
+                productId: cake.productId,
+                quantityOrdered: 1,
+                quantityDelivered: delivered ? 1 : null,
+                sizeId: cake.sizeId,
+                inscription: cake.inscription,
+                note: cake.note,
+                cakeOrderId: cake.id,
+                variantKey: `cake:${cake.id}`,
+              });
+            }
+            orders.push({
+              ...base,
+              id: shipmentId,
+              reference: `E${dayKey(day)}-${pad(shop.index + 1)}`,
+              merchantId: plan.id,
+              deliveryDate: dbDate(day),
+              slotId: slotId(zone, period),
+              status: delivered ? "DELIVERED" : phase.prepared ? "PREPARED" : "LOCKED",
+              origin: "SHIPMENT",
+              createdById: pastryUserId,
+              validatedAt: decidedAt,
+              lockedAt: decidedAt,
+              preparedAt: phase.prepared ? at(phase.preparedAt) : null,
+              deliveredAt: deliveredMinute !== null ? at(deliveredMinute) : null,
+              receivedAt: received ? at((deliveredMinute ?? eta) + 20) : null,
+            });
+            if (withRound) {
+              stops.push({
+                ...base,
+                id: id("stop", dayKey(day), "shop", shop.key),
+                roundId,
+                orderId: shipmentId,
+                sequence: position + 1,
+                status: delivered ? "DELIVERED" : "PENDING",
+                estimatedArrivalAt: at(eta),
+                deliveredAt: deliveredMinute !== null ? at(deliveredMinute) : null,
+              });
+            }
+            return;
+          }
+          const orderId = id("order", dayKey(day), pad(plan.index + 1, 3), period);
           const jitter = Math.floor(daily() * 9) - 3;
           const delivered = phase.deliveredUntil !== null && eta <= phase.deliveredUntil;
           const deliveredMinute = delivered ? Math.min(eta + jitter, phase.deliveredUntil!) : null;
@@ -514,7 +755,65 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
         }
       }
     }
+
+    // Jours passés : le bon état reçu entre en stock, puis la clôture du soir (ventes calculées, fin de vente jetée).
+    if (offset < 0) {
+      const date = isoDay(day);
+      for (const shop of shopPlans) {
+        const { index: shopIndex, key, sellerId } = shop.shop!;
+        const lots = shopLots[shopIndex]!;
+        const damagedOnDelivery = new Map<number, number>();
+        for (const receipt of shopReceipts.filter((row) => row.shopIndex === shopIndex)) {
+          damagedOnDelivery.set(receipt.productIndex, receipt.damaged);
+          if (receipt.good <= 0) continue;
+          const shelfLife = Number(products[receipt.productIndex]!.shelfLifeDays ?? 1);
+          const lot = { id: id("lot", key, dayKey(day), receipt.productIndex), receivedOn: date, lastSaleDay: lastSaleDayOf(date, shelfLife), quantity: receipt.good, initialQuantity: receipt.good };
+          lots.set(receipt.productIndex, [...(lots.get(receipt.productIndex) ?? []), lot]);
+        }
+        const closeRandom = prng(Number(dayKey(day)) * 131 + slot * 17 + shopIndex + 1);
+        for (const [productIndex, productLots] of [...lots].sort(([a], [b]) => a - b)) {
+          const available = productLots.reduce((sum, lot) => sum + lot.quantity, 0);
+          if (available === 0) continue;
+          const remaining = Math.round(available * (0.04 + closeRandom() * 0.16));
+          const damaged = remaining > 0 && closeRandom() < 0.04 ? 1 : 0;
+          const plan = planClose(date, productLots, { remaining, damaged });
+          for (const lot of productLots) lot.quantity = plan.lotsAfter.get(lot.id) ?? lot.quantity;
+          shopDayCloses.push({
+            ...base,
+            id: id("close", key, dayKey(day), productIndex),
+            shopId: shop.id,
+            productId: productId(productIndex),
+            date: dbDate(day),
+            morningStock: plan.morningStock,
+            receivedGood: plan.receivedGood,
+            receivedDamaged: damagedOnDelivery.get(productIndex) ?? 0,
+            remaining,
+            sold: plan.sold,
+            discardedExpired: plan.discardedExpired,
+            discardedDamaged: plan.discardedDamaged,
+            closedById: sellerId,
+            createdAt: at(19 * 60 + 30),
+          });
+        }
+      }
+    }
   }
+
+  const isoDate = (value: string) => new Date(`${value}T00:00:00.000Z`);
+  const shopStockLots: Prisma.ShopStockLotCreateManyInput[] = shopPlans.flatMap((shop) =>
+    [...shopLots[shop.shop!.index]!].flatMap(([productIndex, lots]) =>
+      lots.map((lot) => ({
+        ...base,
+        id: lot.id,
+        shopId: shop.id,
+        productId: productId(productIndex),
+        receivedOn: isoDate(lot.receivedOn),
+        lastSaleDay: isoDate(lot.lastSaleDay),
+        initialQuantity: lot.initialQuantity,
+        quantity: lot.quantity,
+      }))
+    )
+  );
 
   const company: Prisma.CompanyCreateManyInput = {
     id: companyId,
@@ -550,16 +849,21 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
     company,
     categories,
     products,
+    productSizes,
     zones,
     slots,
     merchants,
     merchantPrices,
+    shopPrices,
     users,
     recurringOrders,
     recurringOrderLines,
+    cakeOrders,
     orders,
     orderLines,
     rounds,
     stops,
+    shopStockLots,
+    shopDayCloses,
   };
 }

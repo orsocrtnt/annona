@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Building2, Users, Settings, Activity, Truck, Package, Shield, UserCircle, Receipt,
-  HeadphonesIcon, BookOpen, ChefHat, Route, Tag, Navigation, Store } from "lucide-react";
+  HeadphonesIcon, BookOpen, ChefHat, Route, Tag, Navigation, Store, MonitorPlay } from "lucide-react";
 import type { NavItem } from "@/types";
 
 /** Groupes du menu super-administrateur (ADMIN-ESPACE, lot 1). */
@@ -12,6 +12,7 @@ export const adminNavItems: NavItem[] = [
   { title: "Utilisateurs", href: "/admin/users", icon: Users, group: ADMIN_NAV_GROUPS.clients },
   { title: "Exploitation", href: "/admin/operations", icon: Activity, group: ADMIN_NAV_GROUPS.technique },
   { title: "Support plateforme", href: "/admin/support", icon: HeadphonesIcon, group: ADMIN_NAV_GROUPS.technique },
+  { title: "Démos", href: "/admin/demos", icon: MonitorPlay, group: ADMIN_NAV_GROUPS.technique },
 ];
 
 /** Administrateur de l'entreprise (back-office). */

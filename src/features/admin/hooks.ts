@@ -1,6 +1,6 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchAdminCompanies,
   fetchAdminCompany,
@@ -12,6 +12,8 @@ import {
   fetchAdminHome,
   fetchAdminHomeBadges,
   fetchAdminSearch,
+  fetchAdminDemos,
+  resetAdminDemos,
   type CompanyListFilters,
   type PlatformUserListFilters,
   type OperationJobListFilters,
@@ -105,5 +107,19 @@ export function useAdminSearch(q: string) {
     staleTime: 30_000,
     retry: false,
     placeholderData: keepPreviousData,
+  });
+}
+
+/** DEMO-1 : état des démos, relu toutes les 15 secondes tant que la page est ouverte. */
+export function useAdminDemos() {
+  return useQuery({ queryKey: ["admin", "demos"], queryFn: fetchAdminDemos, staleTime: 0, refetchInterval: 15_000 });
+}
+
+/** DEMO-1 « Tout déconnecter ». */
+export function useResetAdminDemos() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resetAdminDemos,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "demos"] }),
   });
 }

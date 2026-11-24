@@ -47,6 +47,8 @@ const PLATFORM_WRITES: Record<string, string[]> = {
   // ADM-1 (PLA-02) : créer une entreprise avec son premier administrateur, puis la configurer.
   "src/app/api/admin/companies/create/route.ts": ["POST"],
   "src/app/api/admin/companies/[id]/config/route.ts": ["GET", "PATCH"],
+  // DEMO-1 : « Tout déconnecter » rend les environnements de démo (boulangeries fictives, aucun client).
+  "src/app/api/admin/demos/reset/route.ts": ["POST"],
 };
 
 test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors coupure d'accès", () => {
@@ -57,6 +59,8 @@ test("ADMIN-1 impersonation : les routes plateforme n'exportent que GET, hors co
     "src/app/api/admin/companies/[id]/route.ts",
     "src/app/api/admin/companies/create/route.ts",
     "src/app/api/admin/companies/route.ts",
+    "src/app/api/admin/demos/reset/route.ts",
+    "src/app/api/admin/demos/route.ts",
     "src/app/api/admin/home/route.ts",
     "src/app/api/admin/operation-jobs/route.ts",
     "src/app/api/admin/overview/route.ts",

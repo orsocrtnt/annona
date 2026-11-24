@@ -334,6 +334,13 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
                 Se connecter
               </Button>
             </form>
+            {/* DEMO-1 : démo ouverte à tous, sans identifiants. Même dessin que « Continuer avec Google ». */}
+            <Link
+              href="/demo"
+              className="mt-3 flex h-[52px] w-full items-center justify-center rounded-full border border-[#85858f] bg-card px-4 text-base font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            >
+              Essayer la démo
+            </Link>
             {loginContext === "company" && (
               <p className="mt-6 text-center text-sm text-text-secondary">
                 Vous êtes une boulangerie ?{" "}
@@ -342,13 +349,6 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
                 </Link>
               </p>
             )}
-            {/* DEMO-1 : démo ouverte à tous, sans identifiants. */}
-            <p className="mt-2 text-center text-sm text-text-secondary">
-              Envie d&apos;essayer d&apos;abord ?{" "}
-              <Link href="/demo" className="inline-flex min-h-11 items-center font-medium text-brand hover:underline">
-                Voir la démo
-              </Link>
-            </p>
             </>
           )}
 
