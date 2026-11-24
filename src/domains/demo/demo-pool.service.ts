@@ -117,6 +117,17 @@ async function hasEveryPersona(slot: number): Promise<boolean> {
   return (await prisma.user.count({ where: { id: { in: ids } } })) === ids.length;
 }
 
+/**
+ * Démo déjà prêtée au visiteur, mais construite par une version précédente (espaces ajoutés depuis, comme le
+ * pâtissier et la vente le 24 novembre 2026) : reconstruite sur place, le prêt est gardé.
+ */
+export async function refreshOutdatedDemoLease(env: { slot: number }, now = new Date()) {
+  if (await hasEveryPersona(env.slot)) return false;
+  await provisionDemoEnvironment(env.slot, now);
+  await prisma.demoPoolEnvironment.update({ where: { slot: env.slot }, data: { preparedAt: new Date() } });
+  return true;
+}
+
 /** Environnement de réserve préparé il y a moins de DEMO_FRESH_MS : prêté tel quel, sans attendre. */
 async function leaseFreshEnvironment(leaseKeyHash: string, now: Date) {
   const expires = demoLeaseExpiry(now);
