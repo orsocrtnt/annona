@@ -61,7 +61,7 @@ function LoginNoticeAlert() {
           <>
             {" "}
             <Link href="/inscription" className="font-medium underline underline-offset-2">
-              Vous êtes une boulangerie ? Créez votre compte.
+              Vous êtes un fournisseur ? Créez votre compte.
             </Link>
           </>
         )}
@@ -343,7 +343,7 @@ export function AuthForm({ mode, loginContext = "company" }: AuthFormProps) {
             </Link>
             {loginContext === "company" && (
               <p className="mt-6 text-center text-sm text-text-secondary">
-                Vous êtes une boulangerie ?{" "}
+                Vous êtes un fournisseur ?{" "}
                 <Link href="/inscription" className="inline-flex min-h-11 items-center font-medium text-brand hover:underline">
                   Créer votre compte
                 </Link>

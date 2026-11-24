@@ -130,7 +130,7 @@ export function SellerClosing() {
                       </label>
                       <label className="flex items-center gap-2 text-sm">
                         dont abîmés
-                        <Input inputMode="numeric" className="h-12 w-20 text-right text-lg tabular-nums" placeholder="0" value={draft?.damaged ?? ""} onChange={(event) => set(line.productId, { damaged: event.target.value.replace(/\D/g, "") })} aria-label={`${line.name} abîmés en boutique`} />
+                        <Input inputMode="numeric" className="h-12 w-20 text-right text-lg tabular-nums" placeholder="0" value={draft?.damaged ?? ""} onChange={(event) => set(line.productId, { damaged: event.target.value.replace(/\D/g, "") })} aria-label={`${line.name} abîmés en point de vente`} />
                       </label>
                     </div>
                     {typeof plan === "string" ? <p role="alert" className="text-sm text-error">{plan}</p> : null}

@@ -470,7 +470,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
   const pastryUserId = id("user", "pastry");
   const assortment = DEMO_SHOP_ASSORTMENT.map(([name, min, max]) => {
     const productIndex = productIndexByName.get(name);
-    if (productIndex === undefined) throw new Error(`Produit de l'assortiment des boutiques absent du catalogue : ${name}`);
+    if (productIndex === undefined) throw new Error(`Produit de l'assortiment des points de vente absent du catalogue : ${name}`);
     return [productIndex, min, max] as const;
   });
 
@@ -818,7 +818,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
   const company: Prisma.CompanyCreateManyInput = {
     id: companyId,
     slug: `demo-pool-${pad(slot)}`,
-    name: "Boulangerie de démonstration",
+    name: "Entreprise de démonstration",
     email: `contact-demo-${pad(slot)}@${DEMO_EMAIL_DOMAIN}`,
     phone: "0140000000",
     address: DEMO_SCENARIO.depot.address,
@@ -828,7 +828,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
     cutoffTime: hhmm(DEMO_SCENARIO.cutoff),
     timezone: "Europe/Paris",
     reminderLeadMinutes: 120,
-    legalName: "Boulangerie de démonstration SAS",
+    legalName: "Entreprise de démonstration SAS",
     billingAddress: DEMO_SCENARIO.depot.address,
     billingPostalCode: DEMO_SCENARIO.depot.postalCode,
     billingCity: "Paris",

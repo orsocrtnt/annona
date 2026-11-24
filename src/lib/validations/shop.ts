@@ -11,7 +11,7 @@ const optionalText = (label: string, max: number) =>
 const required = (label: string, max: number) => text(label, max).min(1, `${label} : obligatoire.`);
 
 const shopFields = {
-  name: required("Nom de la boutique", 160),
+  name: required("Nom du point de vente", 160),
   address: required("Adresse", 240),
   postalCode: optionalText("Code postal", 12),
   city: optionalText("Ville", 120),
@@ -19,7 +19,7 @@ const shopFields = {
   longitude: z.number().min(-180).max(180).nullable().optional(),
   accessInstructions: optionalText("Consignes d'accès", 500),
   contactPhone: optionalText("Téléphone", 40),
-  zoneId: z.string().trim().min(1, "Choisissez la tournée de la boutique.").max(64),
+  zoneId: z.string().trim().min(1, "Choisissez la tournée du point de vente.").max(64),
 };
 
 /** Lot 2, demande 4 : code responsable de la tablette, 4 à 8 chiffres. */

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Croissant } from "lucide-react";
+import { Package } from "lucide-react";
 import { productPhotoUrl } from "@/features/catalog/api";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +22,7 @@ export function ProductThumb({ productId, photoVersion, className }: ProductThum
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt="" loading="lazy" className="h-full w-full object-cover" onError={() => setFailed(true)} />
       ) : (
-        <Croissant className="h-1/2 w-1/2 text-muted-foreground/60" aria-hidden />
+        <Package className="h-1/2 w-1/2 text-muted-foreground/60" aria-hidden />
       )}
     </span>
   );

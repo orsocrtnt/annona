@@ -46,8 +46,8 @@ const ROLE_FILTER_OPTIONS: { value: RoleFilter; label: string }[] = [
   { value: "all", label: "Tous" },
   { value: "MERCHANT", label: "Clients" },
   { value: "DRIVER", label: "Livreurs" },
-  { value: "BAKER", label: "Boulangers" },
-  { value: "PASTRY_CHEF", label: "Pâtissiers" },
+  { value: "BAKER", label: "Production" },
+  { value: "PASTRY_CHEF", label: "Atelier" },
   { value: "SELLER", label: "Vente" },
   { value: "ADMIN", label: "Administrateurs" },
 ];
@@ -185,7 +185,7 @@ export default function UsersPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Gestion des comptes</h1>
           <p className="mt-1 text-muted-foreground max-md:hidden">
-            Clients, livreurs, boulangers et administrateurs de votre entreprise
+            Clients, livreurs, production, atelier et administrateurs de votre entreprise
           </p>
         </div>
         {platformReadOnly ? null : <CreateUserDialog />}

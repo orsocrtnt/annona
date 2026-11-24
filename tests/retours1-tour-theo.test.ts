@@ -47,7 +47,7 @@ const stock = (shopId: string, shopName: string, productName: string, inStock: n
   day: { received: null, damagedOnDelivery: null, sold: null, discarded: null },
 });
 
-test("RETOURS-1 / lot 2 demande 8 : stock regroupé par boutique, totaux, produits en stock d'abord puis par nom", () => {
+test("RETOURS-1 / lot 2 demande 8 : stock regroupé par point de vente, totaux, produits en stock d'abord puis par nom", () => {
   const groups = groupStockByShop([
     stock("b", "Rivoli", "Tarte", 2),
     stock("a", "Bastille", "Éclair", 0),
@@ -73,7 +73,7 @@ test("RETOURS-1 / lot 2 demandes 9 et 10 : pour qui est chaque gâteau, avec ins
       { id: "o2", merchantId: "resto", notes: "Sans fruits secs, client allergique" },
     ],
     merchants: [
-      { id: "shop", name: "Boutique Bastille", tradeName: null },
+      { id: "shop", name: "Bastille (point de vente)", tradeName: null },
       { id: "resto", name: "SAS Resto", tradeName: "Le Zinc" },
     ],
     products: [{ id: "fraisier", allergens: ["GLUTEN", "EGGS"], allergensDeclared: true }],
@@ -83,11 +83,11 @@ test("RETOURS-1 / lot 2 demandes 9 et 10 : pour qui est chaque gâteau, avec ins
   const fraisier = details.fraisier!;
   assert.equal(fraisier.allergens?.length, 2);
   assert.equal(fraisier.recipients.length, 2);
-  const [boutique, resto] = fraisier.recipients;
-  assert.equal(boutique!.merchantName, "Boutique Bastille");
-  assert.equal(boutique!.customer?.name, "Mme Martin");
-  assert.equal(boutique!.servings, 6);
-  assert.equal(boutique!.inscription, "Joyeux anniversaire");
+  const [pdv, resto] = fraisier.recipients;
+  assert.equal(pdv!.merchantName, "Bastille (point de vente)");
+  assert.equal(pdv!.customer?.name, "Mme Martin");
+  assert.equal(pdv!.servings, 6);
+  assert.equal(pdv!.inscription, "Joyeux anniversaire");
   assert.equal(resto!.merchantName, "Le Zinc");
   assert.equal(resto!.customer, null);
   assert.equal(resto!.quantity, 2);

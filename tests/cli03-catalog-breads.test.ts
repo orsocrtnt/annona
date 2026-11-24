@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-test("CLI-03 : les produits sans format (pains) restent au catalogue ; seuls les gros gâteaux passent par leurs tailles", () => {
+test("CLI-03 : les produits sans format (pains) restent au catalogue ; seuls les produits à tailles passent par leurs tailles", () => {
   const source = readFileSync(new URL("../src/domains/order/merchant-catalog.service.ts", import.meta.url), "utf8");
   assert.doesNotMatch(source, /NOT: \{ pastryFormat: "LARGE" \}/);
   assert.match(source, /OR: \[\{ pastryFormat: null \}, \{ pastryFormat: \{ not: "LARGE" \} \}\]/);

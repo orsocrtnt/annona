@@ -167,17 +167,17 @@ export async function createCakeOrder(
   const company = await db.company.findUnique({ where: { id: actor.companyId }, select: { timezone: true, settings: true } });
   if (!company) throw new DomainRuleError(404, "Entreprise introuvable.", "COMPANY_NOT_FOUND");
   const shop = await db.merchant.findFirst({ where: { id: actor.shopId, companyId: actor.companyId, kind: "SHOP", active: true }, select: { id: true, zoneId: true } });
-  if (!shop) throw new DomainRuleError(404, "Boutique introuvable.", "SHOP_NOT_FOUND");
+  if (!shop) throw new DomainRuleError(404, "Point de vente introuvable.", "SHOP_NOT_FOUND");
 
   // Prix : celui de la boutique pour cette taille, jamais celui de la saisie.
   const size = await db.productSize.findFirst({ where: { id: input.sizeId, companyId: actor.companyId, productId: input.productId }, select: { id: true, servings: true } });
-  if (!size) throw new DomainRuleError(404, "Taille introuvable pour ce gâteau.", "SIZE_NOT_FOUND");
+  if (!size) throw new DomainRuleError(404, "Taille introuvable pour ce produit.", "SIZE_NOT_FOUND");
   const shopPrice = await db.shopPrice.findFirst({
     where: { companyId: actor.companyId, shopId: shop.id, productId: input.productId, sizeKey: size.id, sold: true },
     select: { priceCents: true },
   });
   const priceCents = shopPrice?.priceCents ?? null;
-  if (!priceCents) throw new DomainRuleError(400, "Ce gâteau n'a pas de prix boutique pour cette taille : la responsable doit le saisir dans « Produits et prix ».", "NO_SHOP_PRICE");
+  if (!priceCents) throw new DomainRuleError(400, "Ce produit n'a pas de prix en point de vente pour cette taille : la responsable doit le saisir dans « Produits et prix ».", "NO_SHOP_PRICE");
 
   // Paiement : complet, ou acompte d'au moins 50 % (vérification 1 : 15 € sur 40 € refusé).
   let paidCents: number;
@@ -200,14 +200,14 @@ export async function createCakeOrder(
     throw new DomainRuleError(400, `Une commande se passe au moins ${leadHours} h avant le retrait.`, "PICKUP_TOO_SOON");
   }
   const pickupDate = companyToday(pickupAt, company.timezone);
-  if (!shop.zoneId) throw new DomainRuleError(409, "Boutique sans tournée : le gâteau ne peut pas être livré. Prévenez l'administrateur.", "SHOP_WITHOUT_ZONE");
+  if (!shop.zoneId) throw new DomainRuleError(409, "Point de vente sans tournée : le produit ne peut pas être livré. Prévenez l'administrateur.", "SHOP_WITHOUT_ZONE");
   const slotId = (await morningSlots(db, actor.companyId, [shop.zoneId])).get(shop.zoneId);
-  if (!slotId) throw new DomainRuleError(409, "La tournée de la boutique n'a pas de livraison du matin.", "NO_MORNING_SLOT");
+  if (!slotId) throw new DomainRuleError(409, "La tournée du point de vente n'a pas de livraison du matin.", "NO_MORNING_SLOT");
 
   const created = await db.$transaction(async (tx) => {
     const deliveryDate = deliveryDateToDb(pickupDate);
     let order = await tx.order.findFirst({ where: { companyId: actor.companyId, merchantId: shop.id, deliveryDate, slotId }, select: { id: true, status: true, origin: true } });
-    if (order && order.origin !== "SHIPMENT") throw new DomainRuleError(409, "Une autre commande occupe ce créneau pour la boutique.", "SLOT_TAKEN");
+    if (order && order.origin !== "SHIPMENT") throw new DomainRuleError(409, "Une autre commande occupe ce créneau pour le point de vente.", "SLOT_TAKEN");
     if (order && !(await isEditable(tx as unknown as ShipmentDb, actor.companyId, order))) {
       throw new DomainRuleError(409, "La tournée de ce jour est partie : choisissez un autre jour de retrait.", "SHIPMENT_DEPARTED");
     }

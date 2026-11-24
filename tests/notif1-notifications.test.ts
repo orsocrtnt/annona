@@ -237,7 +237,7 @@ test("NOT-02 : récapitulatif (date, créneau, lignes, total au prix du client),
   await deliverMerchantNotificationJob(payload(1), "c1", { db, channels });
   assert.equal(sent[1]!.message.title, "Commande modifiée");
   await deliverMerchantNotificationJob(payload(2, "ADMIN"), "c2", { db, channels });
-  assert.equal(sent[2]!.message.title, "Commande corrigée par la boulangerie");
+  assert.equal(sent[2]!.message.title, "Commande corrigée par le fournisseur");
   tables.order!.find((row) => row.id === "O2")!.status = "CANCELLED";
   await deliverMerchantNotificationJob(payload(3), "c3", { db, channels });
   assert.equal(sent[3]!.message.title, "Commande annulée");

@@ -25,7 +25,7 @@ function shopTables() {
     ],
     merchant: [
       { id: "client1", companyId: "A", name: "Bistrot", address: "1 rue", active: true },
-      { id: "shopB", companyId: "B", kind: "SHOP", name: "Boutique B", address: "2 rue", active: true, zoneId: "zoneB" },
+      { id: "shopB", companyId: "B", kind: "SHOP", name: "Point de vente B", address: "2 rue", active: true, zoneId: "zoneB" },
     ],
     user: [],
     auditLog: [],
@@ -40,7 +40,7 @@ const CENTRE_VILLE = {
   accessInstructions: "Porte de service", zoneId: "zoneA", managerCode: "4821",
 };
 
-test("LOT2-D1 vérification 1 : l'admin crée la boutique « Centre-ville », rattachée à une tournée, journalisée ; ce n'est pas un client", async () => {
+test("LOT2-D1 vérification 1 : l'admin crée le point de vente « Centre-ville », rattachée à une tournée, journalisée ; ce n'est pas un client", async () => {
   const { tables, db } = shopTables();
   const shop = await createShop(ACTOR_A, createShopSchema.parse(CENTRE_VILLE), db);
   assert.equal(shop.name, "Centre-ville");
@@ -58,11 +58,11 @@ test("LOT2-D1 vérification 1 : l'admin crée la boutique « Centre-ville », ra
   await assert.rejects(createShop(ACTOR_A, { ...CENTRE_VILLE, zoneId: "zoneB" }, db), { status: 400 });
 });
 
-test("LOT2-D1 : une boutique d'une autre entreprise est introuvable ; désactivation journalisée", async () => {
+test("LOT2-D1 : un point de vente d'une autre entreprise est introuvable ; désactivation journalisée", async () => {
   const { tables, db } = shopTables();
   await assert.rejects(getShop("A", "shopB", db), { status: 404 });
   await assert.rejects(updateShop(ACTOR_A, "shopB", { name: "Piratée" }, db), { status: 404 });
-  assert.equal(tables.merchant!.find((row) => row.id === "shopB")!.name, "Boutique B");
+  assert.equal(tables.merchant!.find((row) => row.id === "shopB")!.name, "Point de vente B");
   const shop = await createShop(ACTOR_A, CENTRE_VILLE, db);
   const off = await updateShop(ACTOR_A, shop.id, { active: false }, db);
   assert.equal(off.active, false);
@@ -71,7 +71,7 @@ test("LOT2-D1 : une boutique d'une autre entreprise est introuvable ; désactiva
   await assert.rejects(updateShop(ACTOR_A, "client1", { name: "X" }, db), { status: 404 });
 });
 
-test("LOT2-D1 vérification 2 : la vendeuse ne voit que sa boutique ; sans boutique ou rattachée à un client : refusé", async () => {
+test("LOT2-D1 vérification 2 : la vendeuse ne voit que sa point de vente ; sans point de vente ou rattachée à un client : refusé", async () => {
   const { db } = shopTables();
   const shop = await createShop(ACTOR_A, CENTRE_VILLE, db);
   assert.equal((await getSellerShop({ companyId: "A", merchantId: shop.id }, db)).name, "Centre-ville");
@@ -84,7 +84,7 @@ test("LOT2-D1 vérification 2 : la vendeuse ne voit que sa boutique ; sans bouti
   assert.match(route, /merchantId: guard\.actor\.user\.merchantId/);
 });
 
-test("LOT2-D1 : un compte vendeuse est rattaché à une boutique ; un compte client à un client", () => {
+test("LOT2-D1 : un compte vendeuse est rattaché à un point de vente ; un compte client à un client", () => {
   const base = { firstName: "Léa", lastName: "Vente", email: "lea@exemple.test" };
   assert.equal(createUserSchema.safeParse({ ...base, roleSlug: "seller" }).success, false);
   assert.equal(createUserSchema.safeParse({ ...base, roleSlug: "seller", merchantId: "shop1" }).success, true);
@@ -95,7 +95,7 @@ test("LOT2-D1 : un compte vendeuse est rattaché à une boutique ; un compte cli
   assert.match(accounts, /kind: seller \? "SHOP" : "CLIENT"/);
 });
 
-test("LOT2-D1 : une boutique ne reçoit jamais de facture ni de rappel, et n'apparaît pas dans les choix de clients", () => {
+test("LOT2-D1 : un point de vente ne reçoit jamais de facture ni de rappel, et n'apparaît pas dans les choix de clients", () => {
   const invoices = readFileSync("src/domains/invoice/invoice-generation.service.ts", "utf8");
   assert.equal((invoices.match(/kind: "CLIENT"/g) ?? []).length, 3);
   assert.match(readFileSync("src/domains/notification/merchant-notification.service.ts", "utf8"), /active: true, kind: "CLIENT"/);

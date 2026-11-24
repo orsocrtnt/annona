@@ -95,12 +95,12 @@ export function PriceBoard({
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{label}</p>
                   <p className="text-xs text-muted-foreground">
-                    {entry.categoryName} · {entry.family === "PASTRY" ? "Pâtisserie" : "Pain"} · {entry.unit}
+                    {entry.categoryName} · {entry.family === "PASTRY" ? "Atelier" : "Production"} · {entry.unit}
                   </p>
                   {entry.status === "NEW" ? <Badge variant="warning" className="mt-1">Nouveau produit, prix à saisir</Badge> : null}
                 </div>
                 <label className="flex items-center gap-2 text-sm">
-                  <Switch checked={draft.sold} onCheckedChange={(sold) => set(key, { sold })} aria-label={`${label} vendu dans cette boutique`} />
+                  <Switch checked={draft.sold} onCheckedChange={(sold) => set(key, { sold })} aria-label={`${label} vendu dans ce point de vente`} />
                   {draft.sold ? "Vendu" : "Non vendu"}
                 </label>
                 <div className="flex items-center gap-1">
@@ -111,7 +111,7 @@ export function PriceBoard({
                     disabled={!draft.sold}
                     value={draft.price}
                     onChange={(event) => set(key, { price: event.target.value })}
-                    aria-label={`Prix boutique de ${label} (€ TTC)`}
+                    aria-label={`Prix en point de vente de ${label} (€ TTC)`}
                   />
                   <span className="text-sm text-muted-foreground">€ TTC</span>
                 </div>

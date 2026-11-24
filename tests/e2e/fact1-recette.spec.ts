@@ -259,7 +259,7 @@ test.afterAll(async () => {
   console.log(`[FACT-1] rapport ${JSON.stringify(report)}`);
 });
 
-test("Préparation : verrouillage (prix figés), manquant du boulanger, « préparée », tournée validée, « Livré »", async ({ request }) => {
+test("Préparation : verrouillage (prix figés), manquant de la production, « préparée », tournée validée, « Livré »", async ({ request }) => {
   const lock = await request.get(`/api/cron/lock-orders?date=${D}&now=${encodeURIComponent(new Date().toISOString())}`, {
     headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
   });

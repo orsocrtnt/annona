@@ -19,7 +19,7 @@ export function SellerHome() {
   return (
     <div className="space-y-6" data-testid="seller-home">
       <div>
-        <p className="text-sm font-medium uppercase tracking-wide text-brand">Ma boutique</p>
+        <p className="text-sm font-medium uppercase tracking-wide text-brand">Mon point de vente</p>
         <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight">
           <Store className="h-7 w-7 text-brand" aria-hidden /> {data.name}
         </h1>
@@ -30,10 +30,10 @@ export function SellerHome() {
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {[
-          { href: "/shop/reception", title: "Réception du matin", text: "Compter l'envoi du laboratoire : reçus et abîmés." },
+          { href: "/shop/reception", title: "Réception du matin", text: "Compter l'envoi de la production : reçus et abîmés." },
           { href: "/shop/closing", title: "Clôture du soir", text: "Noter le reste ; ventes calculées, produits à jeter." },
-          { href: "/shop/stock", title: "Stock", text: "Stock de la boutique et produits à jeter ce soir." },
-          { href: "/shop/cakes", title: "Commandes de gâteaux", text: "Prendre la commande d'un client, marquer « soldée » au retrait." },
+          { href: "/shop/stock", title: "Stock", text: "Stock du point de vente et produits à jeter ce soir." },
+          { href: "/shop/cakes", title: "Commandes sur mesure", text: "Prendre la commande d'un client, marquer « soldée » au retrait." },
           { href: "/shop/settings", title: "Paramètres", text: "Produits et prix (code responsable)." },
         ].map((tile) => (
           <Link key={tile.href} href={tile.href} className="rounded-2xl border bg-card p-6 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

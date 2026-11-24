@@ -61,8 +61,8 @@ function PastryDialog({
         : call<ProductRow>("/api/pastry/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: KEY });
-      toast.success(product ? "Pâtisserie enregistrée" : "Pâtisserie créée", {
-        description: product ? undefined : "L'administrateur fixe son prix restaurant ; chaque boutique, son prix boutique.",
+      toast.success(product ? "Produit enregistré" : "Produit créé", {
+        description: product ? undefined : "L'administrateur fixe son prix restaurant ; chaque point de vente, son prix en point de vente.",
       });
       onOpenChange(false);
     },
@@ -71,7 +71,7 @@ function PastryDialog({
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!name.trim()) return setError("Nom : obligatoire.");
-    if (!categoryId) return setError("Choisissez une catégorie de pâtisserie.");
+    if (!categoryId) return setError("Choisissez une catégorie de l'atelier.");
     const parsed = parsePastryFields(pastry, false);
     if (typeof parsed === "string") return setError(parsed);
     setError(null);
@@ -91,8 +91,8 @@ function PastryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{product ? `Modifier ${product.name}` : "Nouvelle pâtisserie"}</DialogTitle>
-          <DialogDescription>Pas de prix ici : le prix restaurant est fixé par l&apos;administrateur, le prix boutique par chaque boutique.</DialogDescription>
+          <DialogTitle>{product ? `Modifier ${product.name}` : "Nouveau produit"}</DialogTitle>
+          <DialogDescription>Pas de prix ici : le prix restaurant est fixé par l&apos;administrateur, le prix en point de vente par chaque point de vente.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4" data-testid="pastry-form">
           <FormField label="Nom" required>
@@ -123,7 +123,7 @@ function PastryDialog({
           {error ? <p role="alert" className="text-sm text-error">{error}</p> : null}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
-            <Button type="submit" variant="brand" loading={save.isPending}>{product ? "Enregistrer" : "Créer la pâtisserie"}</Button>
+            <Button type="submit" variant="brand" loading={save.isPending}>{product ? "Enregistrer" : "Créer le produit"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -158,17 +158,17 @@ export function PastryProducts() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Mes pâtisseries</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Mes produits</h1>
           <p className="mt-1 text-muted-foreground">Fiches, recettes et durées de vente. Les prix sont affichés pour information.</p>
         </div>
         <Button variant="brand" onClick={() => openDialog(null)} disabled={!data || data.categories.length === 0}>
-          <Plus className="h-4 w-4" /> Nouvelle pâtisserie
+          <Plus className="h-4 w-4" /> Nouveau produit
         </Button>
       </div>
       {catalog.error ? <p role="alert" className="text-sm text-error">{catalog.error.message}</p> : null}
       {data && data.categories.length === 0 ? (
         <p className="rounded-xl border border-dashed p-6 text-center text-muted-foreground">
-          Aucune catégorie de pâtisserie : l&apos;administrateur doit en régler une sur « Pâtisserie » dans le catalogue.
+          Aucune catégorie de l&apos;atelier : l&apos;administrateur doit en régler une sur « Atelier » dans le catalogue.
         </p>
       ) : null}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -179,7 +179,7 @@ export function PastryProducts() {
                 <div>
                   <p className="text-lg font-semibold">{product.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {product.categoryName} · {product.pastryFormat === "LARGE" ? "Gros gâteau" : "Petite pièce"} · vente {product.shelfLifeDays} jour(s)
+                    {product.categoryName} · {product.pastryFormat === "LARGE" ? "Grand format" : "Petite pièce"} · vente {product.shelfLifeDays} jour(s)
                   </p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => openDialog(product)} aria-label={`Modifier ${product.name}`}>
@@ -193,7 +193,7 @@ export function PastryProducts() {
               <p className="text-sm">Prix restaurant : {priceLine(product)}</p>
               {product.shopPrices.length ? (
                 <p className="text-sm text-muted-foreground">
-                  Boutiques :{" "}
+                  Points de vente :{" "}
                   {product.shopPrices
                     .map((price) => {
                       const size = product.sizes.find((row) => row.id === price.sizeId);
@@ -202,7 +202,7 @@ export function PastryProducts() {
                     .join(" · ")}
                 </p>
               ) : (
-                <p className="text-sm text-muted-foreground">Aucun prix boutique pour l&apos;instant.</p>
+                <p className="text-sm text-muted-foreground">Aucun prix en point de vente pour l&apos;instant.</p>
               )}
               {product.recipe ? <p className="line-clamp-3 whitespace-pre-line text-sm text-muted-foreground">Recette : {product.recipe}</p> : null}
             </CardContent>

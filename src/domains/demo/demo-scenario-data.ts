@@ -268,7 +268,7 @@ export const DEMO_LARGE_CAKES: ReadonlyArray<{ name: string; sizes: ReadonlyArra
 ];
 
 /** Catégorie des gros gâteaux, propre à la démo (le catalogue du seed n'en a pas). */
-export const DEMO_LARGE_CAKE_CATEGORY = { id: "gros-gateaux", name: "Gâteaux sur commande" } as const;
+export const DEMO_LARGE_CAKE_CATEGORY = { id: "gros-gateaux", name: "Commandes sur mesure" } as const;
 
 /**
  * Boutiques de l'entreprise (LOT2-D1) : un arrêt de la tournée du matin de leur zone. La première est celle de la
@@ -282,8 +282,8 @@ export const DEMO_SHOPS: ReadonlyArray<{
   number: number;
   access: string;
 }> = [
-  { key: "abbesses", name: "Boutique des Abbesses", zone: "nord", street: ["rue des Abbesses", "75018", 48.8846, 2.3382], number: 42, access: "Livraison par la porte de service, côté cour. Sonner « Laboratoire »." },
-  { key: "roquette", name: "Boutique Roquette", zone: "sud", street: ["rue de la Roquette", "75011", 48.8555, 2.376], number: 15, access: "Rideau levé dès 6h15, déposer en réserve derrière la vitrine." },
+  { key: "abbesses", name: "Point de vente des Abbesses", zone: "nord", street: ["rue des Abbesses", "75018", 48.8846, 2.3382], number: 42, access: "Livraison par la porte de service, côté cour. Sonner « Production »." },
+  { key: "roquette", name: "Point de vente Roquette", zone: "sud", street: ["rue de la Roquette", "75011", 48.8555, 2.376], number: 15, access: "Rideau levé dès 6h15, déposer en réserve derrière la vitrine." },
 ];
 
 /** Assortiment envoyé chaque matin à une boutique : pain et pâtisserie, quantités (minimum, maximum). */

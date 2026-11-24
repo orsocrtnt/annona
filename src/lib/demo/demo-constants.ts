@@ -51,14 +51,14 @@ export function isDemoLeaseToken(value: string | null | undefined): value is str
 }
 
 export const DEMO_PERSONA_LABELS: Record<DemoPersona, { title: string; description: string }> = {
-  client: { title: "Commerçant", description: "Passer la commande de demain, suivre sa livraison, ses factures." },
-  admin: { title: "Gérant de la boulangerie", description: "Clients, catalogue, commandes du jour, tournées et factures." },
-  baker: { title: "Boulanger", description: "Ce qu'il faut produire pour la prochaine tournée, par produit." },
+  client: { title: "Client", description: "Passer la commande de demain, suivre sa livraison, ses factures." },
+  admin: { title: "Gérant", description: "Clients, catalogue, commandes du jour, tournées et factures." },
+  baker: { title: "Production", description: "Ce qu'il faut produire pour la prochaine tournée, par produit." },
   driver: { title: "Livreur", description: "La tournée du moment, arrêt par arrêt, avec l'itinéraire." },
-  pastry: { title: "Pâtissier", description: "Les pâtisseries à produire, les envois aux boutiques et leur stock." },
+  pastry: { title: "Atelier", description: "Les produits de l'atelier à produire, les envois aux points de vente et leur stock." },
   seller: {
-    title: "Vente en boutique",
-    description: `La tablette du magasin : réception, clôture du soir, gâteaux sur commande. Code responsable : ${DEMO_SHOP_MANAGER_CODE}.`,
+    title: "Point de vente",
+    description: `La tablette du point de vente : réception, clôture du soir, commandes sur mesure. Code responsable : ${DEMO_SHOP_MANAGER_CODE}.`,
   },
 };
 

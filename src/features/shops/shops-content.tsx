@@ -77,15 +77,15 @@ function ShopDialog({ shop, open, onOpenChange }: { shop?: ShopRow; open: boolea
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!values.name.trim()) return setError("Nom de la boutique : obligatoire.");
+    if (!values.name.trim()) return setError("Nom du point de vente : obligatoire.");
     if (!values.address.trim()) return setError("Adresse : obligatoire.");
-    if (!values.zoneId) return setError("Choisissez la tournée de la boutique.");
+    if (!values.zoneId) return setError("Choisissez la tournée du point de vente.");
     if (!shop && !/^\d{4,8}$/.test(values.managerCode.trim())) return setError("Code responsable : 4 à 8 chiffres.");
     setError(null);
     const { managerCode, ...fields } = toInput(values);
     const done = {
       onSuccess: () => {
-        toast.success(shop ? "Boutique enregistrée" : "Boutique créée", {
+        toast.success(shop ? "Point de vente enregistré" : "Point de vente créé", {
           description: shop ? undefined : "Créez maintenant l'accès Vente de sa tablette.",
         });
         onOpenChange(false);
@@ -101,13 +101,13 @@ function ShopDialog({ shop, open, onOpenChange }: { shop?: ShopRow; open: boolea
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{shop ? `Modifier ${shop.name}` : "Nouvelle boutique"}</DialogTitle>
+          <DialogTitle>{shop ? `Modifier ${shop.name}` : "Nouveau point de vente"}</DialogTitle>
           <DialogDescription>
-            La boutique reçoit chaque matin les envois du laboratoire. Ce n&apos;est pas un client : elle ne commande pas et ne reçoit pas de facture.
+            Le point de vente reçoit chaque matin les envois de la production. Ce n&apos;est pas un client : il ne commande pas et ne reçoit pas de facture.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4" data-testid="shop-form">
-          <FormField label="Nom de la boutique" required>
+          <FormField label="Nom du point de vente" required>
             <Input value={values.name} onChange={(event) => setValues((current) => ({ ...current, name: event.target.value }))} placeholder="Centre-ville" />
           </FormField>
           <AddressFieldsGroup
@@ -118,7 +118,7 @@ function ShopDialog({ shop, open, onOpenChange }: { shop?: ShopRow; open: boolea
             onChange={(next) => setValues((current) => ({ ...current, ...next }))}
             onCoordinates={(coords) => setValues((current) => ({ ...current, ...coords }))}
           />
-          <FormField label="Tournée" hint="La boutique est livrée le matin de cette tournée." required>
+          <FormField label="Tournée" hint="Le point de vente est livré le matin de cette tournée." required>
             <Select value={values.zoneId || undefined} onValueChange={(zoneId) => setValues((current) => ({ ...current, zoneId }))}>
               <SelectTrigger aria-label="Tournée" data-testid="shop-zone">
                 <SelectValue placeholder="Choisir la tournée" />
@@ -139,7 +139,7 @@ function ShopDialog({ shop, open, onOpenChange }: { shop?: ShopRow; open: boolea
             />
           </FormField>
           {shop ? null : (
-            <FormField label="Code responsable" hint="4 à 8 chiffres. Il ouvre « Produits et prix » sur la tablette ; donnez-le à la responsable du magasin." required>
+            <FormField label="Code responsable" hint="4 à 8 chiffres. Il ouvre « Produits et prix » sur la tablette ; donnez-le à la responsable du point de vente." required>
               <Input
                 inputMode="numeric"
                 autoComplete="off"
@@ -150,13 +150,13 @@ function ShopDialog({ shop, open, onOpenChange }: { shop?: ShopRow; open: boolea
               />
             </FormField>
           )}
-          <FormField label="Téléphone de la boutique">
+          <FormField label="Téléphone du point de vente">
             <Input type="tel" value={values.contactPhone} onChange={(event) => setValues((current) => ({ ...current, contactPhone: event.target.value }))} />
           </FormField>
           {error ? <p role="alert" className="text-sm text-error">{error}</p> : null}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
-            <Button type="submit" variant="brand" loading={pending}>{shop ? "Enregistrer" : "Créer la boutique"}</Button>
+            <Button type="submit" variant="brand" loading={pending}>{shop ? "Enregistrer" : "Créer le point de vente"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -172,7 +172,7 @@ function ShopPricesDialog({ shop, open, onOpenChange }: { shop: ShopRow; open: b
     mutationFn: (prices: Parameters<typeof shopsApi.savePrices>[1]) => shopsApi.savePrices(shop.id, prices),
     onSuccess: (next) => {
       qc.setQueryData(["shops", "prices", shop.id], next);
-      toast.success("Prix boutique enregistrés", { description: `Ils s'affichent aussitôt sur la tablette de ${shop.name}.` });
+      toast.success("Prix en point de vente enregistrés", { description: `Ils s'affichent aussitôt sur la tablette de ${shop.name}.` });
     },
     onError: (failure: Error) => toast.error(failure.message),
   });
@@ -180,8 +180,8 @@ function ShopPricesDialog({ shop, open, onOpenChange }: { shop: ShopRow; open: b
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Prix boutique · {shop.name}</DialogTitle>
-          <DialogDescription>Prix TTC payés par les particuliers dans ce magasin. Chaque boutique a ses propres prix.</DialogDescription>
+          <DialogTitle>Prix en point de vente · {shop.name}</DialogTitle>
+          <DialogDescription>Prix TTC payés par les particuliers dans ce point de vente. Chaque point de vente a ses propres prix.</DialogDescription>
         </DialogHeader>
         {board.error ? <p role="alert" className="text-sm text-error">{board.error.message}</p> : null}
         {board.data ? <PriceBoard key={board.dataUpdatedAt} board={board.data} saving={save.isPending} onSave={(prices) => save.mutate(prices)} /> : null}
@@ -196,7 +196,7 @@ function ResetCodeDialog({ shop, open, onOpenChange }: { shop: ShopRow; open: bo
   const reset = useMutation({
     mutationFn: () => shopsApi.resetCode(shop.id, code),
     onSuccess: () => {
-      toast.success("Code responsable réinitialisé", { description: "Donnez le nouveau code à la responsable du magasin." });
+      toast.success("Code responsable réinitialisé", { description: "Donnez le nouveau code à la responsable du point de vente." });
       setCode("");
       onOpenChange(false);
     },
@@ -270,7 +270,7 @@ function ShopCard({ shop, canManage }: { shop: ShopRow; canManage: boolean }) {
         <div>
           <p className="text-sm font-medium">Vente (tablette)</p>
           {shop.sellers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucun compte : créez-en un pour la tablette du magasin.</p>
+            <p className="text-sm text-muted-foreground">Aucun compte : créez-en un pour la tablette du point de vente.</p>
           ) : (
             <ul className="mt-1 space-y-1 text-sm" data-testid={`shop-sellers-${shop.name}`}>
               {shop.sellers.map((seller) => (
@@ -286,7 +286,7 @@ function ShopCard({ shop, canManage }: { shop: ShopRow; canManage: boolean }) {
         {canManage ? (
           <div className="flex flex-wrap gap-2">
             {shop.active ? <CreateUserDialog shop={{ id: shop.id, name: shop.name }} triggerLabel="Créer l'accès Vente" /> : null}
-            <Button variant="outline" onClick={() => setPricing(true)} data-testid={`shop-prices-${shop.name}`}>Prix boutique</Button>
+            <Button variant="outline" onClick={() => setPricing(true)} data-testid={`shop-prices-${shop.name}`}>Prix en point de vente</Button>
             <Button variant="outline" onClick={() => setResetting(true)}>Réinitialiser le code</Button>
             <Button
               variant="outline"
@@ -294,7 +294,7 @@ function ShopCard({ shop, canManage }: { shop: ShopRow; canManage: boolean }) {
               onClick={() =>
                 update.mutate(
                   { active: !shop.active },
-                  { onSuccess: () => toast.success(shop.active ? "Boutique désactivée" : "Boutique réactivée"), onError: (failure) => toast.error(failure.message) }
+                  { onSuccess: () => toast.success(shop.active ? "Point de vente désactivé" : "Point de vente réactivé"), onError: (failure) => toast.error(failure.message) }
                 )
               }
             >
@@ -331,7 +331,7 @@ function CakeLeadCard() {
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["shops", "cake-settings"] });
-      toast.success("Délai des commandes de gâteaux enregistré");
+      toast.success("Délai des commandes sur mesure enregistré");
       setHours(null);
     },
     onError: (failure: Error) => toast.error(failure.message),
@@ -340,7 +340,7 @@ function CakeLeadCard() {
   return (
     <Card>
       <CardContent className="flex flex-wrap items-end gap-3 pt-6">
-        <FormField label="Commandes de gâteaux des particuliers : délai minimum avant le retrait (heures)">
+        <FormField label="Commandes sur mesure des particuliers : délai minimum avant le retrait (heures)">
           <Input inputMode="numeric" className="h-10 w-28" value={value} onChange={(event) => setHours(event.target.value.replace(/D/g, ""))} data-testid="cake-lead-hours" />
         </FormField>
         <Button type="button" variant="outline" loading={save.isPending} disabled={hours === null || hours === ""} onClick={() => save.mutate(Number(hours))}>
@@ -362,19 +362,19 @@ export function ShopsContent() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Boutiques</h1>
-          <p className="mt-1 text-muted-foreground">Les magasins de l&apos;entreprise : ils reçoivent chaque matin les envois du laboratoire.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Points de vente</h1>
+          <p className="mt-1 text-muted-foreground">Les points de vente de l&apos;entreprise : ils reçoivent chaque matin les envois de la production.</p>
         </div>
         {canManage ? (
           <Button variant="brand" onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" /> Nouvelle boutique
+            <Plus className="h-4 w-4" /> Nouveau point de vente
           </Button>
         ) : null}
       </div>
       {shops.error ? <p role="alert" className="text-sm text-error">{shops.error.message}</p> : null}
       {canManage ? <CakeLeadCard /> : null}
       {shops.data && shops.data.length === 0 ? (
-        <EmptyState icon={Store} title="Aucune boutique" description="Créez la première boutique, puis l'accès Vente de sa tablette." />
+        <EmptyState icon={Store} title="Aucun point de vente" description="Créez le premier point de vente, puis l'accès Vente de sa tablette." />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {(shops.data ?? []).map((shop) => <ShopCard key={shop.id} shop={shop} canManage={canManage} />)}

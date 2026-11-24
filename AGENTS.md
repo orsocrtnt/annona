@@ -1,6 +1,6 @@
 # Travailler sur Annona
 
-Annona devient une application de commande et de livraison B2B pour boulangerie (voir `PRODUCT.md`). La référence produit est `docs/cahier-des-charges/` : citer les identifiants d'exigence (CLI, BOU, LIV, ADM, PLA, NOT, RG, ENF) dans le code, les tests et `TODO.md`. `TRI-BASE.md` y indique ce qui est gardé, modifié ou créé à partir de l'ancienne base.
+Annona devient une application de commande et de livraison B2B pour tout fournisseur qui livre des professionnels (boulangerie d'abord, mais aussi glacier, boucherie, boissons : voir `PRODUCT.md` et le vocabulaire affiché de `docs/VOCABULAIRE.md`). La référence produit est `docs/cahier-des-charges/` : citer les identifiants d'exigence (CLI, BOU, LIV, ADM, PLA, NOT, RG, ENF) dans le code, les tests et `TODO.md`. `TRI-BASE.md` y indique ce qui est gardé, modifié ou créé à partir de l'ancienne base.
 
 ## OBLIGATOIRE : mettre `TODO.md` à jour
 - Après chaque changement de code, de comportement ou de visuel, même petit, consigner dans la tâche concernée ce qui a changé, les vérifications lancées avec leur résultat, ce qui reste non vérifié et la suite. S'il n'existe aucune tâche concernée, en créer une.

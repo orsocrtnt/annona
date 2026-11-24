@@ -49,7 +49,7 @@ function ShopShipment({ shop, day, family }: { shop: ShipmentShop; day: Shipment
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["shipments"] });
-      toast.success(`Envoi vers ${shop.name} enregistré`, { description: "Il apparaît sur l'arrêt de la boutique dans la tournée du matin." });
+      toast.success(`Envoi vers ${shop.name} enregistré`, { description: "Il apparaît sur l'arrêt du point de vente dans la tournée du matin." });
     },
     onError: (failure: Error) => toast.error(failure.message),
   });
@@ -66,7 +66,7 @@ function ShopShipment({ shop, day, family }: { shop: ShipmentShop; day: Shipment
         </CardTitle>
         <p className="text-sm text-muted-foreground">
           {shop.zoneName ? `Tournée ${shop.zoneName}, livraison du matin` : "Sans tournée"}
-          {shop.otherFamilyItemCount > 0 ? ` · ${shop.otherFamilyItemCount} ${family === "PASTRY" ? "pains" : "pâtisseries"} déjà sur le même envoi` : ""}
+          {shop.otherFamilyItemCount > 0 ? ` · ${shop.otherFamilyItemCount} ${family === "PASTRY" ? "produits de production" : "produits de l'atelier"} déjà sur le même envoi` : ""}
         </p>
         {shop.blockedReason ? <p role="alert" className="text-sm text-error">{shop.blockedReason}</p> : null}
       </CardHeader>
@@ -113,9 +113,9 @@ export function ShipmentsContent({ family }: { family: "BREAD" | "PASTRY" }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Envois aux boutiques</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Envois aux points de vente</h1>
         <p className="mt-1 text-muted-foreground">
-          {family === "PASTRY" ? "Pâtisseries" : "Pain"} envoyés chaque matin aux boutiques, sans commande de leur part. Modifiable jusqu&apos;au départ de la tournée.
+          {family === "PASTRY" ? "Produits de l'atelier" : "Produits de production"} envoyés chaque matin aux points de vente, sans commande de leur part. Modifiable jusqu&apos;au départ de la tournée.
         </p>
       </div>
       {!mounted ? <PageSkeleton /> : null}
@@ -136,7 +136,7 @@ export function ShipmentsContent({ family }: { family: "BREAD" | "PASTRY" }) {
       {day.isLoading && !day.data ? <PageSkeleton /> : null}
       {day.error ? <p role="alert" className="text-sm text-error">{day.error.message}</p> : null}
       {day.data && day.data.shops.length === 0 ? (
-        <p className="rounded-xl border border-dashed p-6 text-center text-muted-foreground">Aucune boutique : l&apos;administrateur les crée dans « Boutiques ».</p>
+        <p className="rounded-xl border border-dashed p-6 text-center text-muted-foreground">Aucun point de vente : l&apos;administrateur les crée dans « Points de vente ».</p>
       ) : null}
       <div className="grid gap-4 xl:grid-cols-2">
         {(day.data?.shops ?? []).map((shop) => (

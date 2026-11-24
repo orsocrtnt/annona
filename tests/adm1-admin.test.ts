@@ -26,7 +26,7 @@ function fixture() {
     company: [{ id: "A", name: "Boulangerie A", slug: "boulangerie-a", status: "ACTIVE", cutoffTime: "17:00", timezone: "Europe/Paris", reminderLeadMinutes: 120, settings: { billing: { invoice: { vatRate: 5.5 } } }, updatedAt: new Date(0) }],
     role: [
       { id: "rAdmin", slug: "admin", name: "Administrateur", systemRole: "ADMIN" },
-      { id: "rBaker", slug: "baker", name: "Boulanger", systemRole: "BAKER" },
+      { id: "rBaker", slug: "baker", name: "Production", systemRole: "BAKER" },
       { id: "rDriver", slug: "driver", name: "Livreur", systemRole: "DRIVER" },
       { id: "rMerchant", slug: "merchant", name: "Client", systemRole: "MERCHANT" },
       { id: "rSuper", slug: "super-admin", name: "Super", systemRole: "SUPER_ADMIN" },

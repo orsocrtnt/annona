@@ -99,7 +99,7 @@ export function CatalogContent() {
               family === value ? "bg-primary text-primary-foreground" : "hover:bg-muted"
             )}
           >
-            {value === "BREAD" ? "Boulangerie" : "Pâtisserie"}{" "}
+            {value === "BREAD" ? "Production" : "Atelier"}{" "}
             <span className="text-sm font-normal opacity-80 tabular-nums">({familyCount(value)})</span>
           </button>
         ))}
@@ -180,7 +180,7 @@ export function CatalogContent() {
                       <TableCell className="max-md:hidden">{product.categoryName}</TableCell>
                       <TableCell className="max-md:hidden">{product.unit}</TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {/* Gros gâteau : une taille par ligne, pour ne pas élargir le tableau sur téléphone. */}
+                        {/* Grand format : une taille par ligne, pour ne pas élargir le tableau sur téléphone. */}
                         {product.pastryFormat === "LARGE" ? (
                           product.sizes.length ? (
                             product.sizes.map((size) => (

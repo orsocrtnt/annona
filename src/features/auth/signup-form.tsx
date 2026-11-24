@@ -117,7 +117,7 @@ export function SignupForm(props: SignupFormProps) {
           </span>
         </div>
         <h1 className="text-balance text-center text-[clamp(28px,5vw,40px)] font-bold leading-[1.06] tracking-[-0.04em]">
-          {isCompanyStep ? "Encore une étape" : "Créer le compte de votre boulangerie"}
+          {isCompanyStep ? "Encore une étape" : "Créer le compte de votre entreprise"}
         </h1>
         <p className="mt-2.5 text-center text-text-secondary">
           {isCompanyStep
@@ -138,7 +138,7 @@ export function SignupForm(props: SignupFormProps) {
 
         {isCompanyStep && (
           <form onSubmit={companyForm.handleSubmit(onCompanySignup)} className="mt-7 space-y-5" noValidate>
-            <FormField label="Nom de la boulangerie" error={companyForm.formState.errors.companyName?.message} required>
+            <FormField label="Nom de l'entreprise" error={companyForm.formState.errors.companyName?.message} required>
               <Input autoComplete="organization" className={inputClass} error={!!companyForm.formState.errors.companyName} {...companyForm.register("companyName")} />
             </FormField>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -163,7 +163,7 @@ export function SignupForm(props: SignupFormProps) {
               <GoogleDivider label="ou avec votre e-mail" />
             </div>
             <form method="post" onSubmit={emailForm.handleSubmit(onEmailSignup)} className="mt-5 space-y-5" noValidate>
-              <FormField label="Nom de la boulangerie" error={emailForm.formState.errors.companyName?.message} required>
+              <FormField label="Nom de l'entreprise" error={emailForm.formState.errors.companyName?.message} required>
                 <Input autoComplete="organization" className={inputClass} error={!!emailForm.formState.errors.companyName} {...emailForm.register("companyName")} />
               </FormField>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -175,7 +175,7 @@ export function SignupForm(props: SignupFormProps) {
                 </FormField>
               </div>
               <FormField label="Email" error={emailForm.formState.errors.email?.message} required>
-                <Input type="email" autoComplete="email" inputMode="email" placeholder="vous@boulangerie.fr" className={inputClass} error={!!emailForm.formState.errors.email} {...emailForm.register("email")} />
+                <Input type="email" autoComplete="email" inputMode="email" placeholder="vous@entreprise.fr" className={inputClass} error={!!emailForm.formState.errors.email} {...emailForm.register("email")} />
               </FormField>
               <FormField
                 label="Mot de passe"

@@ -62,14 +62,14 @@ const BAKER = { companyId: "A", userId: "boulanger", family: "BREAD" as const };
 const linesOf = (tables: Record<string, Row[]>, orderId: string) =>
   Object.fromEntries(tables.orderLine!.filter((line) => line.orderId === orderId).map((line) => [line.productId, line.quantityOrdered]));
 
-test("LOT2-D5 vérifications 1 et 3 : 12 éclairs et 8 tartes du pâtissier, puis 20 baguettes du boulanger, sur le même envoi de « Centre-ville »", async () => {
+test("LOT2-D5 vérifications 1 et 3 : 12 éclairs et 8 tartes du pâtissier, puis 20 baguettes de la production, sur le même envoi de « Centre-ville »", async () => {
   const { tables, db, lock } = fixture();
   const pastry = await saveShipment(PASTRY, { date: J, shopId: "centre", lines: [{ productId: "eclair", quantity: 12 }, { productId: "tarte", quantity: 8 }] }, { db, now: BEFORE, addToRounds: lock(BEFORE) });
   assert.deepEqual(pastry.lines, [{ productId: "eclair", quantity: 12 }, { productId: "tarte", quantity: 8 }]);
   const order = tables.order!.find((row) => row.merchantId === "centre")!;
   assert.deepEqual([order.origin, order.status, order.slotId], ["SHIPMENT", "LOCKED", "sMatin"], "envoi décidé par le laboratoire, sur le matin de la tournée");
   await saveShipment(BAKER, { date: J, shopId: "centre", lines: [{ productId: "baguette", quantity: 20 }] }, { db, now: BEFORE, addToRounds: lock(BEFORE) });
-  assert.equal(tables.order!.filter((row) => row.merchantId === "centre").length, 1, "un seul envoi par boutique et par matin");
+  assert.equal(tables.order!.filter((row) => row.merchantId === "centre").length, 1, "un seul envoi par point de vente et par matin");
   assert.deepEqual(linesOf(tables, String(order.id)), { eclair: 12, tarte: 8, baguette: 20 });
   // Le pâtissier corrige ses quantités : le pain du boulanger n'est pas touché.
   const corrected = await saveShipment(PASTRY, { date: J, shopId: "centre", lines: [{ productId: "eclair", quantity: 12 }] }, { db, now: BEFORE, addToRounds: lock(BEFORE) });
@@ -77,14 +77,14 @@ test("LOT2-D5 vérifications 1 et 3 : 12 éclairs et 8 tartes du pâtissier, pui
   assert.deepEqual(linesOf(tables, String(order.id)), { eclair: 12, baguette: 20 });
 });
 
-test("LOT2-D5 vérification 2 et LOT2-D1 vérification 3 : à l'heure limite, la boutique devient un arrêt de la tournée du matin, avec ses produits", async () => {
+test("LOT2-D5 vérification 2 et LOT2-D1 vérification 3 : à l'heure limite, le point de vente devient un arrêt de la tournée du matin, avec ses produits", async () => {
   const { tables, db, lock } = fixture();
   await saveShipment(PASTRY, { date: J, shopId: "centre", lines: [{ productId: "eclair", quantity: 12 }, { productId: "tarte", quantity: 8 }] }, { db, now: BEFORE, addToRounds: lock(BEFORE) });
   assert.equal(tables.stop!.length, 0, "avant l'heure limite, pas encore de tournée");
   await lock(AFTER_CUTOFF)("A", J);
   const order = tables.order!.find((row) => row.merchantId === "centre")!;
   const stop = tables.stop!.find((row) => row.orderId === order.id)!;
-  assert.ok(stop, "arrêt de la boutique créé");
+  assert.ok(stop, "arrêt du point de vente créé");
   const round = tables.round!.find((row) => row.id === stop.roundId)!;
   assert.equal(round.slotId, "sMatin");
   // Le livreur lit les lignes de la commande de l'arrêt (round-driver.service) : les produits de l'envoi.
@@ -122,13 +122,13 @@ test("LOT2-D5 : modifiable jusqu'au départ de la tournée ; un envoi vidé disp
   assert.equal(tables.stop!.some((row) => row.orderId === order.id), false);
 });
 
-test("LOT2-D5 : chacun sa famille ; pas de gros gâteau ; pas de client, de date passée ni de boutique d'une autre entreprise", async () => {
+test("LOT2-D5 : chacun sa famille ; pas de produit à tailles ; pas de client, de date passée ni de point de vente d'une autre entreprise", async () => {
   const { db } = fixture();
   const run = (actor: typeof PASTRY | typeof BAKER, input: { date?: string; shopId?: string; productId: string }) =>
     saveShipment(actor, { date: input.date ?? J, shopId: input.shopId ?? "centre", lines: [{ productId: input.productId, quantity: 1 }] }, { db, now: BEFORE, addToRounds: async () => undefined });
   await assert.rejects(run(PASTRY, { productId: "baguette" }), { status: 400, code: "PRODUCT_NOT_IN_FAMILY" });
   await assert.rejects(run(BAKER, { productId: "eclair" }), { status: 400, code: "PRODUCT_NOT_IN_FAMILY" });
-  await assert.rejects(run(PASTRY, { productId: "fraisier" }), { status: 400 }, "les gros gâteaux partent avec les commandes des particuliers");
+  await assert.rejects(run(PASTRY, { productId: "fraisier" }), { status: 400 }, "les produits à tailles partent avec les commandes des particuliers");
   await assert.rejects(run(PASTRY, { productId: "eclair", shopId: "client1" }), { status: 404 });
   await assert.rejects(run(PASTRY, { productId: "eclair", date: "2026-11-18" }), { status: 400, code: "DATE_IN_PAST" });
   await assert.rejects(saveShipment({ ...PASTRY, companyId: "B" }, { date: J, shopId: "centre", lines: [] }, { db, now: BEFORE }), { status: 404 });

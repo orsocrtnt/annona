@@ -46,12 +46,12 @@ export const MINI_ADMIN_MODULES: readonly MiniAdminModule[] = [
   { id: "promotions", label: "Promotions", paths: ["/dashboard/promotions"], permissions: ["promotions:read", "promotions:manage"] },
   {
     id: "accounts",
-    label: "Comptes clients, boulangers et livreurs",
+    label: "Comptes clients, production et livreurs",
     paths: ["/dashboard/merchants", "/users"],
     permissions: ["merchants:read", "merchants:manage", "users:read", "users:create", "users:update", "users:delete"],
   },
   // Lot 2 : boutiques de l'entreprise, accordables à un mini admin.
-  { id: "shops", label: "Boutiques", paths: ["/dashboard/shops", "/dashboard/stock"], permissions: ["shops:read", "shops:manage"] },
+  { id: "shops", label: "Points de vente", paths: ["/dashboard/shops", "/dashboard/stock"], permissions: ["shops:read", "shops:manage"] },
   { id: "settings", label: "Paramètres", paths: ["/settings"], permissions: ["settings:read", "settings:update", "companies:read", "companies:update"] },
   {
     id: "billing",

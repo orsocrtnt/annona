@@ -58,7 +58,7 @@ export interface ShopPriceInput {
   priceCents: number | null;
 }
 
-const shopNotFound = () => new DomainRuleError(404, "Boutique introuvable.", "SHOP_NOT_FOUND");
+const shopNotFound = () => new DomainRuleError(404, "Point de vente introuvable.", "SHOP_NOT_FOUND");
 
 // ---------------------------------------------------------------------------
 // Code responsable
@@ -98,7 +98,7 @@ export async function verifyManagerCode(db: ShopPricesDb, companyId: string, sho
     throw new DomainRuleError(429, "Trop d'essais : « Produits et prix » est bloqué 15 minutes. L'administrateur peut réinitialiser le code.", "MANAGER_CODE_LOCKED");
   }
   if (!shop.managerCodeHash) {
-    throw new DomainRuleError(403, "Aucun code responsable pour cette boutique : demandez-le à l'administrateur.", "MANAGER_CODE_MISSING");
+    throw new DomainRuleError(403, "Aucun code responsable pour ce point de vente : demandez-le à l'administrateur.", "MANAGER_CODE_MISSING");
   }
   if (!managerCodeMatches(code, shop.managerCodeHash)) {
     // Relecture d'Orso (19 novembre) : incrément atomique, des essais simultanés ne se perdent pas.
@@ -229,11 +229,11 @@ export async function setShopPrices(
     if (!product) throw new DomainRuleError(404, "Produit introuvable.", "PRODUCT_NOT_FOUND");
     const large = product.pastryFormat === "LARGE";
     if (large && !sizes.some((size) => size.id === input.sizeId && size.productId === product.id)) {
-      throw new DomainRuleError(400, "Choisissez une taille de ce gâteau.", "SIZE_REQUIRED");
+      throw new DomainRuleError(400, "Choisissez une taille de ce produit.", "SIZE_REQUIRED");
     }
     if (!large && input.sizeId !== null) throw new DomainRuleError(400, "Ce produit n'a pas de taille.", "SIZE_NOT_ALLOWED");
     if (input.sold && (input.priceCents === null || input.priceCents <= 0)) {
-      throw new DomainRuleError(400, "Saisissez le prix boutique, ou marquez le produit « non vendu ».", "SHOP_PRICE_REQUIRED");
+      throw new DomainRuleError(400, "Saisissez le prix en point de vente, ou marquez le produit « non vendu ».", "SHOP_PRICE_REQUIRED");
     }
   }
   const before = await db.shopPrice.findMany({ where: { companyId: actor.companyId, shopId: shop.id, productId: { in: productIds } } });

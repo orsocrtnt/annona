@@ -18,7 +18,7 @@ export function ShelfHeading({ lines, index }: { lines: readonly ShelfLine[]; in
     <li className="list-none pt-4 first:pt-0">
       {newFamily ? (
         <p className="text-xl font-semibold tracking-tight" data-testid={`shelf-family-${line.family}`}>
-          {line.family === "PASTRY" ? "Pâtisserie" : "Boulangerie"}
+          {line.family === "PASTRY" ? "Atelier" : "Production"}
         </p>
       ) : null}
       {line.categoryName ? (

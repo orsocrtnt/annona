@@ -53,7 +53,7 @@ function sizesMatchFormat(value: { pastryFormat?: "SMALL" | "LARGE" | null; size
   if (value.pastryFormat === "LARGE") return value.sizes === undefined || value.sizes.length > 0;
   return !value.sizes || value.sizes.length === 0;
 }
-const SIZES_MESSAGE = { message: "Un gros gâteau a au moins une taille ; une petite pièce n'en a pas.", path: ["sizes"] };
+const SIZES_MESSAGE = { message: "Un produit à tailles a au moins une taille ; une petite pièce n'en a pas.", path: ["sizes"] };
 
 const productFields = {
   name: name("Nom"),
@@ -83,7 +83,7 @@ const productFields = {
 /** Relecture d'Orso (19 novembre) : un gros gâteau a un prix par taille, jamais de prix de base. */
 const noBasePriceOnLarge = (value: { pastryFormat?: "SMALL" | "LARGE" | null; basePriceCents?: number | null }) =>
   value.pastryFormat !== "LARGE" || value.basePriceCents === null || value.basePriceCents === undefined;
-const BASE_PRICE_MESSAGE = { message: "Un gros gâteau a un prix restaurant par taille, pas de prix de base.", path: ["basePriceCents"] };
+const BASE_PRICE_MESSAGE = { message: "Un produit à tailles a un prix restaurant par taille, pas de prix de base.", path: ["basePriceCents"] };
 export const createProductSchema = z.object(productFields).strict().refine(sizesMatchFormat, SIZES_MESSAGE).refine(noBasePriceOnLarge, BASE_PRICE_MESSAGE);
 export const updateProductSchema = z.object(productFields).partial().strict().refine(sizesMatchFormat, SIZES_MESSAGE).refine(noBasePriceOnLarge, BASE_PRICE_MESSAGE);
 
@@ -107,7 +107,7 @@ const servingsMatchFormat = (value: { pastryFormat?: "SMALL" | "LARGE"; servings
   value.pastryFormat === "LARGE"
     ? value.servings === undefined || (value.servings.length > 0 && new Set(value.servings).size === value.servings.length)
     : !value.servings || value.servings.length === 0;
-const SERVINGS_MESSAGE = { message: "Un gros gâteau a au moins une taille (sans doublon) ; une petite pièce n'en a pas.", path: ["servings"] };
+const SERVINGS_MESSAGE = { message: "Un produit à tailles a au moins une taille (sans doublon) ; une petite pièce n'en a pas.", path: ["servings"] };
 export const createPastryProductSchema = z.object(pastryFields).strict().refine(servingsMatchFormat, SERVINGS_MESSAGE);
 export const updatePastryProductSchema = z.object(pastryFields).partial().strict().refine(servingsMatchFormat, SERVINGS_MESSAGE);
 

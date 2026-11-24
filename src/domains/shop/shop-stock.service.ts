@@ -43,7 +43,7 @@ async function today(db: ShopStockDb, companyId: string, now: Date) {
 
 async function assertShop(db: ShopStockDb, companyId: string, shopId: string) {
   const shop = await db.merchant.findFirst({ where: { id: shopId, companyId, kind: "SHOP" }, select: { id: true, name: true } });
-  if (!shop) throw new DomainRuleError(404, "Boutique introuvable.", "SHOP_NOT_FOUND");
+  if (!shop) throw new DomainRuleError(404, "Point de vente introuvable.", "SHOP_NOT_FOUND");
   return shop;
 }
 
@@ -341,7 +341,7 @@ export async function closeDay(actor: SellerActor, input: CloseInput, deps: { db
   const entries = new Map(input.entries.map((entry) => [entry.productId, entry]));
   if (sheet.lines.some((line) => !entries.has(line.productId))) throw new DomainRuleError(400, "Notez le reste de chaque produit (0 s'il n'en reste pas).", "CLOSE_INCOMPLETE");
   for (const productId of entries.keys()) {
-    if (!sheet.lines.some((line) => line.productId === productId)) throw new DomainRuleError(400, "Ce produit n'est pas en stock dans la boutique.", "PRODUCT_NOT_IN_STOCK", { productId });
+    if (!sheet.lines.some((line) => line.productId === productId)) throw new DomainRuleError(400, "Ce produit n'est pas en stock dans le point de vente.", "PRODUCT_NOT_IN_STOCK", { productId });
   }
   const receptions = await db.order.findFirst({
     where: { companyId: actor.companyId, merchantId: actor.shopId, deliveryDate: deliveryDateToDb(input.date), origin: "SHIPMENT" },
@@ -445,7 +445,7 @@ export async function getShopStock(
     where: { companyId, kind: "SHOP", ...(options.shopId ? { id: options.shopId } : {}) },
     select: { id: true, name: true },
   });
-  if (options.shopId && shops.length === 0) throw new DomainRuleError(404, "Boutique introuvable.", "SHOP_NOT_FOUND");
+  if (options.shopId && shops.length === 0) throw new DomainRuleError(404, "Point de vente introuvable.", "SHOP_NOT_FOUND");
   const shopIds = shops.map((shop) => shop.id);
   const [lots, closes, shipments] = await Promise.all([
     shopIds.length ? db.shopStockLot.findMany({ where: { companyId, shopId: { in: shopIds } }, select: { id: true, shopId: true, productId: true, receivedOn: true, lastSaleDay: true, quantity: true } }) : Promise.resolve([]),

@@ -27,7 +27,7 @@ export function orderActorScope(actor: OrderActor): Prisma.OrderWhereInput {
   if (!actor.companyId) throw new OrderAccessError(403, "Entreprise non associée.");
   const companyId = actor.companyId;
   if (actor.role === "MERCHANT" && actor.permissions.includes("dashboard:merchant")) {
-    if (!actor.merchantId) throw new OrderAccessError(403, "Compte client non rattaché à un commerçant.");
+    if (!actor.merchantId) throw new OrderAccessError(403, "Compte client non rattaché à un client.");
     return { companyId, merchantId: actor.merchantId };
   }
   if (actor.role === "DRIVER" && actor.permissions.includes("dashboard:driver")) {
