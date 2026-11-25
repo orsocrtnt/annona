@@ -60,7 +60,9 @@ export function DemoBar({ aboveBottomNav = false }: { aboveBottomNav?: boolean }
       className={
         aboveBottomNav
           ? "fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] left-1/2 z-[60] w-max max-w-[calc(100vw-24px)] -translate-x-1/2"
-          : "fixed bottom-4 left-1/2 z-[60] w-max max-w-[calc(100vw-24px)] -translate-x-1/2 max-md:bottom-[calc(env(safe-area-inset-bottom)+5.5rem)]"
+          : // RETOURS-3 : sur téléphone, collée en bas de l'écran (à 5,5 rem elle recouvrait le texte des cartes du point de
+            // vente) ; elle reste sous le bouton rond du back-office (bottom-20) et la page garde 8 rem de marge en bas.
+            "fixed bottom-4 left-1/2 z-[60] w-max max-w-[calc(100vw-24px)] -translate-x-1/2 max-md:bottom-[calc(env(safe-area-inset-bottom)+0.75rem)]"
       }
     >
       {open && (

@@ -57,7 +57,7 @@ export const ROLE_HIERARCHY: Record<SystemRole, number> = {
 
 export const ROLE_LABELS: Record<SystemRole, string> = {
   SUPER_ADMIN: "Super-administrateur",
-  ADMIN: "Administrateur",
+  ADMIN: "Gérant",
   BAKER: "Production",
   PASTRY_CHEF: "Atelier",
   DRIVER: "Livreur",

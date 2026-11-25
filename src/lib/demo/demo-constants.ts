@@ -50,12 +50,19 @@ export function isDemoLeaseToken(value: string | null | undefined): value is str
   return Boolean(value && DEMO_LEASE_TOKEN_PATTERN.test(value));
 }
 
+/**
+ * RETOURS-3 (notes du tour 2 de Théo, 24 novembre 2026) : noms des deux laboratoires de l'entreprise de démo. Un seul
+ * type d'espace, seul le nom change ; ils sont posés dans les réglages de l'entreprise de démo, que le visiteur peut
+ * renommer dans Paramètres comme un vrai gérant.
+ */
+export const DEMO_SPACE_NAMES = { production: "Laboratoire boulanger", atelier: "Laboratoire de pâtisserie" } as const;
+
 export const DEMO_PERSONA_LABELS: Record<DemoPersona, { title: string; description: string }> = {
   client: { title: "Client", description: "Passer la commande de demain, suivre sa livraison, ses factures." },
   admin: { title: "Gérant", description: "Clients, catalogue, commandes du jour, tournées et factures." },
-  baker: { title: "Production", description: "Ce qu'il faut produire pour la prochaine tournée, par produit." },
+  baker: { title: DEMO_SPACE_NAMES.production, description: "Ce qu'il faut produire pour la prochaine tournée : par produit, par client, par tournée et par point de vente." },
   driver: { title: "Livreur", description: "La tournée du moment, arrêt par arrêt, avec l'itinéraire." },
-  pastry: { title: "Atelier", description: "Les produits de l'atelier à produire, les envois aux points de vente et leur stock." },
+  pastry: { title: DEMO_SPACE_NAMES.atelier, description: "Un second laboratoire : sa production, les commandes sur mesure, les envois aux points de vente et leur stock." },
   seller: {
     title: "Point de vente",
     description: `La tablette du point de vente : réception, clôture du soir, commandes sur mesure. Code responsable : ${DEMO_SHOP_MANAGER_CODE}.`,

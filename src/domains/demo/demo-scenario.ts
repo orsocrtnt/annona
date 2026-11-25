@@ -41,6 +41,7 @@ import {
 } from "@/domains/demo/demo-scenario-data";
 import { lastSaleDayOf, planClose, type StockLot } from "@/domains/shop/stock-rules";
 import { addCalendarDays, parisParts, parisWallTimeToUtc, type CalendarDate } from "@/lib/time/paris";
+import { DEMO_SPACE_NAMES } from "@/lib/demo/demo-constants";
 
 /** Domaine de toutes les adresses de la démo : réservé (RFC 2606), jamais livrable, refusé par la garde d'envoi. */
 export const DEMO_EMAIL_DOMAIN = "demo.annona.example";
@@ -616,8 +617,11 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
             const delivered = phase.deliveredUntil !== null && eta <= phase.deliveredUntil;
             const deliveredMinute = delivered ? Math.min(eta + Math.floor(shopRandom() * 7) - 2, phase.deliveredUntil!) : null;
             if (deliveredMinute !== null) lastDelivered = deliveredMinute;
-            // Les jours passés, la vendeuse a noté la réception ; aujourd'hui, elle reste à faire sur la tablette (LOT2-D6).
-            const received = offset < 0;
+            // Les jours passés, la vendeuse a noté la réception. Aujourd'hui, elle reste à faire sur la tablette du compte
+            // de démo (premier point de vente, LOT2-D6) ; le second l'a déjà notée, pour que le stock du jour se lise
+            // (RETOURS-3 : « des données, même fausses, pour se projeter »).
+            const receivedToday = offset === 0 && shop.index > 0 && deliveredMinute !== null;
+            const received = offset < 0 || receivedToday;
             const decidedAt = offset === 1 ? at(-24 * 60 + Math.min(10 * 60, clockNow - 1)) : previous(10 * 60);
             for (const [productIndex, min, max] of assortment) {
               const sent = between(shopRandom, [min, max]);
@@ -662,7 +666,11 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
               lockedAt: decidedAt,
               preparedAt: phase.prepared ? at(phase.preparedAt) : null,
               deliveredAt: deliveredMinute !== null ? at(deliveredMinute) : null,
-              receivedAt: received ? at((deliveredMinute ?? eta) + 20) : null,
+              receivedAt: receivedToday
+                ? at(Math.max(deliveredMinute!, Math.min(deliveredMinute! + 20, clockNow - 1)))
+                : received
+                  ? at((deliveredMinute ?? eta) + 20)
+                  : null,
             });
             if (withRound) {
               stops.push({
@@ -757,7 +765,8 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
     }
 
     // Jours passés : le bon état reçu entre en stock, puis la clôture du soir (ventes calculées, fin de vente jetée).
-    if (offset < 0) {
+    // Aujourd'hui (RETOURS-3) : la réception déjà notée entre en stock, la clôture du soir reste à faire.
+    if (offset <= 0) {
       const date = isoDay(day);
       for (const shop of shopPlans) {
         const { index: shopIndex, key, sellerId } = shop.shop!;
@@ -770,6 +779,7 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
           const lot = { id: id("lot", key, dayKey(day), receipt.productIndex), receivedOn: date, lastSaleDay: lastSaleDayOf(date, shelfLife), quantity: receipt.good, initialQuantity: receipt.good };
           lots.set(receipt.productIndex, [...(lots.get(receipt.productIndex) ?? []), lot]);
         }
+        if (offset === 0) continue;
         const closeRandom = prng(Number(dayKey(day)) * 131 + slot * 17 + shopIndex + 1);
         for (const [productIndex, productLots] of [...lots].sort(([a], [b]) => a - b)) {
           const available = productLots.reduce((sum, lot) => sum + lot.quantity, 0);
@@ -836,6 +846,8 @@ export function buildDemoScenario({ slot, now }: { slot: number; now: Date }): D
     depotLongitude: DEMO_SCENARIO.depot.longitude,
     settings: {
       demo: true,
+      // RETOURS-3 : noms des deux laboratoires de la démo (renommables dans Paramètres).
+      spaceNames: { ...DEMO_SPACE_NAMES },
       units: ["pièce", "part", "kg", "sachet de 6", "sachet de 10", "sachet de 20", "boîte de 6", "plaque", "plaque de 20"],
       billing: { invoice: { footerNote: "Données de démonstration : aucune facture réelle." } },
     },

@@ -42,7 +42,7 @@ function MobileNavLink({
     >
       {Icon && <Icon className={cn("h-[18px] w-[18px]", isActive && "text-brand")} />}
       {item.badge !== undefined ? <span className="flex-1">{item.title}</span> : item.title}
-      {item.badge !== undefined && <NavBadge value={item.badge} label={item.badgeLabel} />}
+      {item.badge !== undefined && <NavBadge value={item.badge} label={item.badgeLabel} tone={item.badgeTone} />}
     </Link>
   );
 }

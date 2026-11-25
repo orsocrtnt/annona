@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 import { DeliveryDayPicker, parisDateKey } from "@/components/shared/delivery-day-picker";
-import type { PreparationLine, PreparationSheet, ProductionDay, ProductionTotalProduct } from "@/domains/production/production.types";
+import type { PreparationLine, PreparationSheet, ProductionDay, ProductionShop, ProductionTotalProduct } from "@/domains/production/production.types";
 import { useProductionDay, useSetPrepared } from "@/features/production/hooks";
 import { PrintArea, type PrintKind } from "@/features/production/print-area";
 import { ProductDetailDialog } from "@/features/production/product-detail-dialog";
@@ -19,22 +19,25 @@ import { ShortageDialog } from "@/features/production/shortage-dialog";
 import { deadlineLabel, longDeliveryDateLabel } from "@/lib/format/delivery-date";
 import { fr } from "@/lib/i18n/fr";
 import { cn } from "@/lib/utils";
+import { useSpaceNames } from "@/hooks/use-space-names";
+import type { SpaceKey } from "@/lib/company/space-names";
 
 const t = fr.production;
-type View = "totals" | "sheets" | "rounds";
-const VIEWS: View[] = ["totals", "sheets", "rounds"];
+type View = "totals" | "sheets" | "rounds" | "shops";
+const VIEWS: View[] = ["totals", "sheets", "rounds", "shops"];
 
 /** BOU-1 — espace boulanger pensé tablette : gros boutons, une date, trois vues. */
 /**
  * `readOnly` (lot 2, demande 2) : espace pâtissier, qui lit sa production sans marquer « préparé » ni
- * signaler de manquant à cette étape ; `title` remplace le titre « Production ».
+ * signaler de manquant à cette étape. RETOURS-3 : le titre est le nom du laboratoire choisi par le gérant.
  */
-export function ProductionContent({ readOnly = false, title }: { readOnly?: boolean; title?: string } = {}) {
+export function ProductionContent({ readOnly = false, space = "production" }: { readOnly?: boolean; space?: SpaceKey } = {}) {
+  const title = useSpaceNames()[space];
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const date = params.get("date") ?? parisDateKey(1);
-  const view = (VIEWS.includes(params.get("view") as View) ? params.get("view") : "totals") as View;
+  const requestedView = (VIEWS.includes(params.get("view") as View) ? params.get("view") : "totals") as View;
   const day = useProductionDay(date);
   const [printKind, setPrintKind] = useState<PrintKind>("sheets");
   const [packages, setPackages] = useState<Record<string, number>>({});
@@ -57,12 +60,14 @@ export function ProductionContent({ readOnly = false, title }: { readOnly?: bool
 
   if (day.isLoading && !day.data) return <PageSkeleton />;
   const data = day.data;
+  // RETOURS-3 : les quatre onglets sont toujours là ; « Par client » et « Par tournée » se remplissent à l'heure limite.
+  const view = requestedView;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{title ?? t.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           <p className="mt-1 text-muted-foreground">{longDeliveryDateLabel(date)}</p>
         </div>
         {data?.closed && data.sheets.length > 0 ? (
@@ -108,8 +113,8 @@ export function ProductionContent({ readOnly = false, title }: { readOnly?: bool
             </Alert>
           )}
 
-          {data.closed ? (
-            <div role="tablist" aria-label={t.title} className="inline-flex flex-wrap gap-1 rounded-2xl border bg-card p-1">
+          {/* BOU-02, BOU-03 et RETOURS-3 : quatre onglets, toujours affichés. */}
+          <div role="tablist" aria-label={title} className="inline-flex flex-wrap gap-1 rounded-2xl border bg-card p-1">
               {VIEWS.map((key) => (
                 <button
                   key={key}
@@ -125,14 +130,19 @@ export function ProductionContent({ readOnly = false, title }: { readOnly?: bool
                   {t.tabs[key]}
                 </button>
               ))}
-            </div>
-          ) : null}
+          </div>
 
-          {!data.closed || view === "totals" ? <Totals day={data} /> : null}
+          {view === "totals" ? <Totals day={data} /> : null}
+          {view === "shops" ? <Shops shops={data.shops} selected={params.get("shop")} onSelect={(shop) => update({ shop })} /> : null}
           {data.closed && view === "sheets" ? (
             <Sheets day={data} readOnly={readOnly} packages={packages} onPackages={(orderId, value) => setPackages((all) => ({ ...all, [orderId]: value }))} onShortage={setShortageLine} />
           ) : null}
           {data.closed && view === "rounds" ? <Rounds day={data} /> : null}
+          {!data.closed && (view === "sheets" || view === "rounds") ? (
+            <div className="rounded-2xl border border-dashed p-10 text-center text-lg text-muted-foreground" data-testid="production-after-cutoff">
+              {t.afterCutoff(deadlineLabel(data.cutoffAt))}
+            </div>
+          ) : null}
 
           <PrintArea day={data} kind={printKind} packages={packages} />
           <ShortageDialog date={date} line={shortageLine} onClose={() => setShortageLine(null)} />
@@ -171,6 +181,11 @@ function Totals({ day }: { day: ProductionDay }) {
                     <>
                       <span className="text-base">
                         {product.name} <span className="text-sm text-muted-foreground">· {product.unit}</span>
+                        {product.shopQuantity ? (
+                          <span className="block text-sm text-muted-foreground" data-testid={`total-shops-${product.name}`}>
+                            {t.forShops(product.shopQuantity)}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="flex items-center gap-2">
                         <span className={cn("text-2xl font-semibold tabular-nums", day.provisional && "text-muted-foreground")}>{product.quantity}</span>
@@ -202,6 +217,71 @@ function Totals({ day }: { day: ProductionDay }) {
         ))}
       </div>
       <ProductDetailDialog product={opened} detail={opened ? day.details?.[opened.productId] ?? null : null} onClose={() => setOpened(null)} />
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// RETOURS-3 : par point de vente (envois du jour et commandes sur mesure)
+// ---------------------------------------------------------------------------
+
+function Shops({ shops, selected, onSelect }: { shops: ProductionShop[]; selected: string | null; onSelect: (shop: string) => void }) {
+  if (shops.length === 0) {
+    return <div className="rounded-2xl border border-dashed p-10 text-center text-lg text-muted-foreground">{t.shopsEmpty}</div>;
+  }
+  const current = shops.find((shop) => shop.merchantId === selected) ?? null;
+  const shown = current ? [current] : shops;
+  const chip = (key: string, label: string, active: boolean, count?: number) => (
+    <button
+      key={key}
+      type="button"
+      aria-pressed={active}
+      onClick={() => onSelect(key)}
+      className={cn(
+        "min-h-11 rounded-full border px-4 text-sm font-medium transition-colors",
+        active ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-muted"
+      )}
+    >
+      {label}
+      {count !== undefined ? <span className="ml-2 tabular-nums opacity-70">{count}</span> : null}
+    </button>
+  );
+  return (
+    <section aria-label={t.shopsTitle} className="space-y-4">
+      <div>
+        <h2 className="text-xl font-semibold">{t.shopsTitle}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t.shopsHint}</p>
+      </div>
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t.shopsTitle} data-testid="production-shop-filter">
+        {chip("all", t.allShops, !current)}
+        {shops.map((shop) => chip(shop.merchantId, shop.name, current?.merchantId === shop.merchantId, shop.itemCount))}
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {shown.map((shop) => (
+          <Card key={shop.merchantId} data-testid={`production-shop-${shop.name}`}>
+            <CardHeader className="flex flex-row items-baseline justify-between gap-3 space-y-0 pb-2">
+              <CardTitle className="min-w-0 text-lg">{shop.name}</CardTitle>
+              <span className="shrink-0 text-sm text-muted-foreground tabular-nums">{t.shopItems(shop.itemCount)}</span>
+            </CardHeader>
+            <CardContent>
+              <ul className="divide-y">
+                {shop.lines.map((line, index) => (
+                  <li key={`${line.productId}-${index}`} className="flex items-start justify-between gap-3 py-2.5">
+                    <span className="min-w-0">
+                      <span className="block text-base">
+                        {line.name} <span className="text-sm text-muted-foreground">· {line.unit}</span>
+                      </span>
+                      <span className="block text-xs text-muted-foreground">{line.categoryName}</span>
+                      {line.detail ? <span className="mt-0.5 block text-sm">{line.detail}</span> : null}
+                    </span>
+                    <span className="shrink-0 text-2xl font-semibold tabular-nums">{line.quantity}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </section>
   );
 }

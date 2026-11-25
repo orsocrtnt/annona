@@ -6,7 +6,7 @@ import { ProductionContent } from "@/features/production/production-content";
 export default function BakeryPage() {
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <ProductionContent />
+      <ProductionContent space="production" />
     </Suspense>
   );
 }

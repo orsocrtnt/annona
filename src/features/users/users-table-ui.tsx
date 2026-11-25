@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import { ROLE_LABELS } from "@/lib/permissions/rbac";
+import { roleLabelFor } from "@/lib/company/space-names";
+import { useSpaceNames } from "@/hooks/use-space-names";
 import { getRoleColor } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import type { SystemRole } from "@prisma/client";
@@ -30,7 +31,8 @@ export function TableUserEmail({ email }: { email: string }) {
 
 export function TableUserRole({ role, miniAdmin = false }: { role: SystemRole; miniAdmin?: boolean }) {
   // Lot 1, demande 4 : un administrateur limité s'affiche « Mini admin ».
-  const label = miniAdmin ? "Mini admin" : ROLE_LABELS[role] ?? role;
+  const spaceNames = useSpaceNames();
+  const label = miniAdmin ? "Mini admin" : roleLabelFor(role, spaceNames);
   return (
     <Badge
       variant="outline"

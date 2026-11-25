@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { miniAdminModulesSchema } from "@/lib/validations/user";
+import { SPACE_NAME_MAX } from "@/lib/company/space-names";
 
 /**
  * ADM-1 — saisies de l'administrateur de l'entreprise (clients, comptes, paramètres, tournées) et du
@@ -109,7 +110,20 @@ export const companySettingsSchema = z
       .min(0, "Délai du rappel : 0 minute au moins (0 = pas de rappel).")
       .max(1440, "Délai du rappel : 24 h au plus."),
     /** PLA-04 : unités proposées à la saisie d'un produit (l'unité reste libre). */
-    units: z.array(required("Unité", 40)).max(30, "30 unités au plus.").default([]),
+    // RETOURS-3 : sans valeur par défaut. Avec `.default([])`, enregistrer seulement le nom ou l'heure limite envoyait
+    // `units: []` au service, qui vidait la liste des unités (défaut présent depuis ADM-1).
+    units: z.array(required("Unité", 40)).max(30, "30 unités au plus."),
+    /** RETOURS-3 : noms des deux laboratoires (espaces `BAKER` et `PASTRY_CHEF`), choisis par le gérant. */
+    spaceNames: z
+      .object({
+        production: required("Nom du premier laboratoire", SPACE_NAME_MAX),
+        atelier: required("Nom du second laboratoire", SPACE_NAME_MAX),
+      })
+      .strict()
+      .refine(
+        (names) => names.production.replace(/\s+/g, " ").trim().toLocaleLowerCase("fr") !== names.atelier.replace(/\s+/g, " ").trim().toLocaleLowerCase("fr"),
+        "Les deux laboratoires doivent porter des noms différents."
+      ),
   })
   .partial()
   .strict()

@@ -16,6 +16,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import type { MiniAdminModuleId } from "@/lib/permissions/mini-admin";
 import { fr } from "@/lib/i18n/fr";
 import type { UpdateAccountRequest as UpdateAccountInput } from "@/lib/validations/company-admin";
+import { useSpaceNames } from "@/hooks/use-space-names";
 
 const t = fr.accounts;
 const ROLE_SLUGS: Record<Exclude<SystemRole, "SUPER_ADMIN">, UpdateAccountInput["roleSlug"]> = {
@@ -91,6 +92,7 @@ export function AccountStatusButton({ account, name }: { account: EditableAccoun
 /** ADM-01 : modifier nom, téléphone, rôle et client rattaché d'un compte. */
 export function EditUserDialog({ account, name }: { account: EditableAccount; name: string }) {
   const [open, setOpen] = useState(false);
+  const spaceNames = useSpaceNames();
   const mutation = useAccountMutation(account.id);
   const merchants = useMerchantChoices(open);
   const initialRole = account.role.systemRole === "SUPER_ADMIN" ? "admin" : ROLE_SLUGS[account.role.systemRole];
@@ -162,7 +164,7 @@ export function EditUserDialog({ account, name }: { account: EditableAccount; na
                 </SelectTrigger>
                 <SelectContent>
                   {kinds.map((slug) => (
-                    <SelectItem key={slug} value={slug}>{slug === "mini-admin" ? t.miniAdmin : slug === "admin" ? t.fullAdmin : t.roleOptions[slug]}</SelectItem>
+                    <SelectItem key={slug} value={slug}>{slug === "mini-admin" ? t.miniAdmin : slug === "admin" ? t.fullAdmin : slug === "baker" ? spaceNames.production : slug === "pastry-chef" ? spaceNames.atelier : t.roleOptions[slug]}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
