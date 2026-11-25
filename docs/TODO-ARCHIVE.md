@@ -4,6 +4,16 @@ Tâches closes et journal du nouveau produit. L'archive de l'ancien produit (cou
 
 ## Tâches closes
 
+- [x] **DEPLOY-1 — Mise en ligne automatique de `base` sur Vercel par GitHub Actions (remplace la liaison Git de SEP-1).**
+
+  **Fait par : Orso et Théo.**
+
+  - Contexte (23 novembre 2026) : la liaison Git Vercel ↔ GitHub est impossible depuis le compte Vercel de Théo (dépôt `orsocrtnt/annona` absent de la liste : l'application GitHub de Vercel est installée sur le compte d'Orso) et l'équipe `track-app2` est en offre Hobby (aucun second membre). Décision : déployer par GitHub Actions avec un jeton. Théo a créé le jeton « GitHub Actions annona » (équipe `track-app2`, expire le 24 novembre 2027) ; Orso a ajouté les secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID` et `VERCEL_PROJECT_ID` (vérifié par `gh secret list`).
+  - Fait (Claude de Théo, branche `theo/deploy-vercel`) : `.github/workflows/deploy-vercel.yml`. Push sur `base` et `workflow_dispatch` ; `permissions: contents: read` ; un déploiement à la fois, le plus récent l'emporte (pushs en attente remplacés, déploiement en cours jamais coupé) ; construction chez Vercel par `npx vercel@65.5.0 deploy --prod --yes --token` (ni `vercel pull` ni `vercel build`) ; jeton jamais affiché ; aucune commande Prisma ; URL du déploiement dans le résumé ; contrôle `/api/health` et `/login` en 200 ; arrêt sans déploiement si un secret manque.
+  - Vérifié dans Vercel avant la PR (lecture seule) : production sur `annona-dev` (les places de démo prises en cliquant sur le site en ligne apparaissent dans `annona-dev` à la minute près ; `DATABASE_URL` est de type Secret, illisible) ; crons de production actifs (`/api/cron/lock-orders` 16 h 05 UTC, `/api/cron/billing` 6 h 10 UTC, sur `annona-dev`, déjà le cas depuis le 15 novembre) ; domaines `annona-gray.vercel.app` et `annona-track-app2.vercel.app` seulement (ni annona.fr ni l'ancien produit) ; protection Vercel Authentication « Standard » (adresses de déploiement en 302, `annona-gray.vercel.app` public en 200). Les `cron-*.yml` visent la préproduction de l'ancien produit et exigent `VERCEL_AUTOMATION_BYPASS_SECRET`, absent du dépôt (signalé à Orso, seul à pouvoir l'ajouter) ; le nouveau workflow n'en a pas besoin.
+  - Vérifications : YAML valide (`js-yaml`) ; `npm run check` sortie 0 (951 tests, 943 réussis, 0 échec, 7 ignorés, après `npm run db:generate` : le client Prisma local ne connaissait pas encore la table de démo).
+  - **Close le 25 novembre 2026** (audit de fin de journée, Claude de Théo) : PR #82 fusionnée par Orso le 23 novembre ; **9 mises en ligne automatiques réussies sur 9** (onglet Actions, « Mise en ligne (Vercel) », du 23 au 25 novembre, dernière sur `798ed5a7`), dont celle de RETOURS-3 (`829706e1`) vérifiée sur le site en ligne. Plus besoin de redéployer à la main.
+
 - [x] **RECETTE-V1 — Recette des dix critères.**
 
   **Fait par : Orso et Théo.**
