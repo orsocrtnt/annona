@@ -10,7 +10,7 @@ import { ProductionContent } from "@/features/production/production-content";
 export default function PastryPage() {
   return (
     <Suspense fallback={<PageSkeleton />}>
-      <ProductionContent readOnly title="Atelier" />
+      <ProductionContent readOnly space="atelier" />
     </Suspense>
   );
 }

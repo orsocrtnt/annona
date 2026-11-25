@@ -181,7 +181,15 @@ test("ADM-09, PLA-04 : heure limite, fuseau, délai du rappel, nom et unités ; 
   const settings = db as unknown as CompanySettingsDb;
   assert.deepEqual((await getCompanySettings("A", settings)).units, ["pièce", "kg", "plaque", "lot de 10"]);
   const updated = await updateCompanySettings(ADMIN, { name: "Boulangerie Nouvelle", cutoffTime: "16:30", timezone: "Europe/Paris", reminderLeadMinutes: 90, units: ["pièce", "kg", "pièce", " barquette "] }, settings);
-  assert.deepEqual(updated, { name: "Boulangerie Nouvelle", cutoffTime: "16:30", timezone: "Europe/Paris", reminderLeadMinutes: 90, units: ["pièce", "kg", "barquette"] });
+  assert.deepEqual(updated, {
+    name: "Boulangerie Nouvelle",
+    cutoffTime: "16:30",
+    timezone: "Europe/Paris",
+    reminderLeadMinutes: 90,
+    units: ["pièce", "kg", "barquette"],
+    // RETOURS-3 : noms des laboratoires par défaut tant que le gérant ne les a pas choisis.
+    spaceNames: { production: "Laboratoire de production", atelier: "Second laboratoire" },
+  });
   assert.deepEqual((tables.company![0]!.settings as Row).billing, { invoice: { vatRate: 5.5 } });
   assert.equal(tables.auditLog!.filter((row) => row.entityType === "CompanySettings").length, 1);
   assert.equal(companySettingsSchema.safeParse({ cutoffTime: "25:00" }).success, false);

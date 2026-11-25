@@ -10,6 +10,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/services/prisma/client";
 import { DomainRuleError } from "@/lib/errors/domain-rule-error";
 import type { CompanySettingsInput } from "@/lib/validations/company-admin";
+import { readSpaceNames, type SpaceNames } from "@/lib/company/space-names";
 
 export type CompanySettingsDb = Pick<PrismaClient, "company" | "auditLog">;
 const defaultDb = () => prisma as unknown as CompanySettingsDb;
@@ -22,6 +23,8 @@ export interface CompanySettingsView {
   timezone: string;
   reminderLeadMinutes: number;
   units: string[];
+  /** RETOURS-3 : noms des deux laboratoires (espaces production et atelier). */
+  spaceNames: SpaceNames;
 }
 
 function settingsObject(value: Prisma.JsonValue | null | undefined): Record<string, Prisma.JsonValue> {
@@ -42,6 +45,7 @@ export async function getCompanySettings(companyId: string, db: CompanySettingsD
     timezone: company.timezone,
     reminderLeadMinutes: company.reminderLeadMinutes,
     units: readUnits(company.settings),
+    spaceNames: readSpaceNames(company.settings),
   };
 }
 
@@ -58,10 +62,15 @@ export async function updateCompanySettings(
   if (input.cutoffTime !== undefined) data.cutoffTime = input.cutoffTime;
   if (input.timezone !== undefined) data.timezone = input.timezone;
   if (input.reminderLeadMinutes !== undefined) data.reminderLeadMinutes = input.reminderLeadMinutes;
-  if (input.units !== undefined) {
-    const units = [...new Set(input.units.map((unit) => unit.trim()).filter(Boolean))];
+  if (input.units !== undefined || input.spaceNames !== undefined) {
     // Réclamation : la ligne n'a pas changé depuis la lecture (les autres réglages JSON sont gardés).
-    data.settings = { ...settingsObject(company.settings), units } as Prisma.InputJsonValue;
+    const settings = settingsObject(company.settings);
+    if (input.units !== undefined) settings.units = [...new Set(input.units.map((unit) => unit.trim()).filter(Boolean))];
+    if (input.spaceNames !== undefined) {
+      const clean = (name: string) => name.replace(/\s+/g, " ").trim();
+      settings.spaceNames = { production: clean(input.spaceNames.production), atelier: clean(input.spaceNames.atelier) };
+    }
+    data.settings = settings as Prisma.InputJsonValue;
   }
   const { count } = await db.company.updateMany({ where: { id: actor.companyId, updatedAt: company.updatedAt }, data });
   if (count === 0) throw new Error("SETTINGS_CONFLICT");

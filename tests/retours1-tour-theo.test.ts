@@ -119,7 +119,8 @@ test("RETOURS-1 / lot 2 demande 1 : le rôle SELLER s'affiche « Vente », ni «
 test("RETOURS-2 (recette du 22 novembre) : l'en-tête affiche « Vente », pas le nom « Vendeuse » gardé en base", () => {
   // Le rôle en base s'appelle encore « Vendeuse » (migration 20261118100100) : l'en-tête prend le libellé du code.
   const header = readFileSync("src/components/layouts/header.tsx", "utf8");
-  assert.match(header, /ROLE_LABELS\[user\.role\.systemRole\]/);
+  // RETOURS-3 : libellé du code, et pour les deux laboratoires le nom choisi par le gérant.
+  assert.match(header, /roleLabelFor\(user\.role\.systemRole, spaceNames\)/);
   assert.doesNotMatch(header, /\{user\?\.role\.name \?\? "—"\}/);
   // Les futurs seeds créent directement « Vente ».
   assert.match(readFileSync("prisma/reference-data.ts", "utf8"), /slug: "seller", name: "Vente"/);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSpaceNames } from "@/hooks/use-space-names";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataGrid } from "@/components/ui/data-grid";
@@ -48,8 +49,8 @@ const ROLE_FILTER_OPTIONS: { value: RoleFilter; label: string }[] = [
   { value: "DRIVER", label: "Livreurs" },
   { value: "BAKER", label: "Production" },
   { value: "PASTRY_CHEF", label: "Atelier" },
-  { value: "SELLER", label: "Vente" },
-  { value: "ADMIN", label: "Administrateurs" },
+  { value: "SELLER", label: "Point de vente" },
+  { value: "ADMIN", label: "Gérants" },
 ];
 
 const ROLE_SORT_ORDER: Record<SystemRole, number> = {
@@ -75,6 +76,15 @@ export default function UsersPage() {
   // Lot 1, demande 4 : un mini admin ne gère pas les comptes administrateur et mini admin.
 
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  // RETOURS-3 : les deux laboratoires prennent le nom choisi par le gérant.
+  const spaceNames = useSpaceNames();
+  const roleFilterOptions = useMemo(
+    () =>
+      ROLE_FILTER_OPTIONS.map((option) =>
+        option.value === "BAKER" ? { ...option, label: spaceNames.production } : option.value === "PASTRY_CHEF" ? { ...option, label: spaceNames.atelier } : option
+      ),
+    [spaceNames]
+  );
   const { data: users, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: fetchUsers,
@@ -203,7 +213,7 @@ export default function UsersPage() {
         <CardHeader className="space-y-4">
           <CardTitle className="text-base">Comptes</CardTitle>
           <div className="flex flex-wrap gap-2">
-            {ROLE_FILTER_OPTIONS.map((option) => (
+            {roleFilterOptions.map((option) => (
               <Button
                 key={option.value}
                 type="button"
@@ -230,7 +240,7 @@ export default function UsersPage() {
             emptyTitle={
               roleFilter === "all"
                 ? "Aucun utilisateur"
-                : `Aucun compte « ${ROLE_FILTER_OPTIONS.find((o) => o.value === roleFilter)?.label ?? ""} »`
+                : `Aucun compte « ${roleFilterOptions.find((o) => o.value === roleFilter)?.label ?? ""} »`
             }
             emptyDescription={platformReadOnly ? "Aucun compte ne correspond à cette recherche." : "Créez un compte avec le bouton « Inviter un utilisateur »."}
           />

@@ -14,6 +14,8 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
 
 export const backOfficeApi = {
   getSupportTickets: () => fetchJson<CompanySupportTicket[]>("/api/support"),
+  /** RETOURS-3 : demandes nouvelles, pour la pastille rouge du menu du gérant. */
+  getSupportSummary: () => fetchJson<{ openTickets: number }>("/api/support/summary"),
   addSupportMessage: (ticketId: string, body: string) =>
     fetchJson<CompanySupportTicket>(`/api/support/${ticketId}`, {
       method: "POST",

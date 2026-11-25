@@ -6,6 +6,8 @@ export interface ProductionTotalProduct {
   name: string;
   unit: string;
   quantity: number;
+  /** RETOURS-3 : part du total qui part vers les points de vente de l'entreprise (envois et commandes sur mesure). */
+  shopQuantity?: number;
 }
 
 export interface ProductionTotalCategory {
@@ -79,6 +81,25 @@ export interface ProductionProductDetail {
   recipients: ProductionRecipient[];
 }
 
+/** RETOURS-3 : une ligne de l'envoi du jour vers un point de vente (produit, ou commande sur mesure avec son détail). */
+export interface ProductionShopLine {
+  productId: string;
+  name: string;
+  unit: string;
+  categoryName: string;
+  quantity: number;
+  /** Commande sur mesure : taille, inscription, instructions et particulier qui la retire. */
+  detail: string | null;
+}
+
+/** RETOURS-3 : ce que le laboratoire produit pour un point de vente le jour choisi (onglet « Par point de vente »). */
+export interface ProductionShop {
+  merchantId: string;
+  name: string;
+  itemCount: number;
+  lines: ProductionShopLine[];
+}
+
 export interface ProductionDay {
   date: string;
   cutoffAt: string;
@@ -91,6 +112,8 @@ export interface ProductionDay {
   totals: ProductionTotalCategory[];
   sheets: PreparationSheet[];
   rounds: LoadingRound[];
+  /** RETOURS-3 : production destinée à chaque point de vente (déjà comptée dans `totals`), avant comme après l'heure limite. */
+  shops: ProductionShop[];
   /** Pâtissier seulement (RETOURS-1) : détail « pour qui » de chaque produit du total, par `productId`. */
   details?: Record<string, ProductionProductDetail>;
 }

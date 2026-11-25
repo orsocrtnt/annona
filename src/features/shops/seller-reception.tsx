@@ -74,7 +74,8 @@ export function SellerReception() {
                 <Fragment key={line.productId}>
                 <ShelfHeading lines={data.lines} index={index} />
                 <li className="flex flex-wrap items-center gap-3 py-3" data-testid={`reception-${line.name}`}>
-                  <div className="min-w-0 flex-1">
+                  {/* RETOURS-3 : 12 rem au moins pour le nom ; sur téléphone, « Reçu » et « Abîmé » passent dessous. */}
+                  <div className="min-w-[12rem] flex-1">
                     <p className="text-lg font-medium">{line.name}</p>
                     <p className="text-sm text-muted-foreground">Envoyé : {line.sent} {line.unit}</p>
                   </div>

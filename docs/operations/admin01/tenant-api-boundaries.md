@@ -42,4 +42,5 @@ Ces routes n'appellent pas `getCompanyId`. Elles passent par un garde partagé d
 | src/app/api/support/[id]/route.ts | POST | requireSupportStaff |
 | src/app/api/support/[id]/route.ts | PATCH | requireSupportStaff |
 | src/app/api/support/route.ts | GET | requireSupportStaff |
+| src/app/api/support/summary/route.ts | GET | requireSupportStaff |
 <!-- INDIRECT_COMPANY_BOUNDARIES_END -->

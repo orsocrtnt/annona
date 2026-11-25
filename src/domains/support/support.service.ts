@@ -133,6 +133,14 @@ export async function getStaffTickets(companyId: string) {
   });
 }
 
+/**
+ * RETOURS-3 (notes du tour 2 de Théo) : demandes de support pas encore prises en charge (statut « Ouverte ») ; le
+ * menu du gérant les signale par une pastille rouge sur « Support ». Même portée que la liste (son entreprise).
+ */
+export async function countNewStaffTickets(companyId: string): Promise<number> {
+  return prisma.supportTicket.count({ where: { ...staffTicketScope(companyId), status: "OPEN" } });
+}
+
 export async function getStaffTicketById(companyId: string, ticketId: string) {
   return prisma.supportTicket.findFirst({
     where: { id: ticketId, ...staffTicketScope(companyId) },

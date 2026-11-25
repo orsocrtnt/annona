@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Building2, Users, Settings, Activity, Truck, Package, Shield, UserCircle, Receipt,
-  HeadphonesIcon, BookOpen, Route, Tag, Navigation, Store, MonitorPlay, Factory, Boxes, ClipboardList } from "lucide-react";
+  HeadphonesIcon, BookOpen, Route, Tag, Navigation, Store, MonitorPlay, ChefHat } from "lucide-react";
 import type { NavItem } from "@/types";
 
 /** Groupes du menu super-administrateur (ADMIN-ESPACE, lot 1). */
@@ -35,7 +35,7 @@ export const companyNavItems: NavItem[] = [
 
 /** Boulanger : un seul espace, la production. */
 export const bakerNavItems: NavItem[] = [
-  { title: "Production", href: "/bakery", icon: Factory },
+  { title: "Production", href: "/bakery", icon: ChefHat },
   // Lot 2, demande 3 : durée de vente du pain.
   { title: "Durée de vente", href: "/bakery/products", icon: BookOpen },
   // Lot 2, demande 5 : envois quotidiens vers les boutiques.
@@ -52,13 +52,13 @@ export const sellerNavItems: NavItem[] = [
   { title: "Clôture du soir", href: "/shop/closing", icon: Receipt },
   { title: "Stock", href: "/shop/stock", icon: BookOpen },
   // Lot 2, demande 9 : commandes de gâteaux des particuliers.
-  { title: "Commandes sur mesure", href: "/shop/cakes", icon: ClipboardList },
+  { title: "Commandes sur mesure", href: "/shop/cakes", icon: ChefHat },
   { title: "Paramètres", href: "/shop/settings", icon: Settings },
 ];
 
 /** Lot 2, demande 2 : espace pâtissier. */
 export const pastryNavItems: NavItem[] = [
-  { title: "Atelier", href: "/pastry", icon: Boxes },
+  { title: "Atelier", href: "/pastry", icon: ChefHat },
   // Lot 2, demande 3 : fiches, recettes et durées de vente des pâtisseries.
   { title: "Mes produits", href: "/pastry/products", icon: BookOpen },
   { title: "Envois aux points de vente", href: "/pastry/shipments", icon: Truck },

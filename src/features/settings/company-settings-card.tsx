@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCompanySettings, useUpdateCompanySettings } from "@/features/settings/hooks";
 import { fr } from "@/lib/i18n/fr";
 import { COMPANY_TIMEZONES } from "@/lib/validations/company-admin";
+import { SPACE_NAME_MAX } from "@/lib/company/space-names";
+import { applySpaceNamesToSession } from "@/hooks/use-space-names";
 
 const t = fr.companySettings;
 
@@ -22,6 +24,8 @@ export function CompanySettingsCard() {
   const [timezone, setTimezone] = useState("Europe/Paris");
   const [lead, setLead] = useState("120");
   const [units, setUnits] = useState("");
+  const [production, setProduction] = useState("");
+  const [atelier, setAtelier] = useState("");
 
   // Valeurs posées une seule fois au chargement : une saisie en cours n'est jamais écrasée.
   const loaded = useRef(false);
@@ -33,9 +37,11 @@ export function CompanySettingsCard() {
     setTimezone(settings.data.timezone);
     setLead(String(settings.data.reminderLeadMinutes));
     setUnits(settings.data.units.join(", "));
+    setProduction(settings.data.spaceNames.production);
+    setAtelier(settings.data.spaceNames.atelier);
   }, [settings.data]);
 
-  const save = (section: "identity" | "ordering" | "units") => (event: React.FormEvent) => {
+  const save = (section: "identity" | "ordering" | "units" | "spaces") => (event: React.FormEvent) => {
     event.preventDefault();
     // Avant le chargement, les champs portent des valeurs par défaut (17:00, Europe/Paris) : les enregistrer
     // écraserait le fuseau et le délai réels de l'entreprise (RECETTE-V1).
@@ -45,8 +51,17 @@ export function CompanySettingsCard() {
         ? { name }
         : section === "ordering"
           ? { cutoffTime, timezone, reminderLeadMinutes: Number.parseInt(lead, 10) }
-          : { units: units.split(",").map((unit) => unit.trim()).filter(Boolean) };
-    update.mutate(input, { onSuccess: () => toast.success(t.saved), onError: (error) => toast.error(error.message) });
+          : section === "units"
+            ? { units: units.split(",").map((unit) => unit.trim()).filter(Boolean) }
+            : { spaceNames: { production, atelier } };
+    update.mutate(input, {
+      onSuccess: (saved) => {
+        // RETOURS-3 : le menu, l'en-tête et les écrans prennent les nouveaux noms sans recharger la page.
+        if (section === "spaces") applySpaceNamesToSession(saved.spaceNames);
+        toast.success(section === "spaces" ? t.spacesSaved : t.saved);
+      },
+      onError: (error) => toast.error(error.message),
+    });
   };
 
   if (settings.error) return <p className="text-sm text-destructive">{settings.error.message}</p>;
@@ -113,6 +128,24 @@ export function CompanySettingsCard() {
               <Input value={units} onChange={(event) => setUnits(event.target.value)} placeholder="pièce, kg, plaque" />
             </FormField>
             <Button type="submit" variant="outline" disabled={!settings.data} loading={update.isPending && update.variables && "units" in update.variables}>{fr.common.save}</Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t.spaces}</CardTitle>
+          <CardDescription>{t.spacesHint}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={save("spaces")} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+            <FormField label={t.spaceProduction}>
+              <Input value={production} onChange={(event) => setProduction(event.target.value)} maxLength={SPACE_NAME_MAX} required data-testid="space-name-production" />
+            </FormField>
+            <FormField label={t.spaceAtelier}>
+              <Input value={atelier} onChange={(event) => setAtelier(event.target.value)} maxLength={SPACE_NAME_MAX} required data-testid="space-name-atelier" />
+            </FormField>
+            <Button type="submit" variant="outline" disabled={!settings.data} loading={update.isPending && update.variables && "spaceNames" in update.variables}>{fr.common.save}</Button>
           </form>
         </CardContent>
       </Card>

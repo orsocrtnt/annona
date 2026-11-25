@@ -4,9 +4,9 @@
 <!-- TODO_PROGRESS_START -->
 ## Progression globale
 
-**25 tâches terminées sur 48 — 52 %**
+**25 tâches terminées sur 49 — 51 %**
 
-`██████████░░░░░░░░░░` · 23 tâches restantes
+`██████████░░░░░░░░░░` · 24 tâches restantes
 
 **Qui a fait quoi**
 
@@ -19,6 +19,7 @@
 
 - UNIV-1 — Annona universelle : vocabulaire neutre pour tous les métiers (glacier, boucherie, boissons…) (finir le passage du site au vocabulaire neutre, vérifier (`npm run check`, clic navigateur) ; puis Orso : relire les libellés)
 - VIDEO-1 — Vidéo de présentation d'Annona pour les boulangeries, sur le modèle de la vidéo TutelLiv (v4 universelle : voix sans sauts, caméra fluide sur le livreur, habillage multi-métiers, recapture des écrans après UNIV-1 ; puis Orso : regarder la v4)
+- RETOURS-3 — Retouches des notes du tour 2 de Théo (`outputs/notes-tour-2.md`, 24 novembre) : laboratoires nommés, production par point de vente, gérant, démo (finir la recette navigateur, la revue de sécurité, puis PR vers `base` et vérification du site en ligne après le déploiement automatique (DEPLOY-1))
 
 **À faire par Orso**
 
@@ -649,6 +650,24 @@ _Source : `outputs/retouche/Demandes de modification - lot 1.pdf` (9 demandes, o
   - Ensuite : Claude classe les remarques en tâches (avec les identifiants du cahier des charges), Orso tranche les ajouts.
 
   Terminé quand : le tour des quatre espaces est fait et les remarques sont notées dans `docs/rapports/`.
+
+- [ ] **RETOURS-3 — Retouches des notes du tour 2 de Théo (`outputs/notes-tour-2.md`, 24 novembre) : laboratoires nommés, production par point de vente, gérant, démo.**
+
+  **En cours : Théo.**
+
+  **Qui : Claude — finir la recette navigateur, la revue de sécurité, puis PR vers `base` et vérification du site en ligne après le déploiement automatique (DEPLOY-1).**
+
+  - **Demande de Théo (24 novembre 2026)**, accord d'Orso annoncé par Théo (UNIV-1 et DEMO-1 sont « En cours : Orso » ; Théo indique qu'Orso est d'accord pour ces changements). Choix de Théo : garder **deux** espaces de production renommables (pas de laboratoires illimités, donc pas de migration). Écart assumé avec `docs/VOCABULAIRE.md` (noms fixes « Production » et « Atelier ») : les noms deviennent un réglage de l'entreprise ; les noms par défaut restent neutres.
+  - **Laboratoires nommés par le gérant** : `Company.settings.spaceNames` (`src/lib/company/space-names.ts`, sans migration) ; Paramètres › « Laboratoires » (deux champs, 40 caractères, noms différents, journal « CompanySettings ») ; le nom choisi s'affiche dans le menu, l'en-tête, le titre de l'écran Production, la liste des comptes, son filtre et les fenêtres de création et de modification. Par défaut : « Laboratoire de production » (rôle interne `BAKER`) et « Second laboratoire » (`PASTRY_CHEF`). « Administrateur » devient « Gérant » (`ROLE_LABELS`, `fr.accounts`). Identifiants internes et routes `/bakery`, `/pastry` inchangés.
+  - **Production par point de vente (BOU-01, LOT2-D5, LOT2-D9)**, pour les deux laboratoires : les envois aux points de vente étaient déjà comptés dans le total (commandes verrouillées dès leur création) ; chaque produit affiche maintenant « dont N pour les points de vente », et un **quatrième onglet** « Par point de vente » s'ajoute à « À produire », « Par client » et « Par tournée » (les quatre toujours affichés ; avant l'heure limite, « Par client » et « Par tournée » disent qu'ils se remplissent à l'heure limite). Il liste, pour chaque point de vente ou pour un seul choisi, ses produits et ses commandes sur mesure (taille, inscription, instructions, particulier et heure de retrait).
+  - **Gérant (ADM-1)** : flèche « ← Tableau de bord » en haut à gauche de ses pages (hors tableau de bord) ; pastille **rouge** sur « Support » avec le nombre de demandes pas encore prises en charge (statut « Ouverte »), nouvelle route `GET /api/support/summary` (même garde `requireSupportStaff` que la liste : gérant avec `support:read`, entreprise de la session ; ajoutée à `docs/operations/admin01/tenant-api-boundaries.md`), rafraîchie chaque minute et après chaque réponse.
+  - **Démo** : « Gérant », « Laboratoire boulanger », « Laboratoire de pâtisserie » (même type de compte, seuls les noms diffèrent, renommables par le visiteur dans Paramètres) ; le second point de vente a noté la réception du jour, donc son stock du jour se lit (environ 300 produits) ; celui du compte « Point de vente » garde sa réception à faire sur la tablette (choix d'Orso). Les tournées de démo gardent l'optimisation de DISPATCH-OPTIM (essai de livrer les points de vente en premier abandonné : il cassait ce test).
+  - **Défaut trouvé et corrigé au passage (présent depuis ADM-1)** : enregistrer seulement le nom de l'entreprise ou l'heure limite dans Paramètres vidait la liste des unités proposées (`units` avait `.default([])` dans `companySettingsSchema`).
+  - Tests : `tests/retours3-tour-theo-2.test.ts` (5 tests : noms et menu, Paramètres et journal, production par point de vente avant et après l'heure limite et isolation, flèche et pastille, démo) ; mis à jour : `adm1-admin`, `admin01-indirect-company-boundaries`, `demo1-scenario`, `retours1-tour-theo`.
+  - **Retours de Théo sur la première version (25 novembre)** : (1) avant l'heure limite, seuls « À produire » et « Par point de vente » s'affichaient : corrigé, les quatre onglets sont toujours là ; (2) icônes remises comme avant le 24 novembre (chantier UNIV-1 d'Orso, #87 ; les noms restent, choix de Théo) : toque (`ChefHat`) pour les deux laboratoires et « Commandes sur mesure » dans le menu, gâteau sur le titre « Commandes sur mesure », croissant pour un produit sans photo ; titres de rayon de la réception et de la clôture redevenus « Pâtisserie » et « Boulangerie » ; (3) **texte qui se chevauchait sur téléphone** dans le point de vente (vu dans la démo en ligne) : le nom du produit était écrasé à côté des champs « Reçu » et « Abîmé » (nom coupé mot par mot, « chocolat » sur « Reçu ») depuis les champs plus grands de DA-1 ; le nom garde maintenant 12 rem et les champs passent dessous (réception et clôture du soir) ; la pastille « Démo » flottait à 5,5 rem du bas, au milieu des cartes : collée en bas de l'écran (0,75 rem).
+  - **Vérifié (25 novembre)** : recette navigateur sur serveur local (`next dev`, port 3100, `annona-dev`, comptes de démo) : gérant (en-tête « Gérant », flèche absente sur le tableau de bord puis visible après « Voir les commandes » et retour, `/api/support/summary` 200 sans pastille à 0 demande, Paramètres › Laboratoires enregistré, deux noms identiques refusés 400, noms visibles dans Comptes et le filtre, aucun débordement) ; laboratoires (nom choisi dans l'en-tête, le menu et le titre ; « dont N pour les points de vente » ; quatre onglets aux deux dates, avant et après l'heure limite ; filtre par point de vente 3 → 1 → 3 cartes, gardé dans l'adresse, ordinateur et téléphone 390 px, aucun débordement ; sombre sur `/bakery`) ; droits (laboratoire refusé 403 sur `/api/support/summary` et sur le renommage, sans connexion 401) ; démo locale sur téléphone (pastille à 12 px du bas, réception, clôture, stock, commandes sur mesure : aucun chevauchement, aucun nom écrasé, aucune erreur JS, place rendue par « Quitter ») ; 0 erreur JS partout. Noms d'essai « Labo test-theo » posés puis retirés de l'entreprise « Boulangerie Démo Annona » (clé `spaceNames` supprimée, autres réglages intacts). Revue de sécurité de la branche (agent) : aucune faille ; remarque produit : le premier laboratoire voit le nom et l'heure de retrait du particulier des commandes sur mesure de sa famille.
+  - **Non vérifié** : site en ligne (après fusion et déploiement automatique).
+  - Non fait : laboratoires illimités (écarté par Théo) ; le pâtissier reste en lecture seule sur ses bons (pas de « préparé » ni de manquant, LOT2-D2) ; libellés du super-administrateur (fiche entreprise, recherche) gardent les noms génériques.
 
 - [ ] **RETOURS-2 — Retouches des notes du tour de Théo (`outputs/notes-tour.md`, 21 novembre).**
 

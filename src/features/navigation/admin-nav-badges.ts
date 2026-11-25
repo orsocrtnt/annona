@@ -12,6 +12,17 @@ function badgeFor(count: number, label: (count: number) => string) {
   return { badge: count > ADMIN_BADGE_MAX ? `${ADMIN_BADGE_MAX}+` : count, badgeLabel: label(count) };
 }
 
+/**
+ * RETOURS-3 : pastille rouge du gérant sur « Support » quand une demande n'a pas encore été prise en charge.
+ * Aucune pastille à zéro.
+ */
+export function applyCompanyNavBadges(items: NavItem[], counts: { openTickets: number } | null | undefined): NavItem[] {
+  if (!counts) return items;
+  const extra = badgeFor(counts.openTickets, (n) => `${n} ${n > 1 ? "nouvelles demandes" : "nouvelle demande"} de support`);
+  if (extra.badge === undefined) return items;
+  return items.map((item) => (item.href === "/support" ? { ...item, ...extra, badgeTone: "alert" as const } : item));
+}
+
 /** Pastille des tickets support ouverts ou en cours. Aucune pastille à zéro. */
 export function applyAdminNavBadges(items: NavItem[], counts: AdminNavCounts | null | undefined): NavItem[] {
   if (!counts) return items;

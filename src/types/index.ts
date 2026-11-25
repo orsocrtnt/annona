@@ -76,6 +76,8 @@ export interface NavItem {
   badge?: string | number;
   /** Texte lu par les lecteurs d'écran à la place de la pastille (ex. « 3 nouveaux »). */
   badgeLabel?: string;
+  /** RETOURS-3 : pastille rouge (« alert ») pour ce qui attend une action, sinon couleur de la marque. */
+  badgeTone?: "brand" | "alert";
   /** Titre de section du menu ; les entrées consécutives d'un même groupe sont rendues ensemble. */
   group?: string;
   disabled?: boolean;
