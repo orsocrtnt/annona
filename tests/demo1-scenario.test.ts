@@ -224,10 +224,13 @@ test("DEMO-1, lot 2 : pâtisserie, points de vente, envois, stock et gâteaux de
       if (time(shipment.deliveryDate) === tomorrowDb) assert.equal(shipment.status, "LOCKED");
     }
 
-    // LOT2-D6 : réception notée les jours passés ; aujourd'hui, à noter sur la tablette.
+    // LOT2-D6 : réception notée les jours passés ; aujourd'hui, à noter sur la tablette du compte de démo. RETOURS-3 :
+    // le second point de vente a déjà noté la réception du jour une fois livré (stock du jour lisible).
+    const demoShopId = scenario.users.find((user) => user.persona === "seller")!.merchantId;
     for (const shipment of shipments) {
       const lines = scenario.orderLines.filter((line) => line.orderId === shipment.id && !line.cakeOrderId);
-      if (time(shipment.deliveryDate) < todayDb) {
+      const receivedToday = time(shipment.deliveryDate) === todayDb && shipment.merchantId !== demoShopId && shipment.status === "DELIVERED";
+      if (time(shipment.deliveryDate) < todayDb || receivedToday) {
         assert.ok(shipment.receivedAt instanceof Date);
         assert.ok(lines.every((line) => line.quantityReceived != null && Number(line.quantityDamaged) <= Number(line.quantityReceived)));
       } else {
@@ -235,6 +238,10 @@ test("DEMO-1, lot 2 : pâtisserie, points de vente, envois, stock et gâteaux de
         assert.ok(lines.every((line) => line.quantityReceived == null));
       }
     }
+    assert.ok(
+      shipments.some((shipment) => time(shipment.deliveryDate) === todayDb && shipment.merchantId !== demoShopId && shipment.receivedAt instanceof Date),
+      "le second point de vente a reçu l'envoi du jour"
+    );
 
     // LOT2-D7 : clôtures des jours passés cohérentes (ventes = stock du matin + reçu en bon état − reste du soir),
     // et lots restants = ce que la dernière clôture a gardé.
@@ -249,7 +256,10 @@ test("DEMO-1, lot 2 : pâtisserie, points de vente, envois, stock et gâteaux de
       const closes = scenario.shopDayCloses.filter((close) => close.shopId === shop.id);
       const lastDay = Math.max(...closes.map((close) => time(close.date)));
       for (const close of closes.filter((row) => time(row.date) === lastDay)) {
-        const kept = scenario.shopStockLots.filter((lot) => lot.shopId === shop.id && lot.productId === close.productId).reduce((sum, lot) => sum + lot.quantity, 0);
+        // Les lots reçus aujourd'hui (RETOURS-3, second point de vente) n'ont pas encore de clôture.
+        const kept = scenario.shopStockLots
+          .filter((lot) => lot.shopId === shop.id && lot.productId === close.productId && time(lot.receivedOn) < todayDb)
+          .reduce((sum, lot) => sum + lot.quantity, 0);
         assert.equal(kept, close.remaining - close.discardedDamaged - close.discardedExpired, String(close.productId));
       }
     }

@@ -19,6 +19,7 @@ import type { MiniAdminModuleId } from "@/lib/permissions/mini-admin";
 import { fr } from "@/lib/i18n/fr";
 import { createUserSchema, type CreateUserInput } from "@/lib/validations/user";
 import { UserPlus } from "lucide-react";
+import { useSpaceNames } from "@/hooks/use-space-names";
 import { toast } from "sonner";
 
 const t = fr.accounts;
@@ -45,6 +46,7 @@ interface CreateUserDialogProps {
 export function CreateUserDialog({ merchant: client, shop, triggerLabel = "Inviter un utilisateur" }: CreateUserDialogProps = {}) {
   const merchant = client ?? shop;
   const [open, setOpen] = useState(false);
+  const spaceNames = useSpaceNames();
   const queryClient = useQueryClient();
   const merchants = useMerchantChoices(open && !merchant);
   const { isFullAdmin } = usePermissions();
@@ -151,7 +153,7 @@ export function CreateUserDialog({ merchant: client, shop, triggerLabel = "Invit
                 <SelectContent>
                   {ROLE_OPTIONS.filter((option) => isFullAdmin || !option.fullAdminOnly).map((option) => (
                     <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                      {option.value === "baker" ? spaceNames.production : option.value === "pastry-chef" ? spaceNames.atelier : option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -66,11 +66,11 @@ function SidebarNavLink({
       {!sidebarCollapsed && (
         <>
           <span className="flex-1">{item.title}</span>
-          {item.badge !== undefined && <NavBadge value={item.badge} label={item.badgeLabel} />}
+          {item.badge !== undefined && <NavBadge value={item.badge} label={item.badgeLabel} tone={item.badgeTone} />}
         </>
       )}
       {sidebarCollapsed && item.badge !== undefined && (
-        <span aria-hidden className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand" />
+        <span aria-hidden className={cn("absolute right-2 top-2 h-2 w-2 rounded-full", item.badgeTone === "alert" ? "bg-destructive" : "bg-brand")} />
       )}
     </Link>
   );

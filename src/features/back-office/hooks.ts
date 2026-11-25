@@ -13,6 +13,17 @@ export function useCompanySupportTickets() {
   });
 }
 
+/** RETOURS-3 : la clé commence par celle de la liste, donc une réponse ou un changement de statut la rafraîchit. */
+export function useCompanySupportSummary(enabled: boolean) {
+  return useQuery({
+    queryKey: ["company", "support", "summary"],
+    queryFn: backOfficeApi.getSupportSummary,
+    enabled,
+    staleTime: 30_000,
+    refetchInterval: enabled ? 60_000 : false,
+  });
+}
+
 export function useAddStaffSupportMessage() {
   const qc = useQueryClient();
   return useMutation({

@@ -23,6 +23,8 @@ import type {
   PreparationSheet,
   ProductionDay,
   ProductionProductDetail,
+  ProductionShop,
+  ProductionShopLine,
   ProductionTotalCategory,
 } from "@/domains/production/production.types";
 import { allergenLabel, productAllergens } from "@/domains/catalog/allergens";
@@ -110,12 +112,18 @@ const BAKER_WRITABLE: readonly OrderStatus[] = ["LOCKED", "PREPARED"];
  * catégorie (ordre du catalogue). Les produits à zéro n'apparaissent pas.
  */
 export function computeProductionTotals(
-  lines: ReadonlyArray<{ productId: string; quantityOrdered: number }>,
+  lines: ReadonlyArray<{ productId: string; quantityOrdered: number; orderId?: string }>,
   products: ReadonlyArray<{ id: string; name: string; unit: string; categoryId: string; sortOrder: number }>,
-  categories: ReadonlyArray<{ id: string; name: string; sortOrder: number }>
+  categories: ReadonlyArray<{ id: string; name: string; sortOrder: number }>,
+  /** RETOURS-3 : commandes qui partent vers un point de vente de l'entreprise (envois) ; leur part est signalée. */
+  shopOrderIds: ReadonlySet<string> = new Set()
 ): ProductionTotalCategory[] {
   const sums = new Map<string, number>();
-  for (const line of lines) sums.set(line.productId, (sums.get(line.productId) ?? 0) + line.quantityOrdered);
+  const shopSums = new Map<string, number>();
+  for (const line of lines) {
+    sums.set(line.productId, (sums.get(line.productId) ?? 0) + line.quantityOrdered);
+    if (line.orderId && shopOrderIds.has(line.orderId)) shopSums.set(line.productId, (shopSums.get(line.productId) ?? 0) + line.quantityOrdered);
+  }
   const productById = new Map(products.map((product) => [product.id, product]));
   const categoryById = new Map(categories.map((category) => [category.id, category]));
   const groups = new Map<string, ProductionTotalCategory & { sortOrder: number; productOrder: Map<string, number> }>();
@@ -135,7 +143,8 @@ export function computeProductionTotals(
         productOrder: new Map<string, number>(),
       };
     group.quantity += quantity;
-    group.products.push({ productId, name: product?.name ?? productId, unit: product?.unit ?? "", quantity });
+    const shopQuantity = shopSums.get(productId) ?? 0;
+    group.products.push({ productId, name: product?.name ?? productId, unit: product?.unit ?? "", quantity, ...(shopQuantity > 0 ? { shopQuantity } : {}) });
     group.productOrder.set(productId, product?.sortOrder ?? 0);
     groups.set(key, group);
   }
@@ -154,6 +163,105 @@ export function computeProductionTotals(
 // ---------------------------------------------------------------------------
 // Lecture
 // ---------------------------------------------------------------------------
+
+/**
+ * RETOURS-3 (notes du tour 2 de Théo) : onglet « Par point de vente » des deux laboratoires. Pour chaque point de vente
+ * qui reçoit un envoi le jour choisi : ses produits (de la famille du laboratoire), et chaque commande sur mesure
+ * avec sa taille, son inscription, ses instructions et le particulier qui la retire.
+ */
+async function buildShopProduction(
+  db: ProductionDb,
+  companyId: string,
+  shopMerchants: ReadonlyArray<{ id: string; name: string; tradeName: string | null }>,
+  orders: ReadonlyArray<{ id: string; merchantId: string }>,
+  lines: ReadonlyArray<{
+    orderId: string;
+    productId: string;
+    quantityOrdered: number;
+    sizeId?: string | null;
+    inscription?: string | null;
+    note?: string | null;
+    cakeOrderId?: string | null;
+  }>,
+  products: ReadonlyArray<{ id: string; name: string; unit: string; categoryId: string; sortOrder: number }>,
+  categories: ReadonlyArray<{ id: string; name: string; sortOrder: number }>
+): Promise<ProductionShop[]> {
+  if (shopMerchants.length === 0) return [];
+  const shopIds = new Set(shopMerchants.map((shop) => shop.id));
+  const merchantOfOrder = new Map(orders.map((order) => [order.id, order.merchantId]));
+  const shopLines = lines.filter((line) => shopIds.has(merchantOfOrder.get(line.orderId) ?? ""));
+  const sizeIds = [...new Set(shopLines.map((line) => line.sizeId).filter((id): id is string => Boolean(id)))];
+  const cakeIds = [...new Set(shopLines.map((line) => line.cakeOrderId).filter((id): id is string => Boolean(id)))];
+  const [sizes, cakes] = await Promise.all([
+    sizeIds.length ? db.productSize.findMany({ where: { companyId, id: { in: sizeIds } }, select: { id: true, servings: true } }) : [],
+    cakeIds.length && db.cakeOrder
+      ? db.cakeOrder.findMany({ where: { companyId, id: { in: cakeIds } }, select: { id: true, customerName: true, pickupAt: true } })
+      : [],
+  ]);
+  const servingsBySize = new Map(sizes.map((size) => [size.id, size.servings]));
+  const cakeById = new Map(cakes.map((cake) => [cake.id, cake]));
+  const productById = new Map(products.map((product) => [product.id, product]));
+  const categoryById = new Map(categories.map((category) => [category.id, category]));
+  const pickupLabel = (date: Date) =>
+    new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(date);
+
+  return shopMerchants
+    .map((shop) => {
+      const grouped = new Map<string, ProductionShopLine & { categoryOrder: number; productOrder: number }>();
+      for (const line of shopLines.filter((row) => merchantOfOrder.get(row.orderId) === shop.id)) {
+        const product = productById.get(line.productId);
+        const category = product ? categoryById.get(product.categoryId) : undefined;
+        const cake = line.cakeOrderId ? cakeById.get(line.cakeOrderId) : undefined;
+        const parts = [
+          line.sizeId ? `${servingsBySize.get(line.sizeId) ?? "?"} personnes` : null,
+          line.inscription ? `« ${line.inscription} »` : null,
+          line.note ? `⚠ ${line.note}` : null,
+          cake ? `${cake.customerName} · retrait ${pickupLabel(cake.pickupAt)}` : null,
+        ].filter(Boolean);
+        const detail = parts.length ? parts.join(" · ") : null;
+        // Une ligne par produit ; une commande sur mesure garde sa propre ligne (taille, inscription, particulier).
+        const key = detail ? `${line.productId}|${line.cakeOrderId ?? detail}` : line.productId;
+        const existing = grouped.get(key);
+        if (existing) existing.quantity += line.quantityOrdered;
+        else
+          grouped.set(key, {
+            productId: line.productId,
+            name: product?.name ?? "",
+            unit: product?.unit ?? "",
+            categoryName: category?.name ?? t.otherCategory,
+            quantity: line.quantityOrdered,
+            detail,
+            categoryOrder: category?.sortOrder ?? Number.MAX_SAFE_INTEGER,
+            productOrder: product?.sortOrder ?? 0,
+          });
+      }
+      const ordered = [...grouped.values()]
+        .filter((line) => line.quantity > 0)
+        .sort(
+          (a, b) =>
+            a.categoryOrder - b.categoryOrder ||
+            a.productOrder - b.productOrder ||
+            a.name.localeCompare(b.name, "fr") ||
+            (a.detail ?? "").localeCompare(b.detail ?? "", "fr")
+        )
+        .map((line) => ({
+          productId: line.productId,
+          name: line.name,
+          unit: line.unit,
+          categoryName: line.categoryName,
+          quantity: line.quantity,
+          detail: line.detail,
+        }));
+      return {
+        merchantId: shop.id,
+        name: shop.tradeName || shop.name,
+        itemCount: ordered.reduce((sum, line) => sum + line.quantity, 0),
+        lines: ordered,
+      };
+    })
+    .filter((shop) => shop.lines.length > 0)
+    .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+}
 
 async function loadProductDetails(
   db: ProductionDb,
@@ -217,7 +325,19 @@ export async function getProductionDay(
   const withLines = new Set(lines.map((line) => line.orderId));
   const orders = family ? allOrders.filter((order) => withLines.has(order.id)) : allOrders;
   const orderIds = orders.map((order) => order.id);
-  const totals = computeProductionTotals(lines, products, categories);
+  // RETOURS-3 : les envois aux points de vente de l'entreprise (commandes verrouillées dès leur création) sont déjà
+  // dans le total ; ils sont signalés à part et détaillés par point de vente, avant comme après l'heure limite.
+  const orderMerchants = orders.length
+    ? await db.merchant.findMany({
+        where: { companyId, id: { in: [...new Set(orders.map((order) => order.merchantId))] } },
+        select: { id: true, name: true, tradeName: true, kind: true },
+      })
+    : [];
+  const shopMerchants = orderMerchants.filter((merchant) => merchant.kind === "SHOP");
+  const shopMerchantIds = new Set(shopMerchants.map((merchant) => merchant.id));
+  const shopOrderIds = new Set(orders.filter((order) => shopMerchantIds.has(order.merchantId)).map((order) => order.id));
+  const totals = computeProductionTotals(lines, products, categories, shopOrderIds);
+  const shops = await buildShopProduction(db, companyId, shopMerchants, orders, lines, products, categories);
   const base = {
     date: day.date,
     cutoffAt: day.cutoffAt.toISOString(),
@@ -226,6 +346,7 @@ export async function getProductionDay(
     orderCount: orders.length,
     itemCount: lines.reduce((sum, line) => sum + line.quantityOrdered, 0),
     totals,
+    shops,
     ...(family === "PASTRY" ? { details: await loadProductDetails(db, companyId, lines, orders, products) } : {}),
   };
   // BOU-01 : bons et tournées seulement après l'heure limite.

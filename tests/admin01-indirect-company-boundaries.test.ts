@@ -104,7 +104,8 @@ function load(file: string, dependencies: Record<string, unknown>) {
 test("ADMIN-1 frontières indirectes : l'inventaire suit les consommateurs réels", () => {
   const found = discover();
   assert.equal(found.filter((row) => row.guard === "orderActorAuth").length, 0);
-  assert.equal(found.filter((row) => row.guard === "requireSupportStaff").length, 4);
+  // RETOURS-3 : + GET /api/support/summary (pastille rouge du gérant), même garde que la liste.
+  assert.equal(found.filter((row) => row.guard === "requireSupportStaff").length, 5);
   assert.deepEqual(documented(), found);
 });
 

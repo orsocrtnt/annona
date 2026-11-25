@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, CheckCircle2 } from "lucide-react";
+import { Cake, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -103,7 +103,7 @@ export function SellerCakes() {
   const ready = Boolean(size && customerName.trim() && customerPhone.trim() && pickupDate && (payment === "FULL" || deposit));
   return (
     <div className="space-y-6">
-      <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight"><ClipboardList className="h-7 w-7 text-brand" aria-hidden /> Commandes sur mesure</h1>
+      <h1 className="flex items-center gap-2 text-3xl font-semibold tracking-tight"><Cake className="h-7 w-7 text-brand" aria-hidden /> Commandes sur mesure</h1>
       {data.error ? <p role="alert" className="text-base text-error">{data.error.message}</p> : null}
       <Card>
         <CardHeader>

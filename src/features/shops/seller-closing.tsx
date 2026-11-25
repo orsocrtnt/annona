@@ -105,7 +105,7 @@ export function SellerClosing() {
                     <Fragment key={line.productId}>
                     {heading}
                     <li className="flex flex-wrap items-center gap-2 py-3">
-                      <p className="min-w-0 flex-1 text-lg font-medium">{line.name}</p>
+                      <p className="min-w-[12rem] flex-1 text-lg font-medium">{line.name}</p>
                       <Badge variant="outline">Reste {line.closed.remaining}</Badge>
                       <Badge variant="success">Vendus {line.closed.sold}</Badge>
                       <Badge variant="error">Jetés {line.closed.discardedExpired + line.closed.discardedDamaged}</Badge>
@@ -118,7 +118,8 @@ export function SellerClosing() {
                   {heading}
                   <li className="space-y-2 py-3" data-testid={`closing-${line.name}`}>
                     <div className="flex flex-wrap items-center gap-3">
-                      <div className="min-w-0 flex-1">
+                      {/* RETOURS-3 : 12 rem au moins pour le nom ; sur téléphone, « Reste » et « dont abîmés » passent dessous. */}
+                      <div className="min-w-[12rem] flex-1">
                         <p className="text-lg font-medium">{line.name}</p>
                         <p className="text-sm text-muted-foreground">
                           En stock aujourd&apos;hui : {line.lots.reduce((sum, lot) => sum + lot.quantity, 0)} {line.unit}

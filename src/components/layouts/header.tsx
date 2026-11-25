@@ -16,7 +16,8 @@ import { useUIStore } from "@/stores/ui.store";
 import { useAuth } from "@/hooks/use-auth";
 import { useCanOpenPage } from "@/hooks/use-can-open-page";
 import { getInitials } from "@/lib/utils";
-import { ROLE_LABELS } from "@/lib/permissions/rbac";
+import { roleLabelFor } from "@/lib/company/space-names";
+import { useSpaceNames } from "@/hooks/use-space-names";
 import { Menu, LogOut, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { StaffNotificationsBell } from "@/features/notifications/staff-notifications-bell";
@@ -35,6 +36,7 @@ interface HeaderProps {
 export function Header({ breadcrumbs, className, premium = false, actions }: HeaderProps) {
   const { toggleMobileNav } = useUIStore();
   const { user, logout } = useAuth();
+  const spaceNames = useSpaceNames();
   const canOpenSettings = useCanOpenPage("/settings");
 
   const content = (
@@ -131,8 +133,8 @@ export function Header({ breadcrumbs, className, premium = false, actions }: Hea
                   {user ? `${user.firstName} ${user.lastName}` : "Utilisateur"}
                 </p>
                 <p className={cn("mt-0.5 text-xs", premium ? "text-muted-foreground dark:text-muted-foreground" : "text-white/45")}>
-                  {/* RETOURS-2 : libellé du code (« Vente »), pas le nom en base (« Vendeuse » depuis la migration du lot 2). */}
-                  {user ? ROLE_LABELS[user.role.systemRole] ?? user.role.name : "—"}
+                  {/* RETOURS-2 : libellé du code, pas le nom en base. RETOURS-3 : nom du laboratoire choisi par le gérant. */}
+                  {user ? roleLabelFor(user.role.systemRole, spaceNames) : "—"}
                 </p>
               </div>
             </button>
